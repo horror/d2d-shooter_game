@@ -5,9 +5,8 @@ module ApplicationHelper
       #TODO: "ok"
     else
       #TODO: кинуть ошибку
-      #@user.errors.full_messages.each do |msg|
+      #@user.errors.full_messages.each do |msg| end
 
-      end
     end
   end
 
@@ -20,6 +19,7 @@ module ApplicationHelper
       #TODO: "ok"
     else
       #TODO: кинуть ошибку
+    end
   end
 
   def signed_in?
@@ -42,5 +42,6 @@ module ApplicationHelper
       #TODO: "ok"
     else
       #TODO: Кинуть ошибку
+    end
   end
 end

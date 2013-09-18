@@ -1,5 +1,1 @@
-<form method="POST" remote="true">
-<textarea name="text"></textarea>
-<input type="submit" />
-</form>
-<%= debug(params) if Rails.env.development? %>
+<%= debug(ActiveSupport::JSON.decode(params[:_json])) if Rails.env.development? %>
