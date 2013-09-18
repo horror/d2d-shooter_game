@@ -6,7 +6,7 @@
 development:
   host: localhost
   adapter: postgresql
-  database: d2dbb
+  database: d2ddb
   username: postgres
   password: c2h5oh
 
@@ -16,13 +16,13 @@ development:
 test:
   host: localhost
   adapter: postgresql
-  database: d2dbb
+  database: test_d2ddb
   username: postgres
   password: c2h5oh
 
 production:
   host: localhost
   adapter: postgresql
-  database: d2dbb
+  database: dev_d2ddb
   username: postgres
   password: c2h5oh

@@ -30,7 +30,9 @@ group :development, :test do
   gem 'annotate'
 end
 
-
+group :test do
+  gem 'factory_girl_rails', '4.1.0'
+end
 # To use ActiveModel has_secure_password
 # gem 'bcrypt-ruby', '~> 3.0.0'
 
