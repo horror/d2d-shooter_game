@@ -58,7 +58,7 @@ describe "Application page" do
     end
   end
 
-  describe "sand message" do
+  describe "send message" do
     Game.create()
     User.create(login: "lolowka", password: "lolowka", password_confirmation: "lolowka")
     it "with valid information" do
