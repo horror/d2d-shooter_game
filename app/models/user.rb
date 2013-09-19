@@ -11,9 +11,9 @@
 #
 
 class User < ActiveRecord::Base
-  attr_accessible :login, :password, :password_confirmation
+  attr_accessible :login, :password, :password_confirmation, :sid
   has_secure_password
-
+  has_many :messages
   before_save { |user| user.login = login.downcase }
 
   VALID_LOGIN_REGEX = /\A[\w+\-.]+\z/i

@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include AuthHelper
+  include ChatHelper
 
   def index
     send(params["application"]["action"], params["application"]["params"])
