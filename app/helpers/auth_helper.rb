@@ -9,12 +9,12 @@ module AuthHelper
 
   def signin(params)
     user = User.find_by_login(params["login"].downcase)
-    if user && user.authenticate(params["password"])
+    if user && user.authenticate(params["password"]) ? "ok" : "incorrect"
       user.sid = SecureRandom.urlsafe_base64
       user.save
-      #TODO: "ok"
+      self.response_obj = {result: "ok", sid: user.sid}
     else
-      #TODO: кинуть ошибку
+      self.response_obj = {result: "incorrect"}
     end
   end
 
@@ -27,9 +27,9 @@ module AuthHelper
     if user
       user.sid = ''
       user.save
-      #TODO: "ok"
+      self.response_obj = {result: "ok"}
     else
-      #TODO: Кинуть ошибку
+      self.response_obj = {result: "badSid"}
     end
   end
 end

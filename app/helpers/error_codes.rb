@@ -1,6 +1,7 @@
 module ErrorCodes
   def get_code(str)
     error_codes = {
+        #signup, signin
         "Login has already been taken" => "userExists",
         "Password doesn't match confirmation" => "badPasswordConfirmation",
         "Password is too short (minimum is 4 characters)" => "badPassword",
