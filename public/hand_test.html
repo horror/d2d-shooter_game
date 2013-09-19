@@ -6,7 +6,7 @@
     <script type="text/javascript" src="http://yandex.st/jquery/1.9.1/jquery.min.js"></script>
 </head>
 <body>
-<textarea id="request">"{\"action\":\"signup\", \"params\":{\"login\":\"vasya\", \"password\":\"lololol\", \"password_confirmation\":\"lololol\"}}"</textarea>
+<textarea id="request">{action: "signup", params:{login:"vasya", password:"lololol", password_confirmation:"lololol"}}</textarea>
 <br />
 <button id="send_request">Затестить</button>
 </body>
@@ -15,9 +15,8 @@
         $.ajax({
             url: '/',
             type: 'POST',
-            data: $("textarea#request").val(),
-            contentType: 'application/json; charset=utf-8',
-            dataType: 'text'
+            data: eval('JSON.stringify(' + $("textarea#request").val() + ')'),
+            contentType: 'application/json; charset=utf-8'
         }).done(function(msg) {
                     alert(msg);
         }).fail(function(jqXHR, msg) {

@@ -1,5 +1,7 @@
 D2d::Application.routes.draw do
   root to: 'application#index'
+
+  match '/handtest', to: redirect('/hand_test.html')
   # The priority is based upon order of creation:
   # first created -> highest priority.
 

@@ -4,10 +4,9 @@ describe "Application page" do
   subject { page }
 
   describe "sign up" do
-    before { visit #TODO:станица с параметрами
-                    }
-
-    it { should have_#TODO:чекнуть текст
-    }
+    it "with valid information" do
+      xhr :post, "/", enc(action: "signup", params:{login:"vasya", password:"lololol", password_confirmation:"lololol"}), "CONTENT_TYPE" => 'application/json; charset=utf-8', "DATA_TYPE" => 'json'
+      response.code.should == "200"  && response.body.should == enc(result: "ok")
+    end
   end
 end

@@ -2,9 +2,9 @@ class ApplicationController < ActionController::Base
   include AuthHelper
 
   def index
-    request_obj = ActiveSupport::JSON.decode(params[:_json])
-    send(request_obj["action"], request_obj["params"])
+    send(params["application"]["action"], params["application"]["params"])
     @response_json = ActiveSupport::JSON.encode(@response_obj)
+    render :json => @response_json
   end
 
 end
