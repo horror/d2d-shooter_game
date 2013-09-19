@@ -17,11 +17,11 @@ module ChatHelper
       condition = ["m.created_at > ?", params["since"]]
       if params["game"]
         game = Game.find_by_id(params["game"])
-        if game
-          condition = ["m.game_id = ? AND m.created_at > ?", game.id, params["since"]]
-        else
+        if not game
           self.response_obj = {result: "badGame"}
+          return
         end
+        condition = ["m.game_id = ? AND m.created_at > ?", game.id, params["since"]]
       end
       messages = Message.all(
                 :select => "u.login AS login, m.text, m.created_at AS time",
