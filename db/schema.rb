@@ -11,7 +11,23 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130918145356) do
+ActiveRecord::Schema.define(:version => 20130919083445) do
+
+  create_table "games", :force => true do |t|
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
+  create_table "messages", :force => true do |t|
+    t.integer  "user_id"
+    t.integer  "game_id"
+    t.datetime "time"
+    t.string   "text"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
+
+  add_index "messages", ["user_id", "created_at"], :name => "index_messages_on_user_id_and_created_at"
 
   create_table "users", :force => true do |t|
     t.string   "login"
@@ -20,5 +36,7 @@ ActiveRecord::Schema.define(:version => 20130918145356) do
     t.datetime "updated_at",      :null => false
     t.string   "sid"
   end
+
+  add_index "users", ["login"], :name => "index_users_on_login", :unique => true
 
 end
