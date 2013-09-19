@@ -5,7 +5,7 @@ module ErrorCodes
         "Login has already been taken" => "userExists",
         "Password doesn't match confirmation" => "badPasswordConfirmation",
         "Password is too short (minimum is 4 characters)" => "badPassword",
-        "Password can't be blank" => "badPassword",
+        "Password digest can't be blank" => "badPassword",
         "Login is too short (minimum is 4 characters)" => "badLogin",
         "Login is invalid" => "badLogin",
         "Login is too long (maximum is 40 characters)" => "badLogin",
