@@ -1,8 +1,10 @@
 module AuthHelper
+  include ErrorCodes
 
   def signup(params)
     user = User.new(params)
-    self.response_obj = user.save ? {result: "ok"} : {result: "fail", message: user.errors.full_messages.to_a.join(", ")}
+    msg = user.save ? "ok" : get_code(user.errors.full_messages.to_a.first.dup)
+    self.response_obj = {result: msg}
   end
 
   def signin(params)

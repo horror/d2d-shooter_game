@@ -46,7 +46,12 @@ describe User do
   end
 
   describe "when login is too long" do
-    before { @user.login = "a" * 51 }
+    before { @user.login = "a" * 41 }
+    it { should_not be_valid }
+  end
+
+  describe "when login is too short" do
+    before { @user.password = "a" * 3 }
     it { should_not be_valid }
   end
 
@@ -76,7 +81,7 @@ describe User do
   end
 
   describe "with a password that's too short" do
-    before { @user.password = @user.password_confirmation = "a" * 5 }
+    before { @user.password = @user.password_confirmation = "a" * 3 }
     it { should be_invalid }
   end
 
