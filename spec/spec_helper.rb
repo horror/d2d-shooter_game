@@ -16,7 +16,6 @@ Spork.prefork do
   Dir[Rails.root.join("spec/support/**/*.rb")].each {|f| require f}
 
   RSpec.configure do |config|
-    config.include Requests::JsonHelpers, type: :request
     # == Mock Framework
     #
     # If you prefer to use mocha, flexmock or RR, uncomment the appropriate line:
@@ -25,6 +24,8 @@ Spork.prefork do
     # config.mock_with :flexmock
     # config.mock_with :rr
     config.mock_with :rspec
+
+    config.include Requests::JsonHelpers
 
     config.include Capybara::DSL
 
