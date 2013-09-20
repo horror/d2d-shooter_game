@@ -1,5 +1,5 @@
 module ChatHelper
-  def sendmessage(params)
+  def sendMessage(params)
     user = User.find_by_sid(params["sid"])
     if user
       new_message_params = {game_id: params["game"], user_id: user.id, text: params[:text]}
@@ -11,7 +11,7 @@ module ChatHelper
     end
   end
 
-  def getmessages(params)
+  def getMessages(params)
     user = User.find_by_sid(params["sid"])
     if user
       condition = ["m.created_at > ?", params["since"]]

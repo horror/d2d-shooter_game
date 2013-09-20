@@ -57,17 +57,17 @@ describe "Application page" do
     Game.create()
     User.create(login: "lolowka", password: "lolowka", password_confirmation: "lolowka")
     it "with valid information" do
-      send_request(action: "sendmessage", params:{sid: User.first.sid, game: Game.first.id, text: "lololol"})
+      send_request(action: "sendMessage", params:{sid: User.first.sid, game: Game.first.id, text: "lololol"})
       response.code.should == "200"  && response.body.should == enc(result: "ok")
     end
 
     it "with invalid user sid" do
-      send_request(action: "sendmessage", params:{sid: "100500", game: Game.first.id, text: "lololol"})
+      send_request(action: "sendMessage", params:{sid: "100500", game: Game.first.id, text: "lololol"})
       response.code.should == "200"  && response.body.should == enc(result: "badSid")
     end
 
     it "with invalid game id" do
-      send_request(action: "sendmessage", params:{sid: User.first.sid, game: 100500, text: "lololol"})
+      send_request(action: "sendMessage", params:{sid: User.first.sid, game: 100500, text: "lololol"})
       response.code.should == "200"  && response.body.should == enc(result: "badGame")
     end
   end
@@ -76,17 +76,17 @@ describe "Application page" do
     Game.create()
     User.create(login: "lolowka", password: "lolowka", password_confirmation: "lolowka")
     it "with valid information" do
-      send_request(action: "getmessages", params:{sid: User.first.sid, game: Game.first.id, since: "2000-09-19 09:49:51"})
+      send_request(action: "getMessages", params:{sid: User.first.sid, game: Game.first.id, since: "2000-09-19 09:49:51"})
       response.code.should == "200"  && response.body.should == enc(result: "ok",login: "lolowka", message: [])
     end
 
     it "with invalid user sid" do
-      send_request(action: "getmessages", params:{sid: "100500", game: Game.first.id, since: "2000-09-19 09:49:51"})
+      send_request(action: "getMessages", params:{sid: "100500", game: Game.first.id, since: "2000-09-19 09:49:51"})
       response.code.should == "200"  && response.body.should == enc(result: "badSid")
     end
 
     it "with invalid game id" do
-      send_request(action: "getmessages", params:{sid: User.first.sid, game: 100500, since: "2000-09-19 09:49:51"})
+      send_request(action: "getMessages", params:{sid: User.first.sid, game: 100500, since: "2000-09-19 09:49:51"})
       response.code.should == "200"  && response.body.should == enc(result: "badGame")
     end
   end
