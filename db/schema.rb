@@ -11,9 +11,20 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20130919114727) do
+ActiveRecord::Schema.define(:version => 20130923123952) do
 
   create_table "games", :force => true do |t|
+    t.datetime "created_at",                 :null => false
+    t.datetime "updated_at",                 :null => false
+    t.integer  "user_id"
+    t.integer  "map_id"
+    t.integer  "max_players"
+    t.string   "name"
+    t.integer  "status",      :default => 0
+  end
+
+  create_table "maps", :force => true do |t|
+    t.string   "name"
     t.datetime "created_at", :null => false
     t.datetime "updated_at", :null => false
   end
@@ -27,6 +38,13 @@ ActiveRecord::Schema.define(:version => 20130919114727) do
   end
 
   add_index "messages", ["user_id", "created_at"], :name => "index_messages_on_user_id_and_created_at"
+
+  create_table "players", :force => true do |t|
+    t.integer  "user_id"
+    t.integer  "game_id"
+    t.datetime "created_at", :null => false
+    t.datetime "updated_at", :null => false
+  end
 
   create_table "users", :force => true do |t|
     t.string   "login"

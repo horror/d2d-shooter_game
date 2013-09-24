@@ -14,8 +14,11 @@ require 'spec_helper'
 
 describe Message do
 
-  let(:user) { FactoryGirl.create(:user) }
-  before { @message = user.messages.build(text: "Example text") }
+  before do
+    @user = User.new(login: "ExampleUser", password: "Example password", password_confirmation: "Example password")
+    @user.save
+    @message = @user.messages.build(text: "Example text", game_id: 1)
+  end
 
   subject { @message }
 

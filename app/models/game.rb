@@ -8,5 +8,5 @@
 #
 
 class Game < ActiveRecord::Base
-  # attr_accessible :title, :body
+   attr_accessible :user_id, :map_id, :name, :max_players
 end

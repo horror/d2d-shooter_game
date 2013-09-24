@@ -16,8 +16,7 @@ module ChatHelper
     if user
       condition = ["m.created_at > ?", params["since"]]
       if params["game"]
-        game = Game.find_by_id(params["game"])
-        if not game
+        if not (game = Game.find_by_id(params["game"]))
           self.response_obj = {result: "badGame"}
           return
         end

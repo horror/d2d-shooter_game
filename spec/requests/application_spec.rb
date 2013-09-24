@@ -70,6 +70,8 @@ describe "Application page" do
   end
 
   describe "get messages" do
+    Game.create()
+    User.create(login: "lolowka", password: "lolowka", password_confirmation: "lolowka")
     it "with valid information" do
       send_request(action: "getMessages", params:{sid: User.first.sid, game: Game.first.id, since: "2000-09-19 09:49:51"})
       response.code.should == "200"  && response.body.should == enc(result: "ok",login: "lolowka", message: [])
