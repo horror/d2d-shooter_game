@@ -15,6 +15,7 @@ class User < ActiveRecord::Base
   has_secure_password
   has_many :messages
   has_many :games
+  has_many :players
   before_save { |user| user.login = login.downcase }
 
   VALID_LOGIN_REGEX = /\A[\w+\-.]+\z/i

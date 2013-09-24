@@ -1,3 +1,3 @@
 class Player < ActiveRecord::Base
-  has_many :users
+  attr_accessible :game_id, :user_id
 end
