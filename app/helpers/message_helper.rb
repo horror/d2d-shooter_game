@@ -1,5 +1,5 @@
-module ErrorCodes
-  def get_code(str)
+module MessageHelper
+  def get_error_code(str)
     error_codes = {
         #signup, signin
         "Login has already been taken" => "userExists",
@@ -13,5 +13,6 @@ module ErrorCodes
     }
     error_codes[str] ? error_codes[str] : str
   end
+
 
 end

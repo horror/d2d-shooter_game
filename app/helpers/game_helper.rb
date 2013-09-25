@@ -1,5 +1,5 @@
 module GameHelper
-  include ErrorCodes
+  include MessageHelper
 
   def createGame(params)
     if not (user = User.find_by_sid(params["sid"]))
@@ -18,6 +18,8 @@ module GameHelper
   end
 
   def getGames(params)
+
+
     games = Game.all(
         :select => "g.name, g.map_id AS map, g.max_players AS maxPlayers, g.status, u.login AS player",
         :from => 'games g',
