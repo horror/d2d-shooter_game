@@ -14,5 +14,8 @@ module MessageHelper
     error_codes[str] ? error_codes[str] : str
   end
 
-
+  def get_game_status(status)
+    status_names = ["running", "finished"]
+    status_names[status]
+  end
 end
