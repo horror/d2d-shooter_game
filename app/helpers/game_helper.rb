@@ -30,7 +30,7 @@ module GameHelper
       |name, rows|
       [name: name, map: rows[0]["map"], maxPlayers: rows[0]["maxPlayers"], status: get_game_status(rows[0]["status"]), players: rows.map{|r| r["player"]}]
     end
-    self.response_obj = ok({games: games})
+    ok({games: games})
   end
 
   def joinGame(params)
