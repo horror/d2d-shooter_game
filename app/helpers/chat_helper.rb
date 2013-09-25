@@ -1,31 +1,32 @@
 module ChatHelper
+
   def sendMessage(params)
     if not (user = User.find_by_sid(params["sid"]))
-      self.response_obj = {result: "badSid"}
+      badSid
       return
     end
 
     if not Game.find_by_id(params["game"])
-      self.response_obj = {result: "badGame"}
+      badGame
       return
     end
 
 
     new_message_params = {game_id: params["game"], user_id: user.id, text: params[:text]}
     message = Message.new(new_message_params)
-    self.response_obj = {result: "ok"}
+    ok
   end
 
   def getMessages(params)
     if not (user = User.find_by_sid(params["sid"]))
-      self.response_obj = {result: "badSid"}
+      badSid
       return
     end
 
     condition = ["m.created_at > ?", params["since"]]
     if params["game"]
       if not (game = Game.find_by_id(params["game"]))
-        self.response_obj = {result: "badGame"}
+        badGame
         return
       end
       condition = ["m.game_id = ? AND m.created_at > ?", game.id, params["since"]]
@@ -37,6 +38,6 @@ module ChatHelper
               :conditions => condition,
               :order => 'm.created_at desc',
     ).to_a
-    self.response_obj = {result: "ok", login: user.login, message: messages}
+    ok({login: user.login, message: messages})
   end
 end

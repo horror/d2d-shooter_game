@@ -1,4 +1,5 @@
 module MessageHelper
+
   def get_error_code(str)
     error_codes = {
         #signup, signin

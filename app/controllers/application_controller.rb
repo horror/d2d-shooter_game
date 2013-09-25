@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::Base
+  include ApplicationHelper
+  include MessageHelper
   include AuthHelper
   include ChatHelper
   include GameHelper

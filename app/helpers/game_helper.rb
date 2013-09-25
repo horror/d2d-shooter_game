@@ -1,9 +1,8 @@
 module GameHelper
-  include MessageHelper
 
   def createGame(params)
     if not (user = User.find_by_sid(params["sid"]))
-      self.response_obj = {result: "badSid"}
+      badSid
       return
     end
 
@@ -14,7 +13,7 @@ module GameHelper
 
     new_game = {map_id: map.id, user_id: user.id, name: params["name"], max_players: params["maxPlayers"]}
     game = Game.new(new_game)
-    self.response_obj = game.save ? {result: "ok"} : {result: get_code(game.errors.full_messages.to_a.first.dup)}
+    self.response_obj = game.save ? {result: "ok"} : {result: get_error_code(game.errors.full_messages.to_a.first.dup)}
   end
 
   def getGames(params)
@@ -31,22 +30,22 @@ module GameHelper
       |name, rows|
       [name: name, map: rows[0]["map"], maxPlayers: rows[0]["maxPlayers"], status: get_game_status(rows[0]["status"]), players: rows.map{|r| r["player"]}]
     end
-    self.response_obj = {result: "ok", games: games}
+    self.response_obj = ok({games: games})
   end
 
   def joinGame(params)
     if not (user = User.find_by_sid(params["sid"]))
-      self.response_obj = {result: "badSid"}
+      badSid
       return
     end
 
     if not (game = Game.find_by_id(params["game"]))
-      self.response_obj = {result: "badGame"}
+      badGame
       return
     end
 
     if game.players.count == game.max_players
-      self.response_obj = {result: "gameFull"}
+      gameFull
       return
     end
 
@@ -56,12 +55,12 @@ module GameHelper
 
   def leaveGame(params)
     if not (user = User.find_by_sid(params["sid"]))
-      self.response_obj = {result: "badSid"}
+      badSid
       return
     end
 
     if not (player = Player.where(game_id: params["game"], user_id: user.id))
-      self.response_obj = {result: "badGame"}
+      badGame
       return
     end
 
@@ -70,5 +69,6 @@ module GameHelper
 
   def uploadMap(params)
     Map.create(name: params["name"])
+    ok
   end
 end
