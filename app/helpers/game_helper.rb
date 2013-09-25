@@ -25,7 +25,10 @@ module GameHelper
           INNER JOIN users u ON p.user_id = u.id",
         :order => 'g.id, p.created_at desc'
     )
-    #TODO: Женька, сделай чтобы было поле players: [login1, login2]
+    games = games.group_by(&:name).map do
+      |name, rows|
+      [name: name, map: rows[0]["map"], maxPlayers: rows[0]["maxPlayers"], status: rows[0]["status"], players: rows.map{|r| r["player"]}]
+    end
     self.response_obj = {result: "ok", games: games}
   end
 
