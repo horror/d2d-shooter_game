@@ -13,9 +13,7 @@ module AuthHelper
       incorrect
       return
     end
-
-    user.sid = SecureRandom.urlsafe_base64
-    user.save
+    user.update_attribute(:sid, SecureRandom.urlsafe_base64)
     ok({sid: user.sid})
   end
 
@@ -25,9 +23,7 @@ module AuthHelper
       badSid
       return
     end
-
-    user.sid = ''
-    user.save
+    user.update_attribute(:sid, '')
     ok
   end
 end
