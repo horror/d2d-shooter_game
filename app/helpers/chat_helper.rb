@@ -6,14 +6,13 @@ module ChatHelper
       return
     end
 
-    if not Game.find_by_id(params["game"])
+    if params["game"] != "" and not Game.find_by_id(params["game"])
       badGame
       return
     end
 
-
-    new_message_params = {game_id: params["game"], user_id: user.id, text: params[:text]}
-    message = Message.new(new_message_params)
+    new_message_params = {game_id: params["game"] == "" ? "0" : params["game"], user_id: user.id, text: params[:text]}
+    Message.create(new_message_params)
     ok
   end
 
@@ -24,12 +23,12 @@ module ChatHelper
     end
 
     condition = ["m.created_at > ?", params["since"]]
-    if params["game"]
+    if params["game"] != ""
       if not (game = Game.find_by_id(params["game"]))
         badGame
         return
       end
-      condition = ["m.game_id = ? AND m.created_at > ?", game.id, params["since"]]
+      condition = ["m.game_id = ? AND m.created_at > ?", params["game"] == "" ? "0" : game.id, params["since"]]
     end
     messages = Message.all(
               :select => "u.login AS login, m.text, m.created_at AS time",
@@ -38,6 +37,6 @@ module ChatHelper
               :conditions => condition,
               :order => 'm.created_at desc',
     ).to_a
-    ok({login: user.login, message: messages})
+    ok({login: user.login, messages: messages})
   end
 end

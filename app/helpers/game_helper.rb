@@ -68,7 +68,7 @@ module GameHelper
   end
 
   def uploadMap(params)
-    Map.create(name: params["name"])
+    map = Map.create(name: params["name"])
     ok
   end
 end
