@@ -24,8 +24,8 @@ require 'spec_helper'
 
 describe User do
 
-  before do
-    @user = User.new(login: "ExampleUser",
+  before(:all) do
+    @user = User.create(login: "ExampleUser",
                      password: "Example password", password_confirmation: "Example password")
   end
 
@@ -86,18 +86,17 @@ describe User do
   end
 
   describe "return value of authenticate method" do
-    before { @user.save }
-    let(:found_user) { User.find_by_login(@user.login) }
 
     describe "with valid password" do
-      it { should == found_user.authenticate(@user.password) }
+      it { should == @user.authenticate(@user.password) }
     end
 
     describe "with invalid password" do
-      let(:user_for_invalid_password) { found_user.authenticate("invalid") }
+      let(:user_for_invalid_password) { @user.authenticate("invalid") }
 
       it { should_not == user_for_invalid_password }
       specify { user_for_invalid_password.should be_false }
     end
   end
+
 end

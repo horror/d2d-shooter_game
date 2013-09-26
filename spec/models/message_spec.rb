@@ -14,9 +14,8 @@ require 'spec_helper'
 
 describe Message do
 
-  before do
-    @user = User.new(login: "ExampleUser", password: "Example password", password_confirmation: "Example password")
-    @user.save
+  before(:all) do
+    @user = User.create(login: "ExampleUser", password: "Example password", password_confirmation: "Example password")
     @message = @user.messages.build(text: "Example text", game_id: 1)
   end
 
@@ -32,5 +31,6 @@ describe Message do
     before { @message.user_id = nil }
     it { should_not be_valid }
   end
+
 
 end
