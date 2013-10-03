@@ -7,6 +7,14 @@ module ApplicationHelper
     self.response_obj = {result: "badGame"}
   end
 
+  def badMap
+    self.response_obj = {result: "badMap"}
+  end
+
+  def badSince
+    self.response_obj = {result: "badSince"}
+  end
+
   def gameFull
     self.response_obj = {result: "gameFull"}
   end
