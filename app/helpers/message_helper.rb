@@ -11,6 +11,12 @@ module MessageHelper
         "Login is invalid" => "badLogin",
         "Login is too long (maximum is 40 characters)" => "badLogin",
         "Login can't be blank" => "badLogin",
+        #Games
+        "Name can't be blank" => "badName",
+        "Name has already been taken" => "gameExists",
+        "Max players can't be blank" => "badMaxPlayers",
+        "Max players is not a number" => "badMaxPlayers",
+        "Max players must be greater than 0" => "badMaxPlayers",
     }
     error_codes[str] ? error_codes[str] : str
   end

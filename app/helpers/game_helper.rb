@@ -5,30 +5,34 @@ module GameHelper
       badSid
       return
     end
-
     if not (map = Map.find_by_id(params["map"]))
-      self.response_obj = {result: "badMap"}
+      badMap
       return
     end
 
-    new_game = {map_id: map.id, user_id: user.id, name: params["name"], max_players: params["maxPlayers"]}
+    new_game = {map_id: params["map"], user_id: user.id, name: params["name"], max_players: params["maxPlayers"]}
     game = Game.new(new_game)
     self.response_obj = game.save ? {result: "ok"} : {result: get_error_code(game.errors.full_messages.to_a.first.dup)}
   end
 
   def getGames(params)
-
+    if not (user = User.find_by_sid(params["sid"]))
+      badSid
+      return
+    end
 
     games = Game.all(
-        :select => "g.name, g.map_id AS map, g.max_players AS maxPlayers, g.status, u.login AS player",
+        :select => "g.id, g.name, m.name AS map, g.max_players AS maxPlayers, g.status, u.login AS player",
         :from => 'games g',
         :joins => "LEFT JOIN players p ON g.id = p.game_id
-          INNER JOIN users u ON p.user_id = u.id",
-        :order => 'g.id, p.created_at desc'
+                  LEFT JOIN users u ON p.user_id = u.id
+                  LEFT JOIN maps m ON g.map_id = m.id",
+        :order => 'g.id, p.created_at'
     )
-    games = games.group_by(&:name).map do
-      |name, rows|
-      [name: name, map: rows[0]["map"], maxPlayers: rows[0]["maxPlayers"], status: get_game_status(rows[0]["status"]), players: rows.map{|r| r["player"]}]
+    games = games.group_by(&:id).map do
+      |id, rows|
+      {id: id, name: rows[0]["name"], map: rows[0]["map"], maxPlayers: rows[0]["maxPlayers"],
+          status: get_game_status(rows[0]["status"]), players: rows[0]["player"] == nil ? [] : rows.map{|r| r["player"]}}
     end
     ok({games: games})
   end
@@ -69,6 +73,6 @@ module GameHelper
 
   def uploadMap(params)
     map = Map.create(name: params["name"])
-    ok
+    ok({id: map.id})
   end
 end

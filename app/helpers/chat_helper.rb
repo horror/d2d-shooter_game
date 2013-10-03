@@ -21,7 +21,12 @@ module ChatHelper
       badSid
       return
     end
-
+    begin
+      Time.parse(params["since"])
+    rescue
+      badSince
+      return
+    end
     condition = ["m.created_at > ?", params["since"]]
     if params["game"] != ""
       if not (game = Game.find_by_id(params["game"]))
