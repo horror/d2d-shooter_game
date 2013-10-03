@@ -53,8 +53,13 @@ module GameHelper
       return
     end
 
-    Player.create(user_id: user.id, game_id: game.id)
-    self.response_obj = {result: "ok"}
+    if Player.where(game_id: params["game"], user_id: user.id).exists?
+      alreadyInGame
+      return
+    end
+
+    player = Player.create(user_id: user.id, game_id: game.id)
+    self.response_obj = player.save ? {result: "ok"} : {result: get_error_code(player.errors.full_messages.to_a.first.dup)}
   end
 
   def leaveGame(params)
@@ -63,12 +68,13 @@ module GameHelper
       return
     end
 
-    if not (player = Player.where(game_id: params["game"], user_id: user.id))
-      badGame
+    if not (player = Player.where(user_id: user.id)).exists?
+      notInGame
       return
     end
 
     player.delete_all
+    ok
   end
 
   def uploadMap(params)

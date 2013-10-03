@@ -19,6 +19,14 @@ module ApplicationHelper
     self.response_obj = {result: "gameFull"}
   end
 
+  def alreadyInGame
+    self.response_obj = {result: "alreadyInGame"}
+  end
+
+  def notInGame
+    self.response_obj = {result: "notInGame"}
+  end
+
   def incorrect
     self.response_obj = {result: "incorrect"}
   end

@@ -19,7 +19,7 @@ class User < ActiveRecord::Base
   before_save { |user| user.login = login.downcase }
 
   VALID_LOGIN_REGEX = /\A[\w+\-.]+\z/i
-  validates :login, presence: true, length: { maximum: 40, minimum: 4 }, format: { with: VALID_LOGIN_REGEX }, uniqueness: { case_sensitive: false }
+  validates :login, presence: true, length: { maximum: 40, minimum: 4 }, format: { with: VALID_LOGIN_REGEX }, uniqueness: true
   validates :password, presence: true, length: { minimum: 4 }
   validates :password_confirmation, presence: true
 end
