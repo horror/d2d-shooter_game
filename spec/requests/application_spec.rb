@@ -3,7 +3,7 @@ require "date"
 
 describe "Application page" do
 
-  game_id = sid_b = sid_a = 0
+  game_a = game_b = sid_b = sid_a = 0
 
   describe "sign up" do
     def check_it(params, result = "ok")
@@ -159,7 +159,7 @@ describe "Application page" do
     end
 
     it "with valid information" do
-      check_it({sid: sid_a, name: "New game", map: @map_id, maxPlayers: 10})
+      check_it({sid: sid_a, name: "New game", map: @map_id, maxPlayers: 1})
     end
 
     it "with exist name" do
@@ -167,7 +167,7 @@ describe "Application page" do
     end
 
     it "with invalid user sid" do
-      check_it({sid: 100500, name: "New game1", map: @map_id, maxPlayers: 10}, "badSid")
+      check_it({sid: "100500", name: "New game1", map: @map_id, maxPlayers: 10}, "badSid")
     end
 
     it "with invalid map id" do
@@ -196,7 +196,7 @@ describe "Application page" do
       send_request(action: "uploadMap", params: {name: "New map 2"})
       @map_id = json_decode(response.body)["id"]
       send_request(action: "createGame", params: {sid: sid_a, name: "New game 2", map: @map_id, maxPlayers: 18})
-      @check_arr = [{"name" => "New game", "map" => "New map", "maxPlayers" => 10, "status" => "running"},
+      @check_arr = [{"name" => "New game", "map" => "New map", "maxPlayers" => 1, "status" => "running"},
                     {"name" => "New game 2", "map" => "New map 2", "maxPlayers" => 18, "status" => "running"}]
     end
 
@@ -204,7 +204,8 @@ describe "Application page" do
       send_request(action: "getGames", params: {sid: sid_a})
       arr = json_decode(response.body)
       result = arr["result"] == "ok"
-      game_id = arr["games"][0]["id"]
+      game_a = arr["games"][0]["id"]
+      game_b = arr["games"][1]["id"]
       arr["games"].each_with_index do |element, i|
         result &= element["name"] == @check_arr[i]["name"] && element["map"] == @check_arr[i]["map"]
         result &= element["maxPlayers"] == @check_arr[i]["maxPlayers"] && element["status"] == @check_arr[i]["status"]
@@ -214,12 +215,12 @@ describe "Application page" do
 
     it "with players" do
       @players = ["user_a", "user_b"]
-      send_request(action: "joinGame", params: {sid: sid_a, game: game_id})
-      send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
+      send_request(action: "joinGame", params: {sid: sid_a, game: game_b})
+      send_request(action: "joinGame", params: {sid: sid_b, game: game_b})
       send_request(action: "getGames", params: {sid: sid_a})
       arr = json_decode(response.body)
       arr["games"].each do |element|
-        if element["id"] == game_id 
+        if element["id"] == game_b
           arr["result"].should == "ok" && element["players"].should == @players
         end
       end
@@ -232,7 +233,37 @@ describe "Application page" do
 
   describe "join game" do
     it "with valid information" do
-      request_and_checking("joinGame", {sid: sid_a, game: game_id})
+      request_and_checking("joinGame", {sid: sid_a, game: game_a})
+    end
+
+    it "with alreadyJoined" do
+      request_and_checking("joinGame", {sid: sid_a, game: game_b}, {result: "alreadyInGame"})
+    end
+
+    it "with invalid sid" do
+      request_and_checking("joinGame", {sid: "100500", game: game_a}, {result: "badSid"})
+    end
+
+    it "with invalid game id" do
+      request_and_checking("joinGame", {sid: sid_a, game: 100500}, {result: "badGame"})
+    end
+
+    it "with full game" do
+      request_and_checking("joinGame", {sid: sid_b, game: game_a}, {result: "gameFull"})
+    end
+  end
+
+  describe "leave game" do
+    it "with valid information" do
+      request_and_checking("leaveGame", {sid: sid_a})
+    end
+
+    it "with invalid sid" do
+      request_and_checking("leaveGame", {sid: "100500"}, {result: "badSid"})
+    end
+
+    it "with notInGame" do
+      request_and_checking("leaveGame", {sid: sid_a}, {result: "notInGame"})
     end
   end
 end
