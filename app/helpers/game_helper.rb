@@ -65,4 +65,13 @@ module GameHelper
     map = Map.create(name: params["name"])
     ok({id: map.id})
   end
+  def getMaps(params)
+    begin
+      user = find_by_sid(params["sid"])
+    rescue BadParamsError
+      return
+    end
+    maps = Map.all(:select => "m.id, m.name", :from => 'maps m', :order => 'm.id').to_a
+    ok({maps: maps})
+  end
 end
