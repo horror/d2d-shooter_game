@@ -27,8 +27,8 @@ module ApplicationHelper
     self.response_obj = {result: "badName"}
   end
 
-  def badExists
-    self.response_obj = {result: "badExists"}
+  def gameExists
+    self.response_obj = {result: "gameExists"}
   end
 
   def badMaxPlayers
@@ -53,6 +53,10 @@ module ApplicationHelper
 
   def notInGame
     self.response_obj = {result: "notInGame"}
+  end
+
+  def mapExists
+    self.response_obj = {result: "mapExists"}
   end
 
   def incorrect

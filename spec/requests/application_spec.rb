@@ -3,7 +3,7 @@ require "date"
 require 'rest_client'
 
 describe "Application page" do
-  game_a = game_b = sid_b = sid_a = 0
+  map_id = game_a = game_b = sid_b = sid_a = 0
 
   before(:all) do
       send_request(action: "startTesting", params: [])
@@ -208,18 +208,56 @@ describe "Application page" do
     end
   end
 
-  describe "create game" do
-    before(:all) do
-      send_request(action: "uploadMap", params: {name: "New map"})
-      @map_id = json_decode(response.body)["id"]
+  describe "upload map" do
+    def check_it(params, result = "ok")
+      request_and_checking("uploadMap", params, {result: result})
     end
 
+    it "with invalid user sid(not sended)" do
+      check_it({name: "New map"}, "badSid")
+    end
+
+    it "with invalid user name(not sended)" do
+      check_it({sid: sid_a}, "badName")
+    end
+
+    it "with valid information" do
+      check_it({sid: sid_a, name: "New map"})
+    end
+
+    it "with invalid name(max exists)" do
+      check_it({sid: sid_a, name: "New map"}, "mapExists")
+    end
+
+    it "with invalid name(blank)" do
+      check_it({sid: sid_a, name: ""}, "badName")
+    end
+  end
+
+  describe "get maps" do
+    it "with invalid user sid(not sended)" do
+      request_and_checking("getMaps", {}, {result: "badSid"})
+    end
+
+    it "with valid information" do
+      send_request(action: "getMaps", params:{sid: sid_a})
+      arr = json_decode(response.body)
+      map_id = arr["maps"][0]["id"]
+      response.code.to_s.should == "200"  && arr["maps"].length == 1 && arr["maps"][0]["name"].should == "New map"
+    end
+
+    it "with invalid user sid" do
+      request_and_checking("getMaps", {sid: ""}, {result: "badSid"})
+    end
+  end
+
+  describe "create game" do
     def check_it(params, result = "ok")
       request_and_checking("createGame", params, {result: result})
     end
 
     it "with invalid user sid(not sended)" do
-      check_it({name: "New game1", map: @map_id, maxPlayers: 10}, "badSid")
+      check_it({name: "New game1", map: map_id, maxPlayers: 10}, "badSid")
     end
 
     it "with invalid map id(not sended)" do
@@ -227,23 +265,23 @@ describe "Application page" do
     end
 
     it "with invalid name (not sended)" do
-      check_it({sid: sid_a, map: @map_id, maxPlayers: 10}, "badName")
+      check_it({sid: sid_a, map: map_id, maxPlayers: 10}, "badName")
     end
 
     it "with invalid maxPlayers (not sended)" do
-      check_it({sid: sid_a, name: "New game1", map: @map_id}, "badMaxPlayers")
+      check_it({sid: sid_a, name: "New game1", map: map_id}, "badMaxPlayers")
     end
 
     it "with valid information" do
-      check_it({sid: sid_a, name: "New game", map: @map_id, maxPlayers: 1})
+      check_it({sid: sid_a, name: "New game", map: map_id, maxPlayers: 1})
     end
 
     it "with exist name" do
-      check_it({sid: sid_a, name: "New game", map: @map_id, maxPlayers: 10}, "gameExists")
+      check_it({sid: sid_a, name: "New game", map: map_id, maxPlayers: 10}, "gameExists")
     end
 
     it "with invalid user sid" do
-      check_it({sid: "100500", name: "New game1", map: @map_id, maxPlayers: 10}, "badSid")
+      check_it({sid: "100500", name: "New game1", map: map_id, maxPlayers: 10}, "badSid")
     end
 
     it "with invalid map id" do
@@ -251,29 +289,27 @@ describe "Application page" do
     end
 
     it "with invalid name (blank)" do
-      check_it({sid: sid_a, name: "", map: @map_id, maxPlayers: 10}, "badName")
+      check_it({sid: sid_a, name: "", map: map_id, maxPlayers: 10}, "badName")
     end
 
     it "with invalid maxPlayers (< 1)" do
-      check_it({sid: sid_a, name: "New game1", map: @map_id, maxPlayers: 0}, "badMaxPlayers")
+      check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: 0}, "badMaxPlayers")
     end
 
     it "with invalid maxPlayers (blank)" do
-      check_it({sid: sid_a, name: "New game1", map: @map_id, maxPlayers: ""}, "badMaxPlayers")
+      check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: ""}, "badMaxPlayers")
     end
 
     it "with invalid maxPlayers (is not a number)" do
-      check_it({sid: sid_a, name: "New game1", map: @map_id, maxPlayers: "sda"}, "badMaxPlayers")
+      check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: "sda"}, "badMaxPlayers")
     end
   end
 
   describe "get games" do
     before(:all) do
-      send_request(action: "uploadMap", params: {name: "New map 2"})
-      @map_id = json_decode(response.body)["id"]
-      send_request(action: "createGame", params: {sid: sid_a, name: "New game 2", map: @map_id, maxPlayers: 18})
+      send_request(action: "createGame", params: {sid: sid_a, name: "New game 2", map: map_id, maxPlayers: 18})
       @check_arr = [{"name" => "New game", "map" => "New map", "maxPlayers" => 1, "status" => "running"},
-                    {"name" => "New game 2", "map" => "New map 2", "maxPlayers" => 18, "status" => "running"}]
+                    {"name" => "New game 2", "map" => "New map", "maxPlayers" => 18, "status" => "running"}]
     end
 
     it "with invalid sid(not sended)" do
