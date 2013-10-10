@@ -1,10 +1,38 @@
 module ApplicationHelper
+  def badAction
+    self.response_obj = {result: "badAction"}
+  end
+
   def badSid
     self.response_obj = {result: "badSid"}
   end
 
+  def badLogin
+    self.response_obj = {result: "badLogin"}
+  end
+
+  def badPassword
+    self.response_obj = {result: "badPassword"}
+  end
+
+  def userExists
+    self.response_obj = {result: "userExists"}
+  end
+
   def badGame
     self.response_obj = {result: "badGame"}
+  end
+
+  def badName
+    self.response_obj = {result: "badName"}
+  end
+
+  def badExists
+    self.response_obj = {result: "badExists"}
+  end
+
+  def badMaxPlayers
+    self.response_obj = {result: "badMaxPlayers"}
   end
 
   def badMap
