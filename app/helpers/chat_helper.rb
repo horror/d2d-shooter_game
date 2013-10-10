@@ -27,7 +27,7 @@ module ChatHelper
     condition =  params["game"] == "" ? ["time > ?", since] : ["m.created_at > ? AND m.game_id = ?", since, game.id]
 
     messages = Message.all(
-              :select => "u.login AS login, m.text, m.created_at AS time",
+              :select => "u.login AS login, m.text, CAST(strftime('%s', m.created_at) AS int) AS time",
               :from => 'messages m',
               :joins => "INNER JOIN users u ON m.user_id = u.id",
               :conditions => condition,

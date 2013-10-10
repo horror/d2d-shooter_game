@@ -115,27 +115,30 @@ describe "Application page" do
     end
 
     it "with valid information" do
-      send_request(action: "getMessages", params:{sid: sid_b, game: "", since: "2000-09-19 09:49:51"})
-      a_time = DateTime.parse("2000-09-19 09:49:51")
+      send_request(action: "getMessages", params:{sid: sid_b, game: "", since: 1196440219})
+      a_time = 1196440219
       arr = json_decode(response.body)
-      result = arr["result"] == "ok" && arr["login"] == "user_b"
+      result = arr["result"] == "ok"
       arr["messages"].each_with_index do |element, i|
         result &= element["login"] == @check_arr[i]["login"]
         result &= element["text"] == @check_arr[i]["text"]
-        result &= a_time < DateTime.parse(element["time"])
+        result &= a_time < element["time"].to_i
       end
       response.code.to_s.should == "200"  && result.should == true
     end
 
+    some_message_time = 0
+
     it "with now 'since' parametr" do
       sleep 1
-      currTime = Time.now.utc.to_s(:db)
+      currTime = Time.now.to_i
       sleep 1
       send_request(action: "sendMessage", params:{sid: sid_b, game: "", text: "message #3"})
       send_request(action: "getMessages", params:{sid: sid_b, game: "", since: currTime})
       arr = json_decode(response.body)
-      result = arr["result"] == "ok" && arr["login"] == "user_b" && arr["messages"][0]["login"] == "user_b"
+      result = arr["result"] == "ok" && arr["messages"][0]["login"] == "user_b"
       result &= arr["messages"][0]["text"] == "message #3" && arr["messages"].length == 1
+      some_message_time = arr["messages"][0]['time'].to_i
       response.code.to_s.should == "200"  && result.should == true
     end
 
@@ -144,11 +147,11 @@ describe "Application page" do
     end
 
     it "with invalid user sid" do
-      request_and_checking("getMessages", {sid: "100500", game: "", since: "2000-09-19 09:49:51"}, {result: "badSid"})
+      request_and_checking("getMessages", {sid: "", game: "", since: 1196440219}, {result: "badSid"})
     end
 
     it "with invalid game id" do
-      request_and_checking("getMessages", {sid: sid_b, game: 155, since: "2000-09-19 09:49:51"}, {result: "badGame"})
+      request_and_checking("getMessages", {sid: sid_b, game: 155, since: 1196440219}, {result: "badGame"})
     end
   end
 
