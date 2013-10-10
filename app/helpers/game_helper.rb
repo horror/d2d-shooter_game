@@ -62,9 +62,16 @@ module GameHelper
   end
 
   def uploadMap(params)
-    map = Map.create(name: params["name"])
-    ok({id: map.id})
+    begin
+      user = find_by_sid(params["sid"])
+      check_error(Map.where(name: params["name"]).exists?, "mapExists")
+    rescue BadParamsError
+      return
+    end
+    map = Map.new(name: params["name"])
+    self.response_obj = map.save ? {result: "ok"} : {result: get_error_code(map.errors.full_messages.to_a.first.dup)}
   end
+
   def getMaps(params)
     begin
       user = find_by_sid(params["sid"])
