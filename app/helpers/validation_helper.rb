@@ -3,6 +3,10 @@ end
 
 module ValidationHelper
 
+  def startTesting()
+    ActiveRecord::Base.subclasses.each(&:delete_all)
+  end
+
   def check_action_params(action, params)
     arr = {"startTesting" => [], "signup" => ["login", "password"], "signin" => ["login", "password"], "signout" => ["sid"],
           "sendMessage" => ["sid", "game", "text"], "getMessages" => ["sid", "game", "since"],

@@ -5,6 +5,9 @@ describe "Application page" do
 
   game_a = game_b = sid_b = sid_a = 0
 
+  before(:all) do
+      send_request(action: "startTesting", params: [])
+  end
   describe "sign up" do
     def check_it(params, result = "ok")
       request_and_checking("signup", params, {result: result})
