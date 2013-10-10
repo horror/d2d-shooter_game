@@ -3,15 +3,33 @@ require "date"
 require 'rest_client'
 
 describe "Application page" do
-
   game_a = game_b = sid_b = sid_a = 0
 
   before(:all) do
       send_request(action: "startTesting", params: [])
   end
+
+  describe "bad action" do
+    it "without action" do
+      request_and_checking("", {}, {result: "badAction"})
+    end
+
+    it "non-existent action" do
+      request_and_checking("someAction", {}, {result: "badAction"})
+    end
+  end
+
   describe "sign up" do
     def check_it(params, result = "ok")
       request_and_checking("signup", params, {result: result})
+    end
+
+    it "with invalid login(not sended)" do
+      check_it({password: "lololol"}, "badLogin")
+    end
+
+    it "with invalid password(not sended)" do
+      check_it({login: "vas"}, "badPassword")
     end
 
     it "with valid information" do
@@ -52,6 +70,14 @@ describe "Application page" do
   end
 
   describe "sign in" do
+    it "with invalid login(not sended)" do
+      request_and_checking("signin", {password: "lololol"}, {result: "badLogin"})
+    end
+
+    it "with invalid password(not sended)" do
+      request_and_checking("signin", {login: "vas"}, {result: "badPassword"})
+    end
+
     it "with valid information" do
       send_request(action: "signin", params:{login: "user_a", password: "lololol"})
       response.code.to_s.should == "200" && json_decode(response.body)["result"].should == "ok"
@@ -70,6 +96,10 @@ describe "Application page" do
     before do
       send_request(action: "signin", params:{login: "user_a", password: "lololol"})
       sid_a = json_decode(response.body)["sid"]
+    end
+
+    it "with invalid sid(not sended)" do
+      request_and_checking("signout", {}, {result: "badSid"})
     end
 
     it "with invalid information(badSid)" do
@@ -92,6 +122,14 @@ describe "Application page" do
       sid_a = json_decode(response.body)["sid"]
     end
 
+    it "with invalid sid(not sended)" do
+      request_and_checking("sendMessage", {game: "", text: "message #1"}, {result: "badSid"})
+    end
+
+    it "with invalid game(not sended)" do
+      request_and_checking("sendMessage", {sid: sid_a, text: "message #1"}, {result: "badGame"})
+    end
+
     it "with valid information" do
       request_and_checking("sendMessage", {sid: sid_a, game: "", text: "message #1"})
     end
@@ -112,6 +150,18 @@ describe "Application page" do
       sid_b = json_decode(response.body)["sid"]
       send_request(action: "sendMessage", params:{sid: sid_b, game: "", text: "message #2"})
       @check_arr = [{"login" => "user_b", "text" => "message #2"}, {"login" => "user_a", "text" => "message #1"}]
+    end
+
+    it "with invalid since(not sended)" do
+      request_and_checking("getMessages", {sid: sid_b, game: ""}, {result: "badSince"})
+    end
+
+    it "with invalid user sid(not sended)" do
+      request_and_checking("getMessages", {game: "", since: 1196440219}, {result: "badSid"})
+    end
+
+    it "with invalid game id(not sended)" do
+      request_and_checking("getMessages", {sid: sid_b, since: 1196440219}, {result: "badGame"})
     end
 
     it "with valid information" do
@@ -142,6 +192,12 @@ describe "Application page" do
       response.code.to_s.should == "200"  && result.should == true
     end
 
+    it "with equals 'since' parametr" do
+      send_request(action: "getMessages", params:{sid: sid_b, game: "", since: some_message_time})
+      arr = json_decode(response.body)
+      response.code.to_s.should == "200"  && arr["result"].should == "ok" && arr["messages"].length.should == 0
+    end
+
     it "with invalid since" do
       request_and_checking("getMessages", {sid: sid_b, game: "", since: "2000-sd"}, {result: "badSince"})
     end
@@ -163,6 +219,22 @@ describe "Application page" do
 
     def check_it(params, result = "ok")
       request_and_checking("createGame", params, {result: result})
+    end
+
+    it "with invalid user sid(not sended)" do
+      check_it({name: "New game1", map: @map_id, maxPlayers: 10}, "badSid")
+    end
+
+    it "with invalid map id(not sended)" do
+      check_it({sid: sid_a, name: "New game1", maxPlayers: 10}, "badMap")
+    end
+
+    it "with invalid name (not sended)" do
+      check_it({sid: sid_a, map: @map_id, maxPlayers: 10}, "badName")
+    end
+
+    it "with invalid maxPlayers (not sended)" do
+      check_it({sid: sid_a, name: "New game1", map: @map_id}, "badMaxPlayers")
     end
 
     it "with valid information" do
@@ -205,6 +277,10 @@ describe "Application page" do
       send_request(action: "createGame", params: {sid: sid_a, name: "New game 2", map: @map_id, maxPlayers: 18})
       @check_arr = [{"name" => "New game", "map" => "New map", "maxPlayers" => 1, "status" => "running"},
                     {"name" => "New game 2", "map" => "New map 2", "maxPlayers" => 18, "status" => "running"}]
+    end
+
+    it "with invalid sid(not sended)" do
+      request_and_checking("getGames", {}, {result: "badSid"})
     end
 
     it "with valid information" do
@@ -251,6 +327,14 @@ describe "Application page" do
       request_and_checking("joinGame", {sid: "100500", game: game_a}, {result: "badSid"})
     end
 
+    it "with invalid game id(not sended)" do
+      request_and_checking("joinGame", {sid: sid_a}, {result: "badGame"})
+    end
+
+    it "with invalid sid(not sended)" do
+      request_and_checking("joinGame", {game: game_a}, {result: "badSid"})
+    end
+
     it "with invalid game id" do
       request_and_checking("joinGame", {sid: sid_a, game: 100500}, {result: "badGame"})
     end
@@ -263,6 +347,10 @@ describe "Application page" do
   describe "leave game" do
     it "with valid information" do
       request_and_checking("leaveGame", {sid: sid_a})
+    end
+
+    it "with invalid sid(not sended)" do
+      request_and_checking("leaveGame", {}, {result: "badSid"})
     end
 
     it "with invalid sid" do
