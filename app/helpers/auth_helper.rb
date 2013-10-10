@@ -18,9 +18,9 @@ module AuthHelper
   end
 
   def signout(params)
-
-    if not (user = User.find_by_sid(params["sid"]))
-      badSid
+    begin
+      user = find_by_sid(params["sid"])
+    rescue BadParamsError
       return
     end
     user.update_attribute(:sid, '')

@@ -1,12 +1,10 @@
 module GameHelper
 
   def createGame(params)
-    if not (user = User.find_by_sid(params["sid"]))
-      badSid
-      return
-    end
-    if not (map = Map.find_by_id(params["map"]))
-      badMap
+    begin
+      user = find_by_sid(params["sid"])
+      find_by_id(Map, params["map"], "badMap")
+    rescue BadParamsError
       return
     end
 
@@ -16,8 +14,9 @@ module GameHelper
   end
 
   def getGames(params)
-    if not (user = User.find_by_sid(params["sid"]))
-      badSid
+    begin
+      user = find_by_sid(params["sid"])
+    rescue BadParamsError
       return
     end
 
@@ -38,23 +37,12 @@ module GameHelper
   end
 
   def joinGame(params)
-    if not (user = User.find_by_sid(params["sid"]))
-      badSid
-      return
-    end
-
-    if not (game = Game.find_by_id(params["game"]))
-      badGame
-      return
-    end
-
-    if game.players.count == game.max_players
-      gameFull
-      return
-    end
-
-    if Player.where(game_id: params["game"], user_id: user.id).exists?
-      alreadyInGame
+    begin
+      user = find_by_sid(params["sid"])
+      game = find_by_id(Game, params["game"], "badGame")
+      check_error(game.players.count == game.max_players, "gameFull")
+      check_error(Player.where(game_id: params["game"], user_id: user.id).exists?, "alreadyInGame")
+    rescue BadParamsError
       return
     end
 
@@ -63,16 +51,12 @@ module GameHelper
   end
 
   def leaveGame(params)
-    if not (user = User.find_by_sid(params["sid"]))
-      badSid
+    begin
+      user = find_by_sid(params["sid"])
+      check_error((not (player = Player.where(user_id: user.id)).exists?), "notInGame")
+    rescue BadParamsError
       return
     end
-
-    if not (player = Player.where(user_id: user.id)).exists?
-      notInGame
-      return
-    end
-
     player.delete_all
     ok
   end

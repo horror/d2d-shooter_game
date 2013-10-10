@@ -16,4 +16,29 @@ module ValidationHelper
     end
   end
 
+  def check_error(condition, error_name)
+    if (condition)
+      send(error_name)
+      raise BadParamsError
+    end
+  end
+
+  def find_by_sid(sid)
+    if (sid == "" || !(user = User.find_by_sid(sid)))
+      badSid
+      raise BadParamsError
+    end
+    return user
+  end
+
+  def find_by_id(model, id, error_name, canBeBlank = false)
+    if canBeBlank and id == ""
+      return
+    end
+    if (!(result = model.find_by_id(id)))
+      send(error_name)
+      raise BadParamsError
+    end
+    return result
+  end
 end
