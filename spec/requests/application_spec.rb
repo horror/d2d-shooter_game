@@ -1,5 +1,6 @@
 require "spec_helper"
 require "date"
+require 'rest_client'
 
 describe "Application page" do
 
@@ -53,7 +54,7 @@ describe "Application page" do
   describe "sign in" do
     it "with valid information" do
       send_request(action: "signin", params:{login: "user_a", password: "lololol"})
-      response.code.should == "200" && json_decode(response.body)["result"].should == "ok"
+      response.code.to_s.should == "200" && json_decode(response.body)["result"].should == "ok"
     end
 
     it "with invalid information(incorrect login)" do
@@ -123,7 +124,7 @@ describe "Application page" do
         result &= element["text"] == @check_arr[i]["text"]
         result &= a_time < DateTime.parse(element["time"])
       end
-      response.code.should == "200"  && result.should == true
+      response.code.to_s.should == "200"  && result.should == true
     end
 
     it "with now 'since' parametr" do
@@ -135,7 +136,7 @@ describe "Application page" do
       arr = json_decode(response.body)
       result = arr["result"] == "ok" && arr["login"] == "user_b" && arr["messages"][0]["login"] == "user_b"
       result &= arr["messages"][0]["text"] == "message #3" && arr["messages"].length == 1
-      response.code.should == "200"  && result.should == true
+      response.code.to_s.should == "200"  && result.should == true
     end
 
     it "with invalid since" do

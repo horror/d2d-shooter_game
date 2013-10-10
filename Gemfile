@@ -32,7 +32,11 @@ end
 
 group :test do
   gem 'factory_girl_rails', '4.1.0'
+  gem 'database_cleaner'
 end
+
+gem 'rest-client'
+
 # To use ActiveModel has_secure_password
 # gem 'bcrypt-ruby', '~> 3.0.0'
 
