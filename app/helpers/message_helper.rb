@@ -4,7 +4,6 @@ module MessageHelper
     error_codes = {
         #signup, signin
         "Login has already been taken" => "userExists",
-        "Password doesn't match confirmation" => "badPasswordConfirmation",
         "Password is too short (minimum is 4 characters)" => "badPassword",
         "Password digest can't be blank" => "badPassword",
         "Login is too short (minimum is 4 characters)" => "badLogin",
