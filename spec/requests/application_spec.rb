@@ -33,40 +33,37 @@ describe "Application page" do
     end
 
     it "with valid information" do
-      check_it({login: "user_a", password: "lololol", password_confirmation: "lololol"})
+      check_it({login: "user_a", password: "lololol"})
     end
 
     it "with invalid information(userExists)" do
-      check_it({login: "user_a", password: "lololol", password_confirmation: "lololol"}, "userExists")
+      check_it({login: "user_a", password: "lololol"}, "userExists")
     end
 
     it "with invalid information(too short login)" do
-      check_it({login: "vas", password: "lololol", password_confirmation: "lololol"}, "badLogin")
+      check_it({login: "vas", password: "lololol"}, "badLogin")
     end
 
     it "with invalid information(blank login)" do
-      check_it({login: "", password: "lololol", password_confirmation: "lololol"}, "badLogin")
+      check_it({login: "", password: "lololol"}, "badLogin")
     end
 
     it "with invalid information(too long login)" do
-      check_it({login: "a" * 41, password: "lololol", password_confirmation: "lololol"}, "badLogin")
+      check_it({login: "a" * 41, password: "lololol"}, "badLogin")
     end
 
     it "with invalid information(invalid characters in login)" do
-      check_it({login: '$%#@@$%%^', password: "lololol", password_confirmation: "lololol"}, "badLogin")
+      check_it({login: '$%#@@$%%^', password: "lololol"}, "badLogin")
     end
 
     it "with invalid information(too short password)" do
-      check_it({login: "vasssya", password: "lol", password_confirmation: "lol"}, "badPassword")
+      check_it({login: "vasssya", password: "lol"}, "badPassword")
     end
 
     it "with invalid information(blank password)" do
-      check_it({login: "vasssya", password: "", password_confirmation: ""}, "badPassword")
+      check_it({login: "vasssya", password: ""}, "badPassword")
     end
 
-    it "with invalid information(no confirmed password)" do
-      check_it({login: "vasssya", password: "asdsad", password_confirmation: "asxvc"}, "badPasswordConfirmation")
-    end
   end
 
   describe "sign in" do
@@ -103,7 +100,7 @@ describe "Application page" do
     end
 
     it "with invalid information(badSid)" do
-      request_and_checking("signout", {sid: 100500}, {result: "badSid"})
+      request_and_checking("signout", {sid: "100500"}, {result: "badSid"})
     end
 
     it "with valid information" do
@@ -145,7 +142,7 @@ describe "Application page" do
 
   describe "get messages" do
     before(:all) do
-      send_request(action: "signup", params:{login: "user_b", password: "lololol", password_confirmation: "lololol"})
+      send_request(action: "signup", params:{login: "user_b", password: "lololol"})
       send_request(action: "signin", params:{login: "user_b", password: "lololol"})
       sid_b = json_decode(response.body)["sid"]
       send_request(action: "sendMessage", params:{sid: sid_b, game: "", text: "message #2"})
@@ -310,7 +307,7 @@ describe "Application page" do
     end
 
     it "with invalid sid" do
-      request_and_checking("getGames", {sid: 100500}, {result: "badSid"})
+      request_and_checking("getGames", {sid: "100500"}, {result: "badSid"})
     end
   end
 
