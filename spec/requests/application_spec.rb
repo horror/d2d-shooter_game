@@ -6,7 +6,7 @@ describe "Application page" do
   map_id = game_a = game_b = sid_b = sid_a = 0
 
   before(:all) do
-      send_request(action: "startTesting", params: [])
+    send_request(action: "startTesting", params: [])
   end
 
   describe "bad action" do
@@ -111,100 +111,13 @@ describe "Application page" do
       send_request(action: "signout", params:{sid: sid_a})
       request_and_checking("signout", {sid: sid_a}, {result: "badSid"})
     end
-  end
 
-  describe "send message" do
-    before(:all) do
+    after(:all) do
       send_request(action: "signin", params:{login: "user_a", password: "lololol"})
       sid_a = json_decode(response.body)["sid"]
-    end
-
-    it "with invalid sid(not sended)" do
-      request_and_checking("sendMessage", {game: "", text: "message #1"}, {result: "badSid"})
-    end
-
-    it "with invalid game(not sended)" do
-      request_and_checking("sendMessage", {sid: sid_a, text: "message #1"}, {result: "badGame"})
-    end
-
-    it "with valid information" do
-      request_and_checking("sendMessage", {sid: sid_a, game: "", text: "message #1"})
-    end
-
-    it "with invalid user sid" do
-      request_and_checking("sendMessage", {sid: "100500", game: "", text: "message #1"}, {result: "badSid"})
-    end
-
-    it "with invalid game id" do
-      request_and_checking("sendMessage", {sid: sid_a, game: 100500, text: "message #1"}, {result: "badGame"})
-    end
-  end
-
-  describe "get messages" do
-    before(:all) do
       send_request(action: "signup", params:{login: "user_b", password: "lololol"})
       send_request(action: "signin", params:{login: "user_b", password: "lololol"})
       sid_b = json_decode(response.body)["sid"]
-      send_request(action: "sendMessage", params:{sid: sid_b, game: "", text: "message #2"})
-      @check_arr = [{"login" => "user_b", "text" => "message #2"}, {"login" => "user_a", "text" => "message #1"}]
-    end
-
-    it "with invalid since(not sended)" do
-      request_and_checking("getMessages", {sid: sid_b, game: ""}, {result: "badSince"})
-    end
-
-    it "with invalid user sid(not sended)" do
-      request_and_checking("getMessages", {game: "", since: 1196440219}, {result: "badSid"})
-    end
-
-    it "with invalid game id(not sended)" do
-      request_and_checking("getMessages", {sid: sid_b, since: 1196440219}, {result: "badGame"})
-    end
-
-    it "with valid information" do
-      send_request(action: "getMessages", params:{sid: sid_b, game: "", since: 1196440219})
-      a_time = 1196440219
-      arr = json_decode(response.body)
-      result = arr["result"] == "ok"
-      arr["messages"].each_with_index do |element, i|
-        result &= element["login"] == @check_arr[i]["login"]
-        result &= element["text"] == @check_arr[i]["text"]
-        result &= a_time < element["time"].to_i
-      end
-      response.code.to_s.should == "200"  && result.should == true
-    end
-
-    some_message_time = 0
-
-    it "with now 'since' parametr" do
-      sleep 1
-      currTime = Time.now.to_i
-      sleep 1
-      send_request(action: "sendMessage", params:{sid: sid_b, game: "", text: "message #3"})
-      send_request(action: "getMessages", params:{sid: sid_b, game: "", since: currTime})
-      arr = json_decode(response.body)
-      result = arr["result"] == "ok" && arr["messages"][0]["login"] == "user_b"
-      result &= arr["messages"][0]["text"] == "message #3" && arr["messages"].length == 1
-      some_message_time = arr["messages"][0]['time'].to_i
-      response.code.to_s.should == "200"  && result.should == true
-    end
-
-    it "with equals 'since' parametr" do
-      send_request(action: "getMessages", params:{sid: sid_b, game: "", since: some_message_time})
-      arr = json_decode(response.body)
-      response.code.to_s.should == "200"  && arr["result"].should == "ok" && arr["messages"].length.should == 0
-    end
-
-    it "with invalid since" do
-      request_and_checking("getMessages", {sid: sid_b, game: "", since: "2000-sd"}, {result: "badSince"})
-    end
-
-    it "with invalid user sid" do
-      request_and_checking("getMessages", {sid: "", game: "", since: 1196440219}, {result: "badSid"})
-    end
-
-    it "with invalid game id" do
-      request_and_checking("getMessages", {sid: sid_b, game: 155, since: 1196440219}, {result: "badGame"})
     end
   end
 
@@ -394,13 +307,84 @@ describe "Application page" do
       request_and_checking("leaveGame", {sid: sid_a}, {result: "notInGame"})
     end
   end
-end
+
+  describe "send message" do
+    it "with invalid sid(not sended)" do
+      request_and_checking("sendMessage", {game: "", text: "message #1"}, {result: "badSid"})
+    end
+
+    it "with invalid game(not sended)" do
+      request_and_checking("sendMessage", {sid: sid_a, text: "message #1"}, {result: "badGame"})
+    end
+
     it "with valid information (common chat)" do
       request_and_checking("sendMessage", {sid: sid_a, game: "", text: "message #1"})
     end
     it "with valid information (game chat)" do
       request_and_checking("sendMessage", {sid: sid_a, game: game_a, text: "game_a message #1"})
     end
+
+    it "with invalid user sid" do
+      request_and_checking("sendMessage", {sid: "100500", game: "", text: "message #1"}, {result: "badSid"})
+    end
+
+    it "with invalid game id" do
+      request_and_checking("sendMessage", {sid: sid_a, game: 100500, text: "message #1"}, {result: "badGame"})
+    end
+  end
+
+  describe "get messages" do
+    before(:all) do
+      send_request(action: "sendMessage", params:{sid: sid_b, game: "", text: "message #2"})
+      @check_arr = [{"login" => "user_b", "text" => "message #2"}, {"login" => "user_a", "text" => "message #1"}]
+    end
+
+    it "with invalid since(not sended)" do
+      request_and_checking("getMessages", {sid: sid_b, game: ""}, {result: "badSince"})
+    end
+
+    it "with invalid user sid(not sended)" do
+      request_and_checking("getMessages", {game: "", since: 1196440219}, {result: "badSid"})
+    end
+
+    it "with invalid game id(not sended)" do
+      request_and_checking("getMessages", {sid: sid_b, since: 1196440219}, {result: "badGame"})
+    end
+
+    it "with valid information" do
+      send_request(action: "getMessages", params:{sid: sid_b, game: "", since: 1196440219})
+      a_time = 1196440219
+      arr = json_decode(response.body)
+      result = arr["result"] == "ok"
+      arr["messages"].each_with_index do |element, i|
+        result &= element["login"] == @check_arr[i]["login"]
+        result &= element["text"] == @check_arr[i]["text"]
+        result &= a_time < element["time"].to_i
+      end
+      response.code.to_s.should == "200"  && result.should == true
+    end
+
+    some_message_time = 0
+
+    it "with now 'since' parametr" do
+      sleep 1
+      currTime = Time.now.to_i
+      sleep 1
+      send_request(action: "sendMessage", params:{sid: sid_b, game: "", text: "message #3"})
+      send_request(action: "getMessages", params:{sid: sid_b, game: "", since: currTime})
+      arr = json_decode(response.body)
+      result = arr["result"] == "ok" && arr["messages"][0]["login"] == "user_b"
+      result &= arr["messages"][0]["text"] == "message #3" && arr["messages"].length == 1
+      some_message_time = arr["messages"][0]['time'].to_i
+      response.code.to_s.should == "200"  && result.should == true
+    end
+
+    it "with equals 'since' parametr" do
+      send_request(action: "getMessages", params:{sid: sid_b, game: "", since: some_message_time})
+      arr = json_decode(response.body)
+      response.code.to_s.should == "200"  && arr["result"].should == "ok" && arr["messages"].length.should == 0
+    end
+
     it "with specific game_id" do
       send_request(action: "sendMessage", params:{sid: sid_b, game: game_b, text: "game_b message #1"})
       send_request(action: "getMessages", params:{sid: sid_a, game: game_a, since: 1196440219})
@@ -410,3 +394,16 @@ end
       response.code.to_s.should == "200" && result && arr['text'] == 'game_a message #1' && arr['login'] == "user_a"
     end
 
+    it "with invalid since" do
+      request_and_checking("getMessages", {sid: sid_b, game: "", since: "2000-sd"}, {result: "badSince"})
+    end
+
+    it "with invalid user sid" do
+      request_and_checking("getMessages", {sid: "", game: "", since: 1196440219}, {result: "badSid"})
+    end
+
+    it "with invalid game id" do
+      request_and_checking("getMessages", {sid: sid_b, game: 155, since: 1196440219}, {result: "badGame"})
+    end
+  end
+end
