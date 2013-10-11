@@ -8,9 +8,7 @@ module GameHelper
       return
     end
 
-    new_game = {map_id: params["map"], user_id: user.id, name: params["name"], max_players: params["maxPlayers"]}
-    game = Game.new(new_game)
-    self.response_obj = game.save ? {result: "ok"} : {result: get_error_code(game.errors.full_messages.to_a.first.dup)}
+    try_save(Game, {map_id: params["map"], user_id: user.id, name: params["name"], max_players: params["maxPlayers"]})
   end
 
   def getGames(params)
@@ -46,8 +44,7 @@ module GameHelper
       return
     end
 
-    player = Player.create(user_id: user.id, game_id: game.id)
-    self.response_obj = player.save ? {result: "ok"} : {result: get_error_code(player.errors.full_messages.to_a.first.dup)}
+    try_save(Player, {user_id: user.id, game_id: game.id})
   end
 
   def leaveGame(params)
@@ -68,8 +65,7 @@ module GameHelper
     rescue BadParamsError
       return
     end
-    map = Map.new(name: params["name"])
-    self.response_obj = map.save ? {result: "ok"} : {result: get_error_code(map.errors.full_messages.to_a.first.dup)}
+    try_save(Map, {name: params["name"]})
   end
 
   def getMaps(params)

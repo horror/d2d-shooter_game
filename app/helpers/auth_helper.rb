@@ -2,9 +2,7 @@ module AuthHelper
 
   def signup(params)
     params[:sid] = SecureRandom.urlsafe_base64
-    user = User.new(params)
-    msg = user.save ? "ok" : get_error_code(user.errors.full_messages.to_a.first.dup)
-    self.response_obj = {result: msg}
+    try_save(User, params)
   end
 
   def signin(params)

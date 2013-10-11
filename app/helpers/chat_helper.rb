@@ -8,9 +8,7 @@ module ChatHelper
       return
     end
 
-    new_message_params = {game_id: params["game"] == "" ? "0" : params["game"], user_id: user.id, text: params[:text]}
-    Message.create(new_message_params)
-    ok
+    try_save(Message, {game_id: params["game"] == "" ? "0" : params["game"], user_id: user.id, text: params[:text]})
   end
 
   def getMessages(params)
