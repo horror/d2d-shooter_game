@@ -395,3 +395,18 @@ describe "Application page" do
     end
   end
 end
+    it "with valid information (common chat)" do
+      request_and_checking("sendMessage", {sid: sid_a, game: "", text: "message #1"})
+    end
+    it "with valid information (game chat)" do
+      request_and_checking("sendMessage", {sid: sid_a, game: game_a, text: "game_a message #1"})
+    end
+    it "with specific game_id" do
+      send_request(action: "sendMessage", params:{sid: sid_b, game: game_b, text: "game_b message #1"})
+      send_request(action: "getMessages", params:{sid: sid_a, game: game_a, since: 1196440219})
+      arr = json_decode(response.body)
+      result = arr["result"].should == "ok" && arr["messages"].length.should == 1
+      arr = arr['messages'][0]
+      response.code.to_s.should == "200" && result && arr['text'] == 'game_a message #1' && arr['login'] == "user_a"
+    end
+
