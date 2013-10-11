@@ -36,7 +36,7 @@ group :test do
 end
 
 gem 'rest-client'
-gem 'faye'
+gem 'em-websocket'
 
 # To use ActiveModel has_secure_password
 # gem 'bcrypt-ruby', '~> 3.0.0'
