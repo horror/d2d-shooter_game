@@ -8,7 +8,7 @@ module ChatHelper
       return
     end
 
-    try_save(Message, {game_id: params["game"] == "" ? "0" : params["game"], user_id: user.id, text: params[:text]})
+    try_save(Message, {game_id: params["game"], user_id: user.id, text: params[:text]})
   end
 
   def getMessages(params)
@@ -22,15 +22,14 @@ module ChatHelper
       badSince
       return
     end
-    condition =  params["game"] == "" ? ["time > ?", since] : ["m.created_at > ? AND m.game_id = ?", since, game.id]
 
-    messages = Message.all(
-              :select => "u.login AS login, m.text, CAST(strftime('%s', m.created_at) AS int) AS time",
-              :from => 'messages m',
-              :joins => "INNER JOIN users u ON m.user_id = u.id",
-              :conditions => condition,
-              :order => 'm.created_at desc',
-    ).to_a
+    messages = Message.
+        select("u.login AS login, m.text, CAST(strftime('%s', m.created_at) AS int) AS time").
+        from("messages m").
+        joins("INNER JOIN users u ON m.user_id = u.id").
+        where("time > ?", since).
+        where("m.game_id" => params["game"] == "" ? nil : game.id).
+        order("m.created_at desc").to_a
     ok({messages: messages})
   end
 end
