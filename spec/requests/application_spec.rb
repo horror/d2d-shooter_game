@@ -359,7 +359,7 @@ describe "Application page" do
       arr["messages"].each_with_index do |element, i|
         result &= element["login"] == @check_arr[i]["login"]
         result &= element["text"] == @check_arr[i]["text"]
-        result &= a_time < element["time"].to_f
+        result &= a_time < element["time"].to_i
       end
       response.code.to_s.should == "200"  && result.should == true
     end
@@ -368,14 +368,14 @@ describe "Application page" do
 
     it "with now 'since' parametr" do
       sleep 1
-      currTime = Time.now.to_f
+      currTime = Time.now.to_i
       sleep 1
       send_request(action: "sendMessage", params:{sid: sid_b, game: "", text: "message #3"})
       send_request(action: "getMessages", params:{sid: sid_b, game: "", since: currTime})
       arr = json_decode(response.body)
       result = arr["result"] == "ok" && arr["messages"][0]["login"] == "user_b"
       result &= arr["messages"][0]["text"] == "message #3" && arr["messages"].length == 1
-      some_message_time = arr["messages"][0]['time'].to_f
+      some_message_time = arr["messages"][0]['time'].to_i
       response.code.to_s.should == "200"  && result.should == true
     end
 
