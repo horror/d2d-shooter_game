@@ -19,7 +19,7 @@ module GameHelper
     end
 
     games = Game.all(
-        :select => "g.id, g.name, m.name AS map, g.max_players AS maxPlayers, g.status, u.login AS player",
+        :select => "g.id, g.name, m.name AS map, g.max_players AS maxplayers, g.status, u.login AS player",
         :from => 'games g',
         :joins => "LEFT JOIN players p ON g.id = p.game_id
                   LEFT JOIN users u ON p.user_id = u.id
@@ -28,7 +28,7 @@ module GameHelper
     )
     games = games.group_by(&:id).map do
       |id, rows|
-      {id: id, name: rows[0]["name"], map: rows[0]["map"], maxPlayers: rows[0]["maxPlayers"],
+      {id: id, name: rows[0]["name"], map: rows[0]["map"], maxPlayers: rows[0]["maxplayers"].to_i,
           status: get_game_status(rows[0]["status"]), players: rows[0]["player"] == nil ? [] : rows.map{|r| r["player"]}}
     end
     ok({games: games})
