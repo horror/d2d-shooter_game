@@ -18,7 +18,9 @@ module Requests
 
     def request_and_checking(action, params, body = {result: "ok"}, code = "200")
       send_request(action: action, params: params)
-      response.code.to_s.should == code && response.body.should == json_encode(body)
+      resp = json_decode(response.body)
+      resp.delete("message")
+      response.code.to_s.should == code && json_encode(resp) == json_encode(body)
     end
   end
 end
