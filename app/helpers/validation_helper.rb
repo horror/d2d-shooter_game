@@ -12,10 +12,14 @@ module ValidationHelper
           "sendMessage" => ["sid", "game", "text"], "getMessages" => ["sid", "game", "since"],
           "createGame" => ["sid", "name", "map", "maxPlayers"], "getGames" => ["sid"],
           "joinGame" => ["sid", "game"], "leaveGame" => ["sid"], "uploadMap" => ["sid", "name"], "getMaps" => ["sid"]}
-    params_errors = {"login" => "badLogin", "password" => "badPassword", "sid" => "badSid", "game" => "badGame", "map" => "badMap",
-                    "since" => "badSince", "name" => "badName", "maxPlayers" => "badMaxPlayers"}
-    if !arr.include?(action) or (diff = arr[action] - params.keys).length > 0
-      !arr.include?(action) ? badAction : send(params_errors[diff[0]])
+
+    if !arr.include?(action)
+      badAction
+      raise BadParamsError
+    end
+
+    if !params.is_a?(Hash) or (arr[action] - params.keys).length > 0
+      badParams
       raise BadParamsError
     end
   end

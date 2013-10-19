@@ -1,70 +1,82 @@
 module ApplicationHelper
   def badAction
-    self.response_obj = {result: "badAction"}
+    resp({result: "badAction"})
+  end
+
+  def badParams
+    resp({result: "badParams"})
+  end
+
+  def badJson
+    resp({result: "badJson"})
   end
 
   def badSid
-    self.response_obj = {result: "badSid"}
+    resp({result: "badSid"})
   end
 
   def badLogin
-    self.response_obj = {result: "badLogin"}
+    resp({result: "badLogin"})
   end
 
   def badPassword
-    self.response_obj = {result: "badPassword"}
+    resp({result: "badPassword"})
   end
 
   def userExists
-    self.response_obj = {result: "userExists"}
+    resp({result: "userExists"})
   end
 
   def badGame
-    self.response_obj = {result: "badGame"}
+    resp({result: "badGame"})
   end
 
   def badName
-    self.response_obj = {result: "badName"}
+    resp({result: "badName"})
   end
 
   def gameExists
-    self.response_obj = {result: "gameExists"}
+    resp({result: "gameExists"})
   end
 
   def badMaxPlayers
-    self.response_obj = {result: "badMaxPlayers"}
+    resp({result: "badMaxPlayers"})
   end
 
   def badMap
-    self.response_obj = {result: "badMap"}
+    resp({result: "badMap"})
   end
 
   def badSince
-    self.response_obj = {result: "badSince"}
+    resp({result: "badSince"})
   end
 
   def gameFull
-    self.response_obj = {result: "gameFull"}
+    resp({result: "gameFull"})
   end
 
   def alreadyInGame
-    self.response_obj = {result: "alreadyInGame"}
+    resp({result: "alreadyInGame"})
   end
 
   def notInGame
-    self.response_obj = {result: "notInGame"}
+    resp({result: "notInGame"})
   end
 
   def mapExists
-    self.response_obj = {result: "mapExists"}
+    resp({result: "mapExists"})
   end
 
   def incorrect
-    self.response_obj = {result: "incorrect"}
+    resp({result: "incorrect"})
   end
 
   def ok(other_params = {})
-    self.response_obj = {result: "ok"}.merge(other_params)
+    resp({result: "ok"}.merge(other_params))
+  end
+
+  def resp(response)
+    self.response_obj = response;
   end
 
   def response_obj=(response_obj)
