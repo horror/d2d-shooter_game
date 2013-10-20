@@ -17,6 +17,11 @@ class ApplicationController < ActionController::Base
         return
       end
 
+      if !req.include?("action")
+        render :json => ActiveSupport::JSON.encode({result: "badParams"})
+        return
+      end
+
       begin
         req["params"] = req.include?("params") ? req["params"] : {}
         check_action_params(req["action"], req["params"])
