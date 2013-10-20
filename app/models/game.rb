@@ -15,4 +15,7 @@ class Game < ActiveRecord::Base
   validates :name, presence: true, uniqueness: true
   validates :max_players, presence: true, numericality: { greater_than: 0 }
 
+  validates_with GameMustHaveLowerMaxPlayers
 end
+
+

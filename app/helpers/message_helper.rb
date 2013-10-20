@@ -16,6 +16,7 @@ module MessageHelper
         "Max players can't be blank" => "badMaxPlayers",
         "Max players is not a number" => "badMaxPlayers",
         "Max players must be greater than 0" => "badMaxPlayers",
+        "Max players too much count of max players" => "badMaxPlayers",
         #Map
         "Map must be in game map format" => "badMap"
     }

@@ -151,31 +151,39 @@ describe "Application page" do
     end
 
     it "with valid information" do
-      check_it({sid: sid_a, name: "New map", maxPlayers: 8, map: ["#19d", "z #5", "$4$#"]})
+      check_it({sid: sid_a, name: "New map", maxPlayers: 11, map: ["#19d", "z #5", "$4$#"]})
     end
 
     it "with invalid name(max exists)" do
-      check_it({sid: sid_a, name: "New map", maxPlayers: 8, map: ["####", "####", "####"]}, "mapExists")
+      check_it({sid: sid_a, name: "New map", maxPlayers: 11, map: ["####", "####", "####"]}, "mapExists")
     end
 
     it "with invalid name(blank)" do
-      check_it({sid: sid_a, name: "", maxPlayers: 8, map: ["####", "####", "####"]}, "badName")
+      check_it({sid: sid_a, name: "", maxPlayers: 11, map: ["####", "####", "####"]}, "badName")
     end
 
     it "with invalid map(diff lines length)" do
-      check_it({sid: sid_a, name: "sdfadsfadf", maxPlayers: 8, map: ["##", "####", "###"]}, "badMap")
+      check_it({sid: sid_a, name: "sdfadsfadf", maxPlayers: 11, map: ["##", "####", "###"]}, "badMap")
     end
 
     it "with invalid map(unexpected symbol #1)" do
-      check_it({sid: sid_a, name: "sdafadsfdsafads", maxPlayers: 8, map: ["##%#", "####", "####"]}, "badMap")
+      check_it({sid: sid_a, name: "sdafadsfdsafads", maxPlayers: 11, map: ["##%#", "####", "####"]}, "badMap")
     end
 
     it "with invalid map(unexpected symbol #2)" do
-      check_it({sid: sid_a, name: "adsfadsfasfdsaf", maxPlayers: 8, map: ["####", "#+##", "####"]}, "badMap")
+      check_it({sid: sid_a, name: "adsfadsfasfdsaf", maxPlayers: 11, map: ["####", "#+##", "####"]}, "badMap")
     end
 
     it "with invalid map(unexpected symbol #3)" do
-      check_it({sid: sid_a, name: "sdfadsdafafds", maxPlayers: 8, map: ["####", "####", "##}#"]}, "badMap")
+      check_it({sid: sid_a, name: "sdfadsdafafds", maxPlayers: 11, map: ["####", "####", "##}#"]}, "badMap")
+    end
+
+    it "with invalid map(not array)" do
+      check_it({sid: sid_a, name: "sdfadsdafafds", maxPlayers: 11, map: "dsa"}, "badMap")
+    end
+
+    it "with invalid map(not array #2)" do
+      check_it({sid: sid_a, name: "sdfadsdafafds", maxPlayers: 11, map: {"dsa" => "sddsdf"}}, "badMap")
     end
 
     it "with invalid maxPlayers (< 1)" do
@@ -253,6 +261,10 @@ describe "Application page" do
       check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: 0}, "badMaxPlayers")
     end
 
+    it "with invalid maxPlayers (> maxPlayers in map)" do
+      check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: 18}, "badMaxPlayers")
+    end
+
     it "with invalid maxPlayers (blank)" do
       check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: ""}, "badMaxPlayers")
     end
@@ -264,9 +276,9 @@ describe "Application page" do
 
   describe "get games" do
     before(:all) do
-      send_request(action: "createGame", params: {sid: sid_a, name: "New game 2", map: map_id, maxPlayers: 18})
+      send_request(action: "createGame", params: {sid: sid_a, name: "New game 2", map: map_id, maxPlayers: 10})
       @check_arr = [{"name" => "New game", "map" => "New map", "maxPlayers" => 1, "status" => "running"},
-                    {"name" => "New game 2", "map" => "New map", "maxPlayers" => 18, "status" => "running"}]
+                    {"name" => "New game 2", "map" => "New map", "maxPlayers" => 10, "status" => "running"}]
     end
 
     it "with invalid sid(not sended)" do
