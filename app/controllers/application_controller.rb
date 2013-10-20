@@ -4,6 +4,7 @@ class ApplicationController < ActionController::Base
   include AuthHelper
   include ChatHelper
   include GameHelper
+  include MapHelper
   include ValidationHelper
 
   def index
