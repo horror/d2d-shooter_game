@@ -51,7 +51,7 @@ module ValidationHelper
   end
 
   def try_save(model, params)
-    field = model.new(params)
-    self.response_obj = field.save ? {result: "ok"} : {result: get_error_code(field.errors.full_messages.to_a.first.dup)}
+    m = model.new(params)
+    self.response_obj = m.save ? {result: "ok"} : {result: get_error_code(m.errors.full_messages.to_a.first.dup)}
   end
 end

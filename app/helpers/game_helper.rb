@@ -1,22 +1,14 @@
 module GameHelper
 
   def createGame(params)
-    begin
-      user = find_by_sid(params["sid"])
-      find_by_id(Map, params["map"], "badMap")
-    rescue BadParamsError
-      return
-    end
+    user = find_by_sid(params["sid"])
+    find_by_id(Map, params["map"], "badMap")
 
     try_save(Game, {map_id: params["map"], user_id: user.id, name: params["name"], max_players: params["maxPlayers"]})
   end
 
   def getGames(params)
-    begin
-      user = find_by_sid(params["sid"])
-    rescue BadParamsError
-      return
-    end
+    user = find_by_sid(params["sid"])
 
     games = Game.all(
         :select => "g.id, g.name, m.name AS map, g.max_players AS maxplayers, g.status, u.login AS player",
@@ -35,27 +27,21 @@ module GameHelper
   end
 
   def joinGame(params)
-    begin
-      user = find_by_sid(params["sid"])
-      game = find_by_id(Game, params["game"], "badGame")
-      check_error(game.players.count == game.max_players, "gameFull")
-      check_error(Player.where(game_id: params["game"], user_id: user.id).exists?, "alreadyInGame")
-    rescue BadParamsError
-      return
-    end
+    user = find_by_sid(params["sid"])
+    game = find_by_id(Game, params["game"], "badGame")
+    check_error(game.players.count == game.max_players, "gameFull")
+    check_error(Player.where(game_id: params["game"], user_id: user.id).exists?, "alreadyInGame")
 
     try_save(Player, {user_id: user.id, game_id: game.id})
   end
 
   def leaveGame(params)
-    begin
-      user = find_by_sid(params["sid"])
-      check_error((not (player = Player.where(user_id: user.id)).exists?), "notInGame")
-    rescue BadParamsError
-      return
-    end
+    user = find_by_sid(params["sid"])
+    check_error((not (player = Player.where(user_id: user.id)).exists?), "notInGame")
+
     player.delete_all
     ok
   end
+
 
 end
