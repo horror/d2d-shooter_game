@@ -27,7 +27,7 @@ module Requests
     def check_response(expect, code)
       resp = json_decode(response.body)
       resp.delete("message")
-      response.code.to_s.should == code && json_encode(resp) == json_encode(expect)
+      response.code.to_s.should == code && json_encode(resp).should == json_encode(expect)
     end
 
 

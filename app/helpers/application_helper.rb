@@ -7,8 +7,8 @@ module ApplicationHelper
     resp({result: "badParams"})
   end
 
-  def badJson
-    resp({result: "badJson"})
+  def badJSON
+    resp({result: "badJSON"})
   end
 
   def badSid

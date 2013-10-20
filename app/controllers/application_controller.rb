@@ -12,23 +12,16 @@ class ApplicationController < ActionController::Base
     response.headers["Access-Control-Allow-Headers"] = 'Content-Type, X-Requested_with'
     req = params['application']
     if req != nil
-      if req.include?("json parser exception")
-        render :json => ActiveSupport::JSON.encode({result: "badJSON"})
-        return
-      end
-
-      if !req.include?("action")
-        render :json => ActiveSupport::JSON.encode({result: "badParams"})
-        return
-      end
-
       begin
+        raise BadParamsError.new(badJSON) unless !req.include?("json parser exception")
+        raise BadParamsError.new(badParams) unless req.include?("action")
+
         req["params"] = req.include?("params") ? req["params"] : {}
         check_action_params(req["action"], req["params"])
         send(req["action"], req["params"])
       rescue
       ensure
-          render :json => ActiveSupport::JSON.encode(@response_obj)
+          render :json => ActiveSupport::JSON.encode(@response_obj == nil ? "fatalError" : @response_obj)
       end
     end
   end

@@ -15,8 +15,7 @@ module ChatHelper
     begin
       Time.at(params["since"]).to_i
     rescue
-      badSince
-      return
+      raise BadParamsError.new(badSince)
     end
 
     messages = Message.

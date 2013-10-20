@@ -151,15 +151,15 @@ describe "Application page" do
     end
 
     it "with valid information" do
-      check_it({sid: sid_a, name: "New map"})
+      check_it({sid: sid_a, name: "New map", maxPlayers: 8, map: "...."})
     end
 
     it "with invalid name(max exists)" do
-      check_it({sid: sid_a, name: "New map"}, "mapExists")
+      check_it({sid: sid_a, name: "New map", maxPlayers: 8, map: "...."}, "mapExists")
     end
 
     it "with invalid name(blank)" do
-      check_it({sid: sid_a, name: ""}, "badName")
+      check_it({sid: sid_a, name: "", maxPlayers: 8, map: "...."}, "badName")
     end
   end
 

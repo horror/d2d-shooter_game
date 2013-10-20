@@ -1,4 +1,7 @@
 class BadParamsError < StandardError
+  def initialize(reason)
+    reason.call
+  end
 end
 
 module ValidationHelper
@@ -11,31 +14,20 @@ module ValidationHelper
     arr = {"startTesting" => [], "signup" => ["login", "password"], "signin" => ["login", "password"], "signout" => ["sid"],
           "sendMessage" => ["sid", "game", "text"], "getMessages" => ["sid", "game", "since"],
           "createGame" => ["sid", "name", "map", "maxPlayers"], "getGames" => ["sid"],
-          "joinGame" => ["sid", "game"], "leaveGame" => ["sid"], "uploadMap" => ["sid", "name"], "getMaps" => ["sid"]}
+          "joinGame" => ["sid", "game"], "leaveGame" => ["sid"], "uploadMap" => ["sid", "name", "map", "maxPlayers"], "getMaps" => ["sid"]}
 
-    if !arr.include?(action)
-      badAction
-      raise BadParamsError
-    end
+    raise BadParamsError.new(badAction) unless arr.include?(action)
+    raise BadParamsError.new(badParams) unless params.is_a?(Hash) and (arr[action] - params.keys).length == 0
 
-    if !params.is_a?(Hash) or (arr[action] - params.keys).length > 0
-      badParams
-      raise BadParamsError
-    end
   end
 
   def check_error(condition, error_name)
-    if (condition)
-      send(error_name)
-      raise BadParamsError
-    end
+    raise BadParamsError.new(Proc.new {send(error_name)}) unless !condition
   end
 
   def find_by_sid(sid)
-    if (sid == "" || !(user = User.find_by_sid(sid)))
-      badSid
-      raise BadParamsError
-    end
+    raise BadParamsError.new(badSid) unless sid != "" and user = User.find_by_sid(sid)
+
     return user
   end
 
@@ -43,15 +35,14 @@ module ValidationHelper
     if canBeBlank and id == ""
       return
     end
-    if (!(result = model.find_by_id(id)))
-      send(error_name)
-      raise BadParamsError
-    end
+    raise BadParamsError.new(Proc.new {send(error_name)}) unless result = model.find_by_id(id)
+
     return result
   end
 
   def try_save(model, params)
     m = model.new(params)
-    self.response_obj = m.save ? {result: "ok"} : {result: get_error_code(m.errors.full_messages.to_a.first.dup)}
+    raise BadParamsError.new(Proc.new {self.response_obj = {result: get_error_code(m.errors.full_messages.to_a.first.dup)}}) unless m.save
+    ok
   end
 end
