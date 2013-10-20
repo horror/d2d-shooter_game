@@ -3,7 +3,7 @@ module MapHelper
     find_by_sid(params["sid"])
     check_error(Map.where(name: params["name"]).exists?, "mapExists")
 
-    try_save(Map, {name: params["name"], map: params["map"], max_players: params["maxPlayers"]})
+    try_save(Map, {name: params["name"], map: ActiveSupport::JSON.encode(params["map"]), max_players: params["maxPlayers"]})
   end
 
   def getMaps(params)

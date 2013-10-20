@@ -42,7 +42,7 @@ module ValidationHelper
 
   def try_save(model, params)
     m = model.new(params)
-    raise BadParamsError.new(Proc.new {self.response_obj = {result: get_error_code(m.errors.full_messages.to_a.first.dup)}}) unless m.save
+    raise BadParamsError.new(Proc.new {self.response_obj = {result: get_error_code(m.errors.full_messages.to_a.first.dup), message: m.errors.full_messages.to_a.first.dup}}) unless m.save
     ok
   end
 end

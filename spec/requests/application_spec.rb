@@ -151,15 +151,43 @@ describe "Application page" do
     end
 
     it "with valid information" do
-      check_it({sid: sid_a, name: "New map", maxPlayers: 8, map: "...."})
+      check_it({sid: sid_a, name: "New map", maxPlayers: 8, map: ["#19d", "z #5", "$4$#"]})
     end
 
     it "with invalid name(max exists)" do
-      check_it({sid: sid_a, name: "New map", maxPlayers: 8, map: "...."}, "mapExists")
+      check_it({sid: sid_a, name: "New map", maxPlayers: 8, map: ["####", "####", "####"]}, "mapExists")
     end
 
     it "with invalid name(blank)" do
-      check_it({sid: sid_a, name: "", maxPlayers: 8, map: "...."}, "badName")
+      check_it({sid: sid_a, name: "", maxPlayers: 8, map: ["####", "####", "####"]}, "badName")
+    end
+
+    it "with invalid map(diff lines length)" do
+      check_it({sid: sid_a, name: "sdfadsfadf", maxPlayers: 8, map: ["##", "####", "###"]}, "badMap")
+    end
+
+    it "with invalid map(unexpected symbol #1)" do
+      check_it({sid: sid_a, name: "sdafadsfdsafads", maxPlayers: 8, map: ["##%#", "####", "####"]}, "badMap")
+    end
+
+    it "with invalid map(unexpected symbol #2)" do
+      check_it({sid: sid_a, name: "adsfadsfasfdsaf", maxPlayers: 8, map: ["####", "#+##", "####"]}, "badMap")
+    end
+
+    it "with invalid map(unexpected symbol #3)" do
+      check_it({sid: sid_a, name: "sdfadsdafafds", maxPlayers: 8, map: ["####", "####", "##}#"]}, "badMap")
+    end
+
+    it "with invalid maxPlayers (< 1)" do
+      check_it({sid: sid_a, name: "New game1", map: ["####", "####", "####"], maxPlayers: 0}, "badMaxPlayers")
+    end
+
+    it "with invalid maxPlayers (blank)" do
+      check_it({sid: sid_a, name: "New game1", map: ["####", "####", "####"], maxPlayers: ""}, "badMaxPlayers")
+    end
+
+    it "with invalid maxPlayers (is not a number)" do
+      check_it({sid: sid_a, name: "New game1", map: ["####", "####", "####"], maxPlayers: "sda"}, "badMaxPlayers")
     end
   end
 
