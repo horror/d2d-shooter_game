@@ -9,7 +9,10 @@ module MapHelper
   def getMaps(params)
     user = find_by_sid(params["sid"])
 
-    maps = Map.all(:select => "m.id, m.name", :from => 'maps m', :order => 'm.id').to_a
+    maps = Map.all(:select => "id, name, max_players, map", :from => 'maps', :order => 'id').to_a
+    maps = maps.map do |line|
+      {"id" => line["id"], "name" => line["name"], "maxPlayers" => line["max_players"], "map" => ActiveSupport::JSON.decode(line["map"])}
+    end
     ok({maps: maps})
   end
 end

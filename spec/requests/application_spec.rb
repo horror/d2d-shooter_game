@@ -208,7 +208,8 @@ describe "Application page" do
       send_request(action: "getMaps", params:{sid: sid_a})
       arr = json_decode(response.body)
       map_id = arr["maps"][0]["id"]
-      response.code.to_s.should == "200"  && arr["maps"].length == 1 && arr["maps"][0]["name"].should == "New map"
+      response.code.to_s.should == "200"  && arr["maps"].length == 1 && arr["maps"][0]["name"].should == "New map" &&
+          arr["maps"][0]["maxPlayers"].should == 11 && arr["maps"][0]["map"].should == ["#19d", "z #5", "$4$#"]
     end
 
     it "with invalid user sid" do
