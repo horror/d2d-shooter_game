@@ -9,6 +9,18 @@ describe "Application page" do
     send_request(action: "startTesting", params: [])
   end
 
+  describe "bad json" do
+    it "#1" do
+      send_request_json("[")
+      check_response({result: "badJSON"}, "200")
+    end
+
+    it "#2" do
+      send_request_json("")
+      check_response({result: "badJSON"}, "200")
+    end
+  end
+
   describe "bad action" do
     it "without action" do
       request_and_checking("", {}, {result: "badAction"})
