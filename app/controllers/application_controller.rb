@@ -12,7 +12,7 @@ class ApplicationController < ActionController::Base
     response.headers["Access-Control-Allow-Headers"] = 'Content-Type, X-Requested_with'
     req = params['application']
     if req != nil
-      if req.include?("badJSON")
+      if req.include?("json parser exception")
         render :json => ActiveSupport::JSON.encode({result: "badJSON"})
         return
       end

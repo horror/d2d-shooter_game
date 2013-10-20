@@ -19,7 +19,7 @@ module MyApp
           json = rq.body.string
           ActiveSupport::JSON.decode(json)
         rescue
-          env["action_dispatch.request.request_parameters"] = {badJSON: "badJSON"}
+          env["action_dispatch.request.request_parameters"] = {"json parser exception" => "bad json"}
           @app.call(env)
         else
           super(env)
