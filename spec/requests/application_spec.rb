@@ -48,6 +48,10 @@ describe "Application page" do
       check_it({login: "user_a", password: "lololol"})
     end
 
+    it "with valid information (case sensitivity)" do
+      check_it({login: "user_A", password: "lololol"})
+    end
+
     it "with invalid information(userExists)" do
       check_it({login: "user_a", password: "lololol"}, "userExists")
     end

@@ -6,7 +6,7 @@ module AuthHelper
   end
 
   def signin(params)
-    user = User.find_by_login(params["login"].downcase)
+    user = User.find_by_login(params["login"])
     if !user || !user.authenticate(params["password"])
       incorrect
       return

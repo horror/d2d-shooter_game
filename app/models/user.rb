@@ -16,7 +16,6 @@ class User < ActiveRecord::Base
   has_many :messages
   has_many :games
   has_many :players
-  before_save { |user| user.login = login.downcase }
 
   VALID_LOGIN_REGEX = /\A[\w+\-.]+\z/i
   validates :login, presence: true, length: { maximum: 40, minimum: 4 }, format: { with: VALID_LOGIN_REGEX }, uniqueness: true
