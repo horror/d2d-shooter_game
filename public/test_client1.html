@@ -5,7 +5,7 @@
  
             webSocket.onopen = function(event) {
                 console.log('onopen');
-                webSocket.send('{"sid":"a6SMx-4WXw_nTWUu0jgZ4g"}');
+                webSocket.send('{"sid":"a6SMx-4WXw_nTWUu0jgZ4g", "action": "move", "dx": 0, "dy": 0}');
             };
  
             webSocket.onmessage = function(event) {
@@ -18,5 +18,6 @@
         </script>
     </head>
     <body>
+    <button onclick='webSocket.send(JSON.stringify({"sid":"a6SMx-4WXw_nTWUu0jgZ4g", "action": "move", "dx": 1, "dy": 2}))'>move</button>
     </body>
-</html
+</html>

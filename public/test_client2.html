@@ -5,7 +5,7 @@
  
             webSocket.onopen = function(event) {
                 console.log('onopen');
-                webSocket.send('{"sid":"7FPZWA-oaeZ9z6jjo3BiWg"}');
+                webSocket.send('{"sid":"7FPZWA-oaeZ9z6jjo3BiWg", "action": "move", "dx": 0, "dy": 0}');
             };
  
             webSocket.onmessage = function(event) {
@@ -19,4 +19,4 @@
     </head>
     <body>
     </body>
-</html
+</html>

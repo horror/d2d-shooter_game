@@ -6,6 +6,8 @@ EM.next_tick do
   @connections = 0
   @pt
   @players = {"0" => []}
+  @items = Hash.new
+
   EM::WebSocket.start(:host => '0.0.0.0', :port => 8080) do |ws|
 
 
@@ -20,12 +22,12 @@ EM.next_tick do
           @pt = nil
         end
 
-        @messengers.each { |messenger| messenger.send(@players[messenger.game.to_s]) }
+        @messengers.each { |messenger| messenger.on_message(@players[messenger.game.to_s]) }
       end
     end
 
     ws.onmessage do |msg|
-      @messengers.each { |messenger| messenger.process(ActiveSupport::JSON.decode(msg), ws, @players) }
+      @messengers.each { |messenger| messenger.process(ActiveSupport::JSON.decode(msg), ws, @players, @items) }
     end
 
     ws.onclose do

@@ -1,6 +1,10 @@
+RESPAWN = "$"
+MOVE = "move"
+
 class Messenger
   def initialize(ws)
     @ws = ws
+    @to_hash = Hash.new
   end
 
   # запуск бесконечного цикла
@@ -26,33 +30,59 @@ class Messenger
     @sid
   end
 
-  def send(players, ws = nil)
-    @ws.send(ActiveSupport::JSON.encode(players.values)) if running? and (ws.nil? or @ws == ws)
+  def on_message(players, ws = nil)
+    @ws.send(ActiveSupport::JSON.encode(players.values)) if players and running? and (ws.nil? or @ws == ws)
   end
 
-  def process(data, ws, players)
-    if @ws != ws || !(user = User.find_by_sid(data["sid"])) || !(game = Player.find_by_user_id(user.id))
-      return
-    end
+  def process(data, ws, players, items)
+    return if @ws != ws || !(user = User.find_by_sid(data["sid"])) || !(player = Player.find_by_user_id(user.id))
 
     @sid ||= data["sid"]
-    @id ||= user.id
-    if !@game_id
-      @game_id = game.game_id
-      players[@game_id.to_s] ||= Hash.new
-      players[@game_id.to_s][@sid] = to_hash
+    if !@game_id #определяем игру для клиента, если еще небыла определена
+      @game_id = player.game_id
+      players[game] ||= Hash.new
+      players[game][@sid] = to_hash
     end
 
+    if !@to_hash[:x] #если координаты клиента не определены, находим координаты респаунов и присваеваем случайный клиенту
+      if !items[game] #если предметы на карте в этой игре не определены, определяем их
+        items[game] = Hash.new
+        items[game]["respawns"] = Array.new
+        map = ActiveSupport::JSON.decode(player.game.map.map)
+
+        for i in 0..(map.size - 1)
+          for j in 0..(map[0].length - 1)
+            case map[i][j]
+              when RESPAWN
+                items[game]["respawns"] << {x: j, y: i}
+            end
+          end
+        end
+      end
+
+      resp = items[game]["respawns"][rand(items[game]["respawns"].size)]
+      set_coords(resp[:x], resp[:y])
+    end
+
+    send(data["action"], data)
+  end
+
+  def set_coords(x, y)
+    @to_hash[:x] = x
+    @to_hash[:y] = y
+  end
+
+  def move_coords(dx, dy)
+    @to_hash[:x] += dx
+    @to_hash[:y] += dy
   end
 
   def to_hash
-    {sid: @sid}
+    @to_hash
   end
-end
 
-class Coords
-  def initialize(x, y)
-    @x = x
-    @y = y
+  ###ACTIONS###
+  def move(data)
+    move_coords(data["dx"], data["dy"])
   end
 end
