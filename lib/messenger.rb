@@ -18,15 +18,35 @@ class Messenger
     !@stopped
   end
 
-  def send(msg, ws = nil)
-    @ws.send @sid if @sid and running? and (ws.nil? or @ws == ws)
+  def game
+    (@game_id ? @game_id : 0).to_s
   end
 
-  def process(data, ws)
-    return if @ws != ws
+  def sid
+    @sid
+  end
+
+  def send(players, ws = nil)
+    @ws.send(ActiveSupport::JSON.encode(players.values)) if running? and (ws.nil? or @ws == ws)
+  end
+
+  def process(data, ws, players)
+    if @ws != ws || !(user = User.find_by_sid(data["sid"])) || !(game = Player.find_by_user_id(user.id))
+      return
+    end
+
     @sid ||= data["sid"]
-    @id ||= User.where(sid: data[:sid]).first
-    @game_id ||= Player.where(user_id: @id)
+    @id ||= user.id
+    if !@game_id
+      @game_id = game.game_id
+      players[@game_id.to_s] ||= Hash.new
+      players[@game_id.to_s][@sid] = to_hash
+    end
+
+  end
+
+  def to_hash
+    {sid: @sid}
   end
 end
 

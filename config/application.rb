@@ -16,7 +16,7 @@ module D2d
     # -- all .rb files in that directory are automatically loaded.
 
     # Custom directories with classes and modules you want to be autoloadable.
-    config.autoload_paths += %W(#{config.root}/lib/validators/)
+    Dir.glob("#{config.root}/app/lib/validators/*.rb").each { |f| require f }
 
     # Only load the plugins named here, in the order given (default is alphabetical).
     # :all can be used as a placeholder for all plugins not explicitly named.
