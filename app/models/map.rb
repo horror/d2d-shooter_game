@@ -7,7 +7,7 @@ class Map < ActiveRecord::Base
     if is_valid
       line_size = map_data[0].length
       map_data.each do |line|
-        if line.length != line_size or (line =~ /^[\w\d#\$\s]+$/) == nil
+        if line.length != line_size or (line =~ /^[\w\d#\$\.]+$/) == nil
           is_valid = false
           break
         end

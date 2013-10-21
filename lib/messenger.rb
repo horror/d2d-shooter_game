@@ -5,17 +5,12 @@ class Messenger
 
   # запуск бесконечного цикла
   def start
-    i = 0
-    while self.running?
-      @ws.send (i += 1).to_s
-      sleep(3.seconds)
-      break if i == 2
-    end
+    @stopped = false
   end
 
   # остановка мессенджера
-  def stop
-    @stopped = true
+  def stop(ws)
+    @ws != ws ? @stopped : @stopped = true
   end
 
   # запущен ли мессенджер
@@ -23,7 +18,21 @@ class Messenger
     !@stopped
   end
 
-  def send(msg)
-    puts msg
+  def send(msg, ws = nil)
+    @ws.send @sid if @sid and running? and (ws.nil? or @ws == ws)
+  end
+
+  def process(data, ws)
+    return if @ws != ws
+    @sid ||= data["sid"]
+    @id ||= User.where(sid: data[:sid]).first
+    @game_id ||= Player.where(user_id: @id)
+  end
+end
+
+class Coords
+  def initialize(x, y)
+    @x = x
+    @y = y
   end
 end

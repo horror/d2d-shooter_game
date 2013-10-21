@@ -151,7 +151,7 @@ describe "Application page" do
     end
 
     it "with valid information" do
-      check_it({sid: sid_a, name: "New map", maxPlayers: 11, map: ["#19d", "z #5", "$4$#"]})
+      check_it({sid: sid_a, name: "New map", maxPlayers: 11, map: ["#19d", "z.#5", "$4$#"]})
     end
 
     it "with invalid name(max exists)" do
@@ -209,7 +209,7 @@ describe "Application page" do
       arr = json_decode(response.body)
       map_id = arr["maps"][0]["id"]
       response.code.to_s.should == "200"  && arr["maps"].length == 1 && arr["maps"][0]["name"].should == "New map" &&
-          arr["maps"][0]["maxPlayers"].should == 11 && arr["maps"][0]["map"].should == ["#19d", "z #5", "$4$#"]
+          arr["maps"][0]["maxPlayers"].should == 11 && arr["maps"][0]["map"].should == ["#19d", "z.#5", "$4$#"]
     end
 
     it "with invalid user sid" do
