@@ -1,7 +1,9 @@
 RESPAWN = "$"
 WALL = "#"
 MOVE = "move"
-DEFAULT_ACCELERATION = 5
+DEFAULT_ACCELERATION = 0.01
+EPSILON = 0.0000001
+ACCURACY = 6
 
 class Messenger
   def initialize(ws)
@@ -62,22 +64,24 @@ class Messenger
       if !items[game] #если предметы на карте в этой игре не определены, определяем их
         items[game] = Hash.new
         items[game]["respawns"] = Array.new
-        items[game]["walls"] = Array.new
-        map = ActiveSupport::JSON.decode(player.game.map.map)
-        @bottom_bound = (map.size - 1).to_f
-        @left_bound = (map[0].length - 1).to_f
+        items[game]["teleports"] = Hash.new
+        @map = ActiveSupport::JSON.decode(player.game.map.map)
+        @bottom_bound = (@map.size - 1).to_f
+        @left_bound = (@map[0].length - 1).to_f
         for i in 0..@bottom_bound
           for j in 0..@left_bound
-            case map[i][j]
+            case @map[i][j]
               when RESPAWN
-                items[game]["respawns"] << Geometry::Point[j, i]
+                items[game]["respawns"] << {x: j, y: i}
+              when 0..9
+                items[game]["teleports"][@map[i][j].to_s] << {x: j, y: i}
             end
           end
         end
       end
 
       resp = items[game]["respawns"][rand(items[game]["respawns"].size)]
-      set_position(resp.x, resp.y)
+      set_position(resp[:x], resp[:y])
       @initialized = true
     end
 
@@ -85,28 +89,44 @@ class Messenger
   end
 
   def set_position(x, y)
-    @to_hash[:x] = x
-    @to_hash[:y] = y
+    @to_hash[:x] = x.round(ACCURACY)
+    @to_hash[:y] = y.round(ACCURACY)
   end
 
   def move_position
+    case @map[x = (@to_hash[:x] + @to_hash[:vx]).floor, y = (@to_hash[:y] + @to_hash[:vy]).floor]
+      when 1..9
+        make_tp(x, y)
+      when WALL
+        stop_movement
+    end
     @to_hash[:x] += @to_hash[:vx]
     @to_hash[:y] += @to_hash[:vy]
     set_position([[0.0, @to_hash[:x]].max, @left_bound].min, [[0.0, @to_hash[:y]].max, @bottom_bound].min)
   end
 
+  def make_tp(x, y)
+    tps = items[game]["teleports"][@map[x, y]]
+    tp = tps[0][:x] == x and tps[0][:y] == y ? tps[1] : tps[0]
+    set_position(tp[:x], tp[:y])
+  end
+
   def normalize(dx, dy)
-    if (max = [dx.to_f.abs, dy.to_f.abs].max) != 0.0
-      dx /= max
-      dy /= max
-    end
+    return 0, 0 if (norm = Math.sqrt(dx.to_f**2 + dy.to_f**2)) == 0.0
+    dx /= norm
+    dy /= norm
     return dx, dy
   end
 
   def change_velocity(dx, dy)
     dx, dy = normalize(dx, dy)
-    @to_hash[:vx] += dx * DEFAULT_ACCELERATION
-    @to_hash[:vy] += dy * DEFAULT_ACCELERATION
+    @to_hash[:vx] += (dx * DEFAULT_ACCELERATION).round(ACCURACY)
+    @to_hash[:vy] += (dy * DEFAULT_ACCELERATION).round(ACCURACY)
+  end
+
+  def stop_movement
+    @to_hash[:vx] = 0
+    @to_hash[:vy] = 0
   end
 
   def deceleration
