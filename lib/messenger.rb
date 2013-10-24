@@ -1,4 +1,5 @@
 RESPAWN = "$"
+VOID = "."
 WALL = "#"
 MOVE = "move"
 DEFAULT_ACCELERATION = 0.01
@@ -11,6 +12,8 @@ class Messenger
     @to_hash = {vx: 0.0, vy: 0.0, x: 0.0, y: 0.0}
     @changed = false
     @initialized = false
+    @teleported = false
+    @items = {}
   end
 
   # запуск бесконечного цикла
@@ -71,17 +74,19 @@ class Messenger
         items[game]["teleports"] = Hash.new
         for i in 0..@bottom_bound - 1
           for j in 0..@right_bound - 1
-            case @map[i][j]
-              when RESPAWN
-                items[game]["respawns"] << {x: j, y: i}
-              when 0..9
+            items[game]["respawns"] << {x: j, y: i} if @map[i][j] == RESPAWN
+            if ("0".."9").include?(@map[i][j])
+              if !items[game]["teleports"].include?(@map[i][j].to_s)
+                items[game]["teleports"][@map[i][j].to_s] = [{x: j, y: i}]
+              else
                 items[game]["teleports"][@map[i][j].to_s] << {x: j, y: i}
+              end
             end
           end
         end
+        @items = items
       end
-
-      resp = items[game]["respawns"][rand(items[game]["respawns"].size)]
+      resp = items[game]["respawns"][rand(items[game]["respawns"].size - 1)]
       set_position(resp[:x] + 0.5, resp[:y] + 0.5)
       @initialized = true
     end
@@ -95,21 +100,22 @@ class Messenger
   end
 
   def move_position
-    case @map[x = (@to_hash[:x] + @to_hash[:vx]).floor, y = (@to_hash[:y] + @to_hash[:vy]).floor]
-      when 1..9
-        make_tp(x, y)
-      when WALL
-        stop_movement
-    end
+
+    symbol = @map[y = (@to_hash[:y] + @to_hash[:vy]).floor][x = (@to_hash[:x] + @to_hash[:vx]).floor]
+    @teleported = false if symbol == VOID or symbol == RESPAWN
+    make_tp(x, y) if ("0".."9").include?(symbol) && !@teleported
+    stop_movement if symbol == WALL
+
     @to_hash[:x] += @to_hash[:vx]
     @to_hash[:y] += @to_hash[:vy]
     set_position([[0.0, @to_hash[:x]].max, @right_bound].min, [[0.0, @to_hash[:y]].max, @bottom_bound].min)
   end
 
   def make_tp(x, y)
-    tps = items[game]["teleports"][@map[x, y]]
-    tp = tps[0][:x] == x and tps[0][:y] == y ? tps[1] : tps[0]
-    set_position(tp[:x], tp[:y])
+    tps = @items[game]["teleports"][@map[y][x]]
+    tp = (tps[0][:x] == x and tps[0][:y] == y ? tps[1] : tps[0])
+    set_position(tp[:x].to_f + 0.5, tp[:y].to_f + 0.5)
+    @teleported = true
   end
 
   def normalize(dx, dy)
