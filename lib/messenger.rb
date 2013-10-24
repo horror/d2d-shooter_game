@@ -44,10 +44,11 @@ class Messenger
     @sid
   end
 
-  def on_message(players, ws = nil)
+  def on_message(tick, players, ws = nil)
     deceleration if not changed?
     no_changes
-    @ws.send(ActiveSupport::JSON.encode(players.values)) if players and running? and (ws.nil? or @ws == ws)
+    #puts "send: " +  ActiveSupport::JSON.encode({tick: tick, players: players.values})
+    @ws.send(ActiveSupport::JSON.encode({tick: tick, players: players.values})) if players and running? and (ws.nil? or @ws == ws)
   end
 
   def process(data, ws, players, items)
