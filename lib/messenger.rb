@@ -61,15 +61,15 @@ class Messenger
     end
 
     if !@initialized #если координаты клиента не определены, находим координаты респаунов и присваеваем случайный клиенту
+      @map = ActiveSupport::JSON.decode(player.game.map.map)
+      @bottom_bound = (@map.size - 1).to_f + 1
+      @right_bound = (@map[0].length - 1).to_f + 1
       if !items[game] #если предметы на карте в этой игре не определены, определяем их
         items[game] = Hash.new
         items[game]["respawns"] = Array.new
         items[game]["teleports"] = Hash.new
-        @map = ActiveSupport::JSON.decode(player.game.map.map)
-        @bottom_bound = (@map.size - 1).to_f
-        @left_bound = (@map[0].length - 1).to_f
-        for i in 0..@bottom_bound
-          for j in 0..@left_bound
+        for i in 0..@bottom_bound - 1
+          for j in 0..@right_bound - 1
             case @map[i][j]
               when RESPAWN
                 items[game]["respawns"] << {x: j, y: i}
@@ -81,7 +81,7 @@ class Messenger
       end
 
       resp = items[game]["respawns"][rand(items[game]["respawns"].size)]
-      set_position(resp[:x], resp[:y])
+      set_position(resp[:x] + 0.5, resp[:y] + 0.5)
       @initialized = true
     end
 
@@ -102,7 +102,7 @@ class Messenger
     end
     @to_hash[:x] += @to_hash[:vx]
     @to_hash[:y] += @to_hash[:vy]
-    set_position([[0.0, @to_hash[:x]].max, @left_bound].min, [[0.0, @to_hash[:y]].max, @bottom_bound].min)
+    set_position([[0.0, @to_hash[:x]].max, @right_bound].min, [[0.0, @to_hash[:y]].max, @bottom_bound].min)
   end
 
   def make_tp(x, y)
@@ -120,13 +120,13 @@ class Messenger
 
   def change_velocity(dx, dy)
     dx, dy = normalize(dx, dy)
-    @to_hash[:vx] += (dx * DEFAULT_ACCELERATION).round(ACCURACY)
-    @to_hash[:vy] += (dy * DEFAULT_ACCELERATION).round(ACCURACY)
+    @to_hash[:vx] = (@to_hash[:vx] + dx * DEFAULT_ACCELERATION).round(ACCURACY)
+    @to_hash[:vy] = (@to_hash[:vy] + dy * DEFAULT_ACCELERATION).round(ACCURACY)
   end
 
   def stop_movement
-    @to_hash[:vx] = 0
-    @to_hash[:vy] = 0
+    @to_hash[:vx] = 0.0
+    @to_hash[:vy] = 0.0
   end
 
   def deceleration
