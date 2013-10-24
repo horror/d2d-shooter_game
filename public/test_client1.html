@@ -1,11 +1,29 @@
 <html>
     <head>
         <script>
+            var sid = "";
+
+            function get_sid()
+            {
+                var action = "signin", login = "user_a", password = "password";
+                var xmlhttp = new XMLHttpRequest();
+                xmlhttp.open('POST', 'http://localhost:3000', true);
+                xmlhttp.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+                arr = {"action": action, "params": {"login": login, "password": password}}
+                xmlhttp.send(JSON.stringify(arr));
+                xmlhttp.onreadystatechange = function() {
+                    if (xmlhttp.readyState == 4)
+                        if(xmlhttp.status == 200)
+                           sid = JSON.parse(xmlhttp.responseText)['sid'];
+                };
+            }
+            get_sid();
+
             var webSocket = new WebSocket('ws://localhost:8080');
  
             webSocket.onopen = function(event) {
                 console.log('onopen');
-                webSocket.send('{"sid":"a6SMx-4WXw_nTWUu0jgZ4g", "action": "move", "dx": 0, "dy": 0}');
+                webSocket.send(JSON.stringify({"sid": sid, "action": "move", "dx": 1, "dy": 0}));
             };
  
             webSocket.onmessage = function(event) {
@@ -15,9 +33,10 @@
             webSocket.onclose = function(event) {
                 console.log('onclose');
             };
+
         </script>
     </head>
     <body>
-    <button onclick='webSocket.send(JSON.stringify({"sid":"a6SMx-4WXw_nTWUu0jgZ4g", "action": "move", "dx": 1, "dy": 2}))'>move</button>
+    <button onclick='webSocket.send(JSON.stringify({"sid": sid, "action": "move", "dx": 1, "dy": 0}))'>move</button>
     </body>
 </html>
