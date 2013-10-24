@@ -10,8 +10,6 @@ EM.next_tick do
 
   EM::WebSocket.start(:host => '0.0.0.0', :port => 8080) do |ws|
 
-
-
     ws.onopen do
       @connections += 1
       @messengers.add(new_messenger = Messenger.new(ws))
@@ -22,7 +20,7 @@ EM.next_tick do
           @pt = nil
         end
 
-        @messengers.each { |messenger| messenger.on_message(@players[messenger.game.to_s]) }
+        @messengers.each { |messenger| messenger.on_message(@players[messenger.game]) }
       end
     end
 
@@ -36,7 +34,7 @@ EM.next_tick do
       @messengers.each do |messenger|
         if messenger.stop(ws)
           @messengers.delete(messenger) #удалили из масива всех подключений
-          @players[messenger.game.to_s].delete(messenger.sid) #удалили из массива играков
+          @players[messenger.game].delete(messenger.sid) #удалили из массива играков
         end
       end
     end
