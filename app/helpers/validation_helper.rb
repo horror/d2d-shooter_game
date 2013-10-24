@@ -6,7 +6,7 @@ end
 
 module ValidationHelper
 
-  def startTesting()
+  def startTesting(params)
     ActiveRecord::Base.subclasses.each(&:delete_all)
   end
 
