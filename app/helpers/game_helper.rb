@@ -5,6 +5,7 @@ module GameHelper
     find_by_id(Map, params["map"], "badMap")
 
     try_save(Game, {map_id: params["map"], user_id: user.id, name: params["name"], max_players: params["maxPlayers"]})
+    try_save(Player, {user_id: user.id, game_id: Game.last.id})
   end
 
   def getGames(params)
@@ -30,16 +31,19 @@ module GameHelper
     user = find_by_sid(params["sid"])
     game = find_by_id(Game, params["game"], "badGame")
     check_error(game.players.count == game.max_players, "gameFull")
-    check_error(Player.where(game_id: params["game"], user_id: user.id).exists?, "alreadyInGame")
+    check_error(Player.where(user_id: user.id).exists?, "alreadyInGame")
 
     try_save(Player, {user_id: user.id, game_id: game.id})
   end
 
   def leaveGame(params)
     user = find_by_sid(params["sid"])
-    check_error((not (player = Player.where(user_id: user.id)).exists?), "notInGame")
-
-    player.delete_all
+    check_error((not (player = Player.find_by_user_id(user.id))), "notInGame")
+    if (game = Game.find(player.game_id)).players.length == 1
+      game.map.delete
+      game.delete
+    end
+    player.delete
     ok
   end
 
