@@ -48,6 +48,7 @@ class Messenger
   end
 
   def on_message(tick, players, ws = nil)
+    return if !@initialized
     deceleration if not changed?
     no_changes
     #puts "send: " +  ActiveSupport::JSON.encode({tick: tick, players: players.values})
