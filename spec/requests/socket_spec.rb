@@ -9,13 +9,17 @@ describe 'Socket server' do
 
   sid_a = sid_b = ""
   map_id = game_id = 0
-  check_arr = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5}
+  check_arr = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100}
 
-  def webSocketRequest()
+  def webSocketRequest(action, params)
     request = EventMachine::WebsocketRequest.new('ws://' + TEST_HOST + TEST_PORT).get
 
+    request.callback {
+      request.send(json_encode({action: action, params: params}))
+    }
+
     request.errback {
-      puts "[websocket] problem connecting (will retry)"
+      puts "websocket problem connecting"
       EM.stop_event_loop
     }
     return request
@@ -30,23 +34,18 @@ describe 'Socket server' do
     send_request(action: "signin", params: {login: "user_b", password: "password"})
     sid_b = json_decode(response.body)["sid"]
     send_request(action: "uploadMap", params: {sid: sid_a, name: "New map", maxPlayers: 10,
-                                               map: ['1.$.2', '#3.1.', '#3.#.', '2...#']})
+                                               map: ['1.$.2', '.3.1.', '#3.#.', '2...#']})
     send_request(action: "getMaps", params: {sid: sid_a})
     map_id = json_decode(response.body)["maps"][0]["id"]
     send_request(action: "createGame", params: {sid: sid_a, name: "New game", map: map_id, maxPlayers: 10})
     send_request(action: "getGames", params: {sid: sid_a})
     game_id = json_decode(response.body)["games"][0]["id"]
-    send_request(action: "joinGame", params: {sid: sid_a, game: game_id})
     send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
   end
 
   it "player spawn" do
     EM.run do
-      request = webSocketRequest()
-
-      request.callback {
-        request.send(json_encode({sid: sid_a, action: "move", dx: 0, dy: 0}))
-      }
+      request = webSocketRequest("move", {sid: sid_a, dx: 0, dy: 0})
 
       request.stream { |message, type|
         json_decode(message)['players'][0].should == check_arr
@@ -55,42 +54,45 @@ describe 'Socket server' do
     end
   end
 
-  it "action one step move" do
+  it "+/- one step move" do
     EM.run do
-      request = webSocketRequest()
-
-      request.callback {
-        request.send(json_encode({sid: sid_a, action: "move", dx: 1, dy: 1}))
-        request.send(json_encode({sid: sid_a, action: "move", dx: 1, dy: 1}))
-      }
-
+      request = webSocketRequest("move", {sid: sid_a, dx: 1, dy: 0})
       num = 0
       request.stream { |message, type|
         arr = json_decode(message)
-        arr['players'][0]['y'].should > check_arr['y']
-        arr['players'][0]['x'].should > check_arr['x']
-        EM.stop_event_loop
+        if arr['players'][0]['vx'] < EPS && arr['players'][0]['vy'] < EPS #Ждем
+          case num
+            when 0
+              num += 1
+              arr['players'][0]['x'].should > check_arr['x']
+              (arr['players'][0]['y'] -  check_arr['y']).should < EPS
+              request.send(json_encode({action: "move", params: {sid: sid_a, dx: -1, dy: 0, tick: arr['tick']}}))
+            when 1
+              num += 1
+              (arr['players'][0]['x'] - check_arr['x']).should < EPS
+              (arr['players'][0]['y'] -  check_arr['y']).should < EPS
+            when 2
+              EM.stop_event_loop
+          end
+        end
       }
     end
   end
 
-  it "player teleport" do
+  it "tick" do
     EM.run do
-      request = webSocketRequest()
-
-      request.callback {
-        for i in 0..10
-          request.send(json_encode({sid: sid_a, action: "move", dx: 1, dy: 1}))
-        end
-      }
-
+      request = webSocketRequest("move", {sid: sid_a, dx: 0, dy: 0})
+      tick = -1
+      counter = 0
       request.stream { |message, type|
-        arr = json_decode(message)['players'][0]
-        if arr['vx'] < EPS
-          arr['y'].should == 3.5
-          (arr['x'].should - 4.5).should < EPS
-          EM.stop_event_loop
+        arr = json_decode(message)
+        if tick != -1
+          arr['tick'].should == tick + 1
+          counter += 1
+          EM.stop_event_loop if counter == 10
         end
+        tick = arr['tick']
+        request.send(json_encode({action: "move", params: {sid: sid_a, dx: 0, dy: 0, tick: arr['tick']}}))
       }
     end
   end
