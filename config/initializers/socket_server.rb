@@ -26,8 +26,8 @@ EM.next_tick do
     end
 
     ws.onmessage do |msg|
-      #puts "get: "+ msg
-      @messengers.each { |messenger| messenger.process(ActiveSupport::JSON.decode(msg), ws, @players, @items) }
+      #puts "GET: get tick - " + ActiveSupport::JSON.decode(msg)['params']['tick'].to_s + " my tick - " + @tick.to_s
+      @messengers.each { |messenger| messenger.process(ActiveSupport::JSON.decode(msg), ws, @players, @items, @tick) }
     end
 
     ws.onclose do
