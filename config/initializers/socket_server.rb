@@ -9,7 +9,7 @@ EM.next_tick do
   @items = Hash.new
   @tick = 0
 
-  EM::WebSocket.start(:host => '0.0.0.0', :port => 8080) do |ws|
+  EM::WebSocket.start(:host => '0.0.0.0', :port => 8001) do |ws|
 
     ws.onopen do
       @connections += 1

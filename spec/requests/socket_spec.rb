@@ -4,7 +4,7 @@ require 'em-websocket-request'
 describe 'Socket server' do
 
   TEST_HOST = 'localhost'
-  TEST_PORT = ':8080'
+  TEST_PORT = ':8001'
   EPS = 1e-7
 
   sid_a = sid_b = ""
