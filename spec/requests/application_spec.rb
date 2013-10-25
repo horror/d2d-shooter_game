@@ -3,7 +3,7 @@ require "date"
 require 'rest_client'
 
 describe "Application page" do
-  map_id = game_a = game_b = sid_b = sid_a = 0
+  map_id = game_a = game_b = sid_c = sid_b = sid_a = 0
 
   before(:all) do
     request_and_checking("startTesting", {})
@@ -239,7 +239,7 @@ describe "Application page" do
     end
 
     it "with valid information" do
-      check_it({sid: sid_a, name: "New game", map: map_id, maxPlayers: 1})
+      check_it({sid: sid_a, name: "New game", map: map_id, maxPlayers: 3})
     end
 
     it "with exist name" do
@@ -277,9 +277,9 @@ describe "Application page" do
 
   describe "get games" do
     before(:all) do
-      send_request(action: "createGame", params: {sid: sid_a, name: "New game 2", map: map_id, maxPlayers: 10})
-      @check_arr = [{"name" => "New game", "map" => "New map", "maxPlayers" => 1, "status" => "running"},
-                    {"name" => "New game 2", "map" => "New map", "maxPlayers" => 10, "status" => "running"}]
+      send_request(action: "createGame", params: {sid: sid_b, name: "New game 2", map: map_id, maxPlayers: 10})
+      @check_arr = [{"name" => "New game", "map" => "New map", "maxPlayers" => 1, "status" => "running", "players" => ["user_a"]},
+                    {"name" => "New game 2", "map" => "New map", "maxPlayers" => 10, "status" => "running", "players" => ["user_b"]}]
     end
 
     it "with invalid sid(not sended)" do
@@ -292,28 +292,58 @@ describe "Application page" do
       result = arr["result"] == "ok"
       game_a = arr["games"][0]["id"]
       game_b = arr["games"][1]["id"]
-      arr["games"].each_with_index do |element, i|
-        result &= element["name"] == @check_arr[i]["name"] && element["map"] == @check_arr[i]["map"]
-        result &= element["maxPlayers"] == @check_arr[i]["maxPlayers"] && element["status"] == @check_arr[i]["status"]
+      arr["games"].each_with_index do |element, game_num|
+        element.each {|i| element[i].should == @check_arr[game_num][i] if i != "id"}
       end
       result.should == true
     end
 
-    it "with players" do
-      @players = ["user_a", "user_b"]
-      send_request(action: "joinGame", params: {sid: sid_a, game: game_b})
-      send_request(action: "joinGame", params: {sid: sid_b, game: game_b})
-      send_request(action: "getGames", params: {sid: sid_a})
+    it "with other players (check order)" do
+      send_request(action: "signup", params: {login: "user_c", password: "password_c"})
+      send_request(action: "signin", params: {login: "user_c", password: "password_c"})
+      sid_c = json_decode(response.body)['sid']
+      send_request(action: "signup", params: {login: "user_1", password: "password_c"})
+      send_request(action: "signin", params: {login: "user_1", password: "password_c"})
+      sid_1 = json_decode(response.body)['sid']
+      send_request(action: "joinGame", params: {sid: sid_c, game: game_b})
+      send_request(action: "joinGame", params: {sid: sid_1, game: game_a})
+      send_request(action: "getGames", params: {sid: sid_c})
       arr = json_decode(response.body)
-      arr["games"].each do |element|
-        if element["id"] == game_b
-          arr["result"].should == "ok" && element["players"].should == @players
-        end
-      end
+      arr["games"][0]["players"].should == ["user_a", "user_1"]
+      arr["games"][1]["players"].should == ["user_b", "user_c"]
+      request_and_checking("leaveGame", {sid: sid_a})
     end
 
     it "with invalid sid" do
       request_and_checking("getGames", {sid: "100500"}, {result: "badSid"})
+    end
+  end
+
+  describe "leave game" do
+    it "with valid information" do
+      request_and_checking("leaveGame", {sid: sid_b})
+      send_request(action: "getGames", params: {sid: sid_a})
+      arr = json_decode(response.body)
+      arr["games"][1]["players"].should == ["user_c"]
+    end
+
+    it "with last player" do
+      request_and_checking("leaveGame", {sid: sid_c})
+      send_request(action: "getGames", params: {sid: sid_a})
+      arr = json_decode(response.body)
+      arr["games"].length.should == 1
+    end
+
+    it "with invalid sid(not sended)" do
+      request_and_checking("leaveGame", {}, {result: "badParams"})
+    end
+
+    it "with invalid sid" do
+      request_and_checking("leaveGame", {sid: "100500"}, {result: "badSid"})
+    end
+
+    it "with notInGame" do
+      request_and_checking("leaveGame", {sid: sid_b}, {result: "notInGame"})
     end
   end
 
@@ -323,7 +353,7 @@ describe "Application page" do
     end
 
     it "with alreadyJoined" do
-      request_and_checking("joinGame", {sid: sid_a, game: game_b}, {result: "alreadyInGame"})
+      request_and_checking("joinGame", {sid: sid_a, game: game_a}, {result: "alreadyInGame"})
     end
 
     it "with invalid sid" do
@@ -343,25 +373,8 @@ describe "Application page" do
     end
 
     it "with full game" do
+      request_and_checking("joinGame", {sid: sid_c, game: game_a})
       request_and_checking("joinGame", {sid: sid_b, game: game_a}, {result: "gameFull"})
-    end
-  end
-
-  describe "leave game" do
-    it "with valid information" do
-      request_and_checking("leaveGame", {sid: sid_a})
-    end
-
-    it "with invalid sid(not sended)" do
-      request_and_checking("leaveGame", {}, {result: "badParams"})
-    end
-
-    it "with invalid sid" do
-      request_and_checking("leaveGame", {sid: "100500"}, {result: "badSid"})
-    end
-
-    it "with notInGame" do
-      request_and_checking("leaveGame", {sid: sid_a}, {result: "notInGame"})
     end
   end
 
@@ -446,9 +459,9 @@ describe "Application page" do
       send_request(action: "sendMessage", params:{sid: sid_b, game: game_b, text: "game_b message #1"})
       send_request(action: "getMessages", params:{sid: sid_a, game: game_a, since: 1196440219})
       arr = json_decode(response.body)
-      result = arr["result"].should == "ok" && arr["messages"].length.should == 1
+      arr["result"].should == "ok" && arr["messages"].length.should == 1
       arr = arr['messages'][0]
-      response.code.to_s.should == "200" && result && arr['text'] == 'game_a message #1' && arr['login'] == "user_a"
+      response.code.to_s.should == "200" && arr['text'].should == 'game_a message #1' && arr['login'].should == "user_a"
     end
 
     it "with invalid since" do
