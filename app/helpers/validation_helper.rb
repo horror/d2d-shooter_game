@@ -8,6 +8,7 @@ module ValidationHelper
 
   def startTesting(params)
     ActiveRecord::Base.subclasses.each(&:delete_all)
+    ok
   end
 
   def check_action_params(action, params)

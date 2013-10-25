@@ -6,7 +6,7 @@ describe "Application page" do
   map_id = game_a = game_b = sid_b = sid_a = 0
 
   before(:all) do
-    send_request(action: "startTesting", params: {})
+    request_and_checking("startTesting", {})
   end
 
   describe "bad json" do
