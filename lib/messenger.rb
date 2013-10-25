@@ -2,14 +2,14 @@ RESPAWN = "$"
 VOID = "."
 WALL = "#"
 MOVE = "move"
-DEFAULT_ACCELERATION = 0.01
+DEFAULT_ACCELERATION = 0.1
 EPSILON = 0.0000001
 ACCURACY = 6
 
 class Messenger
   def initialize(ws)
     @ws = ws
-    @to_hash = {vx: 0.0, vy: 0.0, x: 0.0, y: 0.0}
+    @to_hash = {vx: 0.0, vy: 0.0, x: 0.0, y: 0.0, hp: 100}
     @changed = false
     @initialized = false
     @teleported = false
@@ -54,10 +54,11 @@ class Messenger
     @ws.send(ActiveSupport::JSON.encode({tick: tick, players: players.values})) if players and running? and (ws.nil? or @ws == ws)
   end
 
-  def process(data, ws, players, items)
-    return if @ws != ws || !(user = User.find_by_sid(data["sid"])) || !(player = Player.find_by_user_id(user.id))
+  def process(data, ws, players, items, tick)
+    params = data['params']
+    return if @ws != ws || !(user = User.find_by_sid(params["sid"])) || !(player = Player.find_by_user_id(user.id))
     @changed = true
-    @sid ||= data["sid"]
+    @sid ||= params["sid"]
     if !@game_id #определяем игру для клиента, если еще небыла определена
       @game_id = player.game_id
       players[game] ||= Hash.new
@@ -66,8 +67,8 @@ class Messenger
 
     if !@initialized #если координаты клиента не определены, находим координаты респаунов и присваеваем случайный клиенту
       @map = ActiveSupport::JSON.decode(player.game.map.map)
-      @bottom_bound = (@map.size - 1).to_f + 1
-      @right_bound = (@map[0].length - 1).to_f + 1
+      @bottom_bound = @map.size.to_f
+      @right_bound = @map[0].length.to_f
       if !items[game] #если предметы на карте в этой игре не определены, определяем их
         items[game] = Hash.new
         items[game]["respawns"] = Array.new
@@ -77,9 +78,8 @@ class Messenger
             items[game]["respawns"] << {x: j, y: i} if @map[i][j] == RESPAWN
             if ("0".."9").include?(@map[i][j])
               if !items[game]["teleports"].include?(@map[i][j].to_s)
-                items[game]["teleports"][@map[i][j].to_s] = [{x: j, y: i}]
-              else
-                items[game]["teleports"][@map[i][j].to_s] << {x: j, y: i}
+                items[game]["teleports"][@map[i][j].to_s] = Array.new
+              items[game]["teleports"][@map[i][j].to_s] << {x: j, y: i}
               end
             end
           end
@@ -91,7 +91,7 @@ class Messenger
       @initialized = true
     end
 
-    send(data["action"], data)
+    send(data["action"], params)
   end
 
   def set_position(x, y)
