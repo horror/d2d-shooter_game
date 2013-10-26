@@ -3,7 +3,6 @@ require File.dirname(__FILE__) + '/../../lib/messenger.rb'
 
 EM.next_tick do
   @messengers = Set.new
-  @connections = 0
   @pt
   @players = {"0" => []}
   @items = Hash.new
@@ -12,7 +11,6 @@ EM.next_tick do
   EM::WebSocket.start(:host => '0.0.0.0', :port => 8001) do |ws|
 
     ws.onopen do
-      @connections += 1
       @messengers.add(new_messenger = Messenger.new(ws))
       new_messenger.start
       @pt ||= EM::PeriodicTimer.new(0.3) do

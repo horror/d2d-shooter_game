@@ -70,24 +70,23 @@ class Messenger
       @map = ActiveSupport::JSON.decode(player.game.map.map)
       @bottom_bound = @map.size.to_f
       @right_bound = @map[0].length.to_f
-      if !items[game] #если предметы на карте в этой игре не определены, определяем их
-        items[game] = Hash.new
-        items[game]["respawns"] = Array.new
-        items[game]["teleports"] = Hash.new
+      if !@items[game] #если предметы на карте в этой игре не определены, определяем их
+        @items[game] = Hash.new
+        @items[game]["respawns"] = Array.new
+        @items[game]["teleports"] = Hash.new
         for i in 0..@bottom_bound - 1
           for j in 0..@right_bound - 1
-            items[game]["respawns"] << {x: j, y: i} if @map[i][j] == RESPAWN
+            @items[game]["respawns"] << {x: j, y: i} if @map[i][j] == RESPAWN
             if ("0".."9").include?(@map[i][j])
-              if !items[game]["teleports"].include?(@map[i][j].to_s)
-                items[game]["teleports"][@map[i][j].to_s] = Array.new
-              items[game]["teleports"][@map[i][j].to_s] << {x: j, y: i}
+              if !@items[game]["teleports"].include?(@map[i][j].to_s)
+                @items[game]["teleports"][@map[i][j].to_s] = Array.new
+              @items[game]["teleports"][@map[i][j].to_s] << {x: j, y: i}
               end
             end
           end
         end
-        @items = items
       end
-      resp = items[game]["respawns"][rand(items[game]["respawns"].size - 1)]
+      resp = @items[game]["respawns"][rand(@items[game]["respawns"].size - 1)]
       set_position(resp[:x] + 0.5, resp[:y] + 0.5)
       @initialized = true
     end
