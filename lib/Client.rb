@@ -49,12 +49,12 @@ class Client
     if !@game_id #определяем игру для клиента, если еще небыла определена
       @game_id = player.game_id
       @players[game] ||= Hash.new
-      @players[game][@sid] = to_player
     end
 
     init_position_new_player(player) if !@initialized
 
     send(data["action"], params)
+    @players[game][@sid] = to_player
   end
 
   def init_position_new_player(player)
