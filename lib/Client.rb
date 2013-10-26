@@ -7,28 +7,14 @@ EPSILON = 0.0000001
 ACCURACY = 6
 
 class Client
-  def initialize(ws)
-    @ws = ws
-    @to_hash = {vx: 0.0, vy: 0.0, x: 0.0, y: 0.0, hp: 100}
+  def initialize(players, items, maps)
+    @player = {vx: 0.0, vy: 0.0, x: 0.0, y: 0.0, hp: 100}
     @changed = false
     @initialized = false
     @teleported = false
-    @items = {}
-  end
-
-  # запуск бесконечного цикла
-  def start
-    @stopped = false
-  end
-
-  # остановка мессенджера
-  def stop(ws)
-    @ws != ws ? @stopped : @stopped = true
-  end
-
-  # запущен ли мессенджер
-  def running?
-    !@stopped
+    @players = players
+    @maps = maps
+    @items = items
   end
 
   def changed?
@@ -47,72 +33,83 @@ class Client
     @sid
   end
 
-  def on_message(tick, players, ws = nil)
+  def on_message(ws, players, tick)
     return if !@initialized
     deceleration if not changed?
     no_changes
-    #puts "send: " +  ActiveSupport::JSON.encode({tick: tick, players: players.values})
-    @ws.send(ActiveSupport::JSON.encode({tick: tick, players: players.values})) if players and running? and (ws.nil? or @ws == ws)
+    ws.send(ActiveSupport::JSON.encode({tick: tick, players: players.values})) if players
   end
 
-  def process(data, ws, players, items, tick)
+  def process(data, tick)
     params = data['params']
-    return if @ws != ws || !(user = User.find_by_sid(params["sid"])) || !(player = Player.find_by_user_id(user.id))
+    return if !(user = User.find_by_sid(params["sid"])) || !(player = Player.find_by_user_id(user.id)) || (@initialized && tick > params['tick'])
     @changed = true
     @sid ||= params["sid"]
+
     if !@game_id #определяем игру для клиента, если еще небыла определена
       @game_id = player.game_id
-      players[game] ||= Hash.new
-      players[game][@sid] = to_hash
+      @players[game] ||= Hash.new
+      @players[game][@sid] = to_player
     end
 
-    if !@initialized #если координаты клиента не определены, находим координаты респаунов и присваеваем случайный клиенту
-      @map = ActiveSupport::JSON.decode(player.game.map.map)
-      @bottom_bound = @map.size.to_f
-      @right_bound = @map[0].length.to_f
-      if !@items[game] #если предметы на карте в этой игре не определены, определяем их
-        @items[game] = Hash.new
-        @items[game]["respawns"] = Array.new
-        @items[game]["teleports"] = Hash.new
-        for i in 0..@bottom_bound - 1
-          for j in 0..@right_bound - 1
-            @items[game]["respawns"] << {x: j, y: i} if @map[i][j] == RESPAWN
-            if ("0".."9").include?(@map[i][j])
-              if !@items[game]["teleports"].include?(@map[i][j].to_s)
-                @items[game]["teleports"][@map[i][j].to_s] = Array.new
-              @items[game]["teleports"][@map[i][j].to_s] << {x: j, y: i}
-              end
-            end
-          end
-        end
-      end
-      resp = @items[game]["respawns"][rand(@items[game]["respawns"].size - 1)]
-      set_position(resp[:x] + 0.5, resp[:y] + 0.5)
-      @initialized = true
-    end
+    init_position_new_player(player) if !@initialized
 
     send(data["action"], params)
   end
 
+  def init_position_new_player(player)
+    init_map_for_curr_game(player) if !@maps[game]
+    @bottom_bound = @maps[game].size.to_f
+    @right_bound = @maps[game][0].length.to_f
+
+    init_items_for_curr_game if !@items[game]
+
+    resp = define_respawn
+    set_position(resp[:x] + 0.5, resp[:y] + 0.5)
+    @initialized = true
+  end
+
+  def define_respawn
+    @items[game]["respawns"][rand(@items[game]["respawns"].size - 1)]
+  end
+
+  def init_map_for_curr_game(player)
+    @maps[game] = ActiveSupport::JSON.decode(player.game.map.map)
+  end
+
+  def init_items_for_curr_game
+    @items[game] = Hash.new
+    @items[game]["respawns"] = Array.new
+    @items[game]["teleports"] = Hash.new
+    for i in 0..@bottom_bound - 1
+      for j in 0..@right_bound - 1
+        @items[game]["respawns"] << {x: j, y: i} if @maps[game][i][j] == RESPAWN
+        if ("0".."9").include?(@maps[game][i][j])
+          @items[game]["teleports"][@maps[game][i][j].to_s] ||= Array.new
+          @items[game]["teleports"][@maps[game][i][j].to_s] << {x: j, y: i}
+        end
+      end
+    end
+  end
+
   def set_position(x, y)
-    @to_hash[:x] = x.round(ACCURACY)
-    @to_hash[:y] = y.round(ACCURACY)
+    @player[:x] = x.round(ACCURACY)
+    @player[:y] = y.round(ACCURACY)
   end
 
   def move_position
-
-    symbol = @map[y = (@to_hash[:y] + @to_hash[:vy]).floor][x = (@to_hash[:x] + @to_hash[:vx]).floor]
+    symbol = @maps[game][y = (@player[:y] + @player[:vy]).floor][x = (@player[:x] + @player[:vx]).floor]
     @teleported = false if symbol == VOID or symbol == RESPAWN
     make_tp(x, y) if ("0".."9").include?(symbol) && !@teleported
     stop_movement if symbol == WALL
 
-    @to_hash[:x] += @to_hash[:vx]
-    @to_hash[:y] += @to_hash[:vy]
-    set_position([[0.0, @to_hash[:x]].max, @right_bound].min, [[0.0, @to_hash[:y]].max, @bottom_bound].min)
+    @player[:x] += @player[:vx]
+    @player[:y] += @player[:vy]
+    set_position([[0.0, @player[:x]].max, @right_bound].min, [[0.0, @player[:y]].max, @bottom_bound].min)
   end
 
   def make_tp(x, y)
-    tps = @items[game]["teleports"][@map[y][x]]
+    tps = @items[game]["teleports"][@maps[game][y][x]]
     tp = (tps[0][:x] == x and tps[0][:y] == y ? tps[1] : tps[0])
     set_position(tp[:x].to_f + 0.5, tp[:y].to_f + 0.5)
     @teleported = true
@@ -127,22 +124,22 @@ class Client
 
   def change_velocity(dx, dy)
     dx, dy = normalize(dx, dy)
-    @to_hash[:vx] = (@to_hash[:vx] + dx * DEFAULT_ACCELERATION).round(ACCURACY)
-    @to_hash[:vy] = (@to_hash[:vy] + dy * DEFAULT_ACCELERATION).round(ACCURACY)
+    @player[:vx] = (@player[:vx] + dx * DEFAULT_ACCELERATION).round(ACCURACY)
+    @player[:vy] = (@player[:vy] + dy * DEFAULT_ACCELERATION).round(ACCURACY)
   end
 
   def stop_movement
-    @to_hash[:vx] = 0.0
-    @to_hash[:vy] = 0.0
+    @player[:vx] = 0.0
+    @player[:vy] = 0.0
   end
 
   def deceleration
-    change_velocity(-@to_hash[:vx], -@to_hash[:vy])
+    change_velocity(-@player[:vx], -@player[:vy])
     move_position
   end
 
-  def to_hash
-    @to_hash
+  def to_player
+    @player
   end
 
   ###ACTIONS###
