@@ -6,7 +6,7 @@ DEFAULT_ACCELERATION = 0.1
 EPSILON = 0.0000001
 ACCURACY = 6
 
-class Messenger
+class Client
   def initialize(ws)
     @ws = ws
     @to_hash = {vx: 0.0, vy: 0.0, x: 0.0, y: 0.0, hp: 100}

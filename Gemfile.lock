@@ -65,6 +65,8 @@ GEM
     em-websocket (0.5.0)
       eventmachine (>= 0.12.9)
       http_parser.rb (~> 0.5.3)
+    em-websocket-request (0.1.0)
+      em-http-request (~> 1.0.0)
     erubis (2.7.0)
     eventmachine (1.0.3)
     eventmachine (1.0.3-x86-mingw32)
@@ -172,6 +174,7 @@ DEPENDENCIES
   em-http-request
   em-synchrony
   em-websocket
+  em-websocket-request
   factory_girl_rails (= 4.1.0)
   jquery-rails
   pg

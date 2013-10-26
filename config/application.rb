@@ -17,7 +17,7 @@ module D2d
 
     # Custom directories with classes and modules you want to be autoloadable.
     Dir.glob("#{config.root}/app/lib/validators/*.rb").each { |f| require f }
-
+    Dir.glob("#{config.root}/lib/*.rb").each { |f| require f }
     # Only load the plugins named here, in the order given (default is alphabetical).
     # :all can be used as a placeholder for all plugins not explicitly named.
     # config.plugins = [ :exception_notification, :ssl_requirement, :all ]
