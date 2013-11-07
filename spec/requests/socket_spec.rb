@@ -1,29 +1,11 @@
 require "spec_helper"
-require 'em-websocket-request'
 
 describe 'Socket server' do
-
-  TEST_HOST = 'localhost'
-  TEST_PORT = ':8001'
   EPS = 1e-7
 
   sid_a = sid_b = ""
   map_id = game_id = 0
-  check_arr = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100}
-
-  def webSocketRequest(action, params)
-    request = EventMachine::WebsocketRequest.new('ws://' + TEST_HOST + TEST_PORT).get
-
-    request.callback {
-      request.send(json_encode({action: action, params: params}))
-    }
-
-    request.errback {
-      puts "websocket problem connecting"
-      EM.stop_event_loop
-    }
-    return request
-  end
+  def_params = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100}
 
   before(:all) do
     send_request(action: "startTesting", params: {})
