@@ -29,25 +29,29 @@ end
     @ws_requests = Array.new
   end
 
-  def def_request (indx = 0, sid, check_limit, send_limit, x_val, y_val, vx_val, vy_val, dx_rule, dy_rule, &checking)
-    request = web_socket_request(sid)
-    counter = 0
-    checking ||= lambda{ |params|
-        should_eql(params['x'], x_val)
-        should_eql(params['y'], y_val)
-        should_eql(params['vx'], vx_val)
-        should_eql(params['vy'], vy_val)
+  def def_request (params, &checking)
+    params_list = [:dx_rule, :dy_rule, :index, :x, :y, :vx, :vy, :check_limit, :send_limit]
+    params_list.each {|i| params[i] ||= 0 }
+    request = web_socket_request(params[:sid])
+    p_tick = 0
+    checking ||= lambda{ |player|
+        should_eql(player['x'], params[:x])
+        should_eql(player['y'], params[:y])
+        should_eql(player['vx'], params[:vx])
+        should_eql(player['vy'], params[:vy])
     }
     request.stream { |message, type|
       tick = json_decode(message)['tick']
-      params = json_decode(message)['players'][indx]
-      if counter == check_limit
-        checking.call(params)
-        close_socket(request, sid)
+      player = json_decode(message)['players'][params[:index]]
+      puts "Cnt = #{p_tick}, params = #{player}, Tick = #{tick}"
+      if p_tick == params[:check_limit]
+        checking.call(player)
+        close_socket(request, params[:sid])
       end
-      #puts "Cnt = #{counter}, params = #{params}"
-      send_ws_request(request, "move", {sid: sid, dx: dx_rule.call(params, counter), dy: dy_rule.call(params, counter), tick: tick}) if counter < send_limit
-      counter += 1
+      dx = params[:dx_rule].kind_of?(Proc) ? params[:dx_rule].call(p_tick, player) : params[:dx_rule]
+      dy = params[:dy_rule].kind_of?(Proc) ? params[:dy_rule].call(p_tick, player) : params[:dy_rule]
+      send_ws_request(request, "move", {sid: params[:sid], dx: dx, dy: dy, tick: tick}) if p_tick < params[:send_limit]
+      p_tick += 1
     }
   end
 
@@ -59,7 +63,7 @@ end
         json_decode(message)['players'][0].should == def_params
         close_socket(request_a, sid_a)
       }
-      request_b.stream { |message, type|
+        request_b.stream { |message, type|
         json_decode(message)['players'].should == [def_params, def_params]
         close_socket(request_b, sid_b)
       }
@@ -69,26 +73,25 @@ end
   it "+/- one step move" do
     EM.run do
       request = web_socket_request(sid_a)
-      num = 0
+      p_tick = 0
       request.stream { |message, type|
         arr = json_decode(message)
-        if arr['players'][0]['vx'] < EPS
-          case num
+        player = arr['players'][0]
+        if player['vx'] < EPS
+          case p_tick
             when 0
-              num += 1
               send_ws_request(request, "move", {sid: sid_a, dx: 1, dy: 0, tick: arr['tick']})
             when 1
-              num += 1
-              arr['players'][0]['x'].should > def_params['x']
-              should_eql(arr['players'][0]['y'], def_params['y'])
+              player['x'].should > def_params['x']
+              should_eql(player['y'], def_params['y'])
               send_ws_request(request, "move", {sid: sid_a, dx: -1, dy: 0, tick: arr['tick']})
             when 2
-              num += 1
-              should_eql(arr['players'][0]['x'], def_params['x'])
-              should_eql(arr['players'][0]['y'], def_params['y'])
+              should_eql(player['x'], def_params['x'])
+              should_eql(player['y'], def_params['y'])
             when 3
               close_socket(request, sid_a)
           end
+          p_tick += 1
         end
       }
     end
@@ -97,17 +100,18 @@ end
   it "inc/dec velocity" do
     EM.run do
       request = web_socket_request(sid_a)
-      is_move = true
-      check_arr = def_params
+      is_moving = true
+      curr_player_params = def_params
       request.stream { |message, type|
         arr = json_decode(message)
-        check_arr.should == arr['players'][0]
-        check_arr = new_params(1, 0, check_arr, is_move)
-        if is_move
+        player = arr['players'][0]
+        curr_player_params.should == player
+        curr_player_params = new_params(1, 0, curr_player_params, is_moving)
+        if is_moving
           send_ws_request(request, "move", {sid: sid_a, dx: 1, dy: 0, tick: arr['tick']})
-          is_move = check_arr['vx'] <= 0.2
+          is_moving = curr_player_params['vx'] <= 0.2
         end
-        close_socket(request, sid_a) if !is_move && check_arr['vx'] < EPS
+        close_socket(request, sid_a) if !is_moving && curr_player_params['vx'] < EPS
       }
     end
   end
@@ -116,13 +120,14 @@ end
     EM.run do
       request = web_socket_request(sid_a)
       tick = -1
-      counter = 0
+      p_tick = 0
       request.stream { |message, type|
         arr = json_decode(message)
+        player = arr['players'][0]
         if tick != -1
           arr['tick'].should == tick + 1
-          counter += 1
-          close_socket(request, sid_a) if counter == 10
+          p_tick += 1
+          close_socket(request, sid_a) if p_tick == 10
         end
         tick = arr['tick']
         send_ws_request(request, "move", {sid: sid_a, dx: 0, dy: 0, tick: arr['tick']})
@@ -131,39 +136,39 @@ end
   end
 
   it "stay at tp" do
-    EM.run do
-      def_request(sid_a, 10, 4, 0.0, 0.0, 0.0, 0.0, lambda{|prms, cnt| 1}, lambda{|prms, cnt| 0}){|params|
-          should_eql(params['y'], 6.5)
-          params['x'].should < 2
-      }
-    end
+    EM.run { def_request( {sid: sid_a, check_limit: 10, send_limit: 4, x:1.6, y: 6.5, dx_rule: 1} ) }
   end
 
   it "to right wall" do
-    EM.run { def_request(sid_a, 15, 10, 3.5, 6.5, 0.0, 0.0, lambda{|prms, cnt| 1}, lambda{|prms, cnt| 0}) }
+    EM.run { def_request( {sid: sid_a, check_limit: 15, send_limit: 10, x: 3.5, y: 6.5, dx_rule: 1} ) }
   end
 
   it "to left wall" do
-    EM.run { def_request(sid_a, 15, 15, 1.5, 6.5, 0.0, 0.0, lambda{|prms, cnt| cnt > 3 ? -1 : 1}, lambda{|prms, cnt| 0}) }
+    EM.run {
+      def_request( {sid: sid_a, check_limit: 15, send_limit: 15, x: 1.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 3 ? -1 : 1}} )
+    }
   end
 
   it "left border" do
-    EM.run { def_request(sid_a, 10, 10, 0.5, 4.5, 0.0, 0.0, lambda{|prms, cnt| -1}, lambda{|prms, cnt| 0}) }
+    EM.run { def_request( {sid: sid_a, check_limit: 10, send_limit: 10, x: 0.5, y: 4.5, dx_rule: -1} ) }
   end
 
   it "right border" do
-    EM.run { def_request(sid_a, 15, 15, 4.5, 2.5, 0.0, 0.0, lambda{|prms, cnt| cnt > 3 ? 1 : -1}, lambda{|prms, cnt| 0}) }
+    EM.run {
+      def_request( {sid: sid_a, check_limit: 15, send_limit: 15, x: 4.5, y: 2.5, dx_rule: Proc.new{|p_tick| p_tick > 3 ? 1 : -1}} )
+    }
   end
 
   it "two players run" do
     EM.run {
-      def_request(sid_a, 30, 30, 3.5, 6.5, 0.0, 0.0, lambda{|prms, cnt| cnt > 10 ? 1 : -1}, lambda{|prms, cnt| 0})
-      def_request(1, sid_b, 30, 30, 0.5, 4.5, 0.0, 0.0, lambda{|prms, cnt| cnt > 10 ? -1 : 1}, lambda{|prms, cnt| 0})
+      def_request( {sid: sid_a, check_limit: 25, send_limit: 25, x: 3.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 10 ? 1 : -1}} )
+      def_request( {index: 1, sid: sid_b, check_limit: 25, send_limit: 25, x: 0.5, y: 4.5, dx_rule: Proc.new{|p_tick| p_tick > 10 ? -1 : 1}} )
     }
   end
 
   it "max velocity" do
-    EM.run { def_request(sid_a, 21, 21, 1.5, 6.5, 1.0, 0.0, lambda{|prms, cnt| cnt > 10 ? 1 : -1}, lambda{|prms, cnt| 0}) }
+    EM.run {
+      def_request( {sid: sid_a, check_limit: 21, send_limit: 21, x: 1.5, y: 6.5, vx: 1.0, dx_rule: Proc.new{|p_tick| p_tick > 10 ? 1 : -1}} )
+    }
   end
-
 end
