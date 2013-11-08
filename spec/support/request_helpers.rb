@@ -44,11 +44,14 @@ module Requests
     #Web Socket
 
     def web_socket_request(sid)
-      request = EventMachine::WebsocketRequest.new('ws://' + TEST_HOST + TEST_SOCKET_PORT).get
+      request = EventMachine::WebsocketRequest.new(
+          'ws://' + TEST_HOST + TEST_SOCKET_PORT,
+          :inactivity_timeout => 100
+      ).get
 
       request.callback {
         @ws_requests << request
-        send_ws_request(request, "move", {sid: sid, dx: 0, dy: 0})
+        send_ws_request(request, "move", {sid: sid, dx: 0, dy: 0, tick: 0})
       }
 
       request.errback {
