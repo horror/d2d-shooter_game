@@ -46,7 +46,8 @@ module Requests
     def web_socket_request(sid)
       request = EventMachine::WebsocketRequest.new(
           'ws://' + TEST_HOST + TEST_SOCKET_PORT,
-          :inactivity_timeout => 100
+          inactivity_timeout: 5,
+          connect_timeout: 5
       ).get
 
       request.callback {
@@ -64,7 +65,7 @@ module Requests
     def close_socket(request = false, sid = "")
       @ws_requests.delete(request)
       request.stream { |message, type|
-        send_ws_request(request, "move", {sid: sid, dx: 0, dy: 0, tick: json_decode(message)['tick']})
+        send_ws_request(request, "empty", {sid: sid, tick: json_decode(message)['tick']})
       }
       EM.stop if @ws_requests.length == 0
     end
