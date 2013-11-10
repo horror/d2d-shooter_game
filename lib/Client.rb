@@ -93,7 +93,10 @@ class Client
   end
 
   def define_respawn
-    @items[game]["respawns"][rand(@items[game]["respawns"].size - 1)]
+    items = @items[game]
+    result = items["respawns"][items["last_respawn"]]
+    items["last_respawn"] = items["last_respawn"] + 1 == items["respawns"].size ? 0 : items["last_respawn"] + 1
+    return result
   end
 
   def init_map_for_curr_game(player)
@@ -113,6 +116,7 @@ class Client
         end
       end
     end
+    @items[game]['last_respawn'] = 0
   end
 
   def set_position(x, y)
