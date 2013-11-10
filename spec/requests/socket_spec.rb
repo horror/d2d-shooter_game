@@ -8,7 +8,7 @@ describe 'Socket server' do
   def_params = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100}
 
   before(:all) do
-    send_request(action: "startTesting", params: {})
+    send_request(action: "startTesting", params: {websocketMode: "sync"})
     send_request(action: "signup", params: {login: "user_a", password: "password"})
     send_request(action: "signup", params: {login: "user_b", password: "password"})
     send_request(action: "signin", params: {login: "user_a", password: "password"})
@@ -23,7 +23,7 @@ describe 'Socket server' do
     send_request(action: "getGames", params: {sid: sid_a})
     game_id = json_decode(response.body)["games"][0]["id"]
     send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
-end
+  end
 
   before do
     @ws_requests = Array.new
@@ -43,13 +43,14 @@ end
     request.stream { |message, type|
       tick = json_decode(message)['tick']
       player = json_decode(message)['players'][params[:index]]
-      puts "Cnt = #{p_tick}, params = #{player}, Tick = #{tick}"
+      #puts "Sid = #{params[:sid][0]}, Cnt = #{p_tick}, params = #{player}, Tick = #{tick}"
       if p_tick == params[:check_limit]
         checking.call(player)
         close_socket(request, params[:sid])
       end
       dx = params[:dx_rule].kind_of?(Proc) ? params[:dx_rule].call(p_tick, player) : params[:dx_rule]
       dy = params[:dy_rule].kind_of?(Proc) ? params[:dy_rule].call(p_tick, player) : params[:dy_rule]
+      send_ws_request(request, "empty", {sid: params[:sid], tick: tick}) if p_tick >= params[:send_limit]
       send_ws_request(request, "move", {sid: params[:sid], dx: dx, dy: dy, tick: tick}) if p_tick < params[:send_limit]
       p_tick += 1
     }
@@ -61,9 +62,10 @@ end
       request_b = web_socket_request(sid_b)
       request_a.stream { |message, type|
         json_decode(message)['players'][0].should == def_params
+        send_ws_request(request_a, "empty", {sid: sid_a, tick: json_decode(message)['tick']})
         close_socket(request_a, sid_a)
       }
-        request_b.stream { |message, type|
+      request_b.stream { |message, type|
         json_decode(message)['players'].should == [def_params, def_params]
         close_socket(request_b, sid_b)
       }
@@ -77,7 +79,7 @@ end
       request.stream { |message, type|
         arr = json_decode(message)
         player = arr['players'][0]
-        if player['vx'] < EPS
+        if player['vx'].abs < EPS
           case p_tick
             when 0
               send_ws_request(request, "move", {sid: sid_a, dx: 1, dy: 0, tick: arr['tick']})
@@ -88,10 +90,13 @@ end
             when 2
               should_eql(player['x'], def_params['x'])
               should_eql(player['y'], def_params['y'])
+              send_ws_request(request, "empty", {sid: sid_a, tick: arr['tick']})
             when 3
               close_socket(request, sid_a)
           end
           p_tick += 1
+        else
+          send_ws_request(request, "empty", {sid: sid_a, tick: arr['tick']})
         end
       }
     end
@@ -111,7 +116,8 @@ end
           send_ws_request(request, "move", {sid: sid_a, dx: 1, dy: 0, tick: arr['tick']})
           is_moving = curr_player_params['vx'] <= 0.2
         end
-        close_socket(request, sid_a) if !is_moving && curr_player_params['vx'] < EPS
+        send_ws_request(request, "empty", {sid: sid_a, tick: arr['tick']}) if !is_moving && curr_player_params['vx'].abs >= EPS
+        close_socket(request, sid_a) if !is_moving && curr_player_params['vx'].abs < EPS
       }
     end
   end
@@ -161,8 +167,8 @@ end
 
   it "two players run" do
     EM.run {
-      def_request( {sid: sid_a, check_limit: 25, send_limit: 25, x: 3.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 10 ? 1 : -1}} )
-      def_request( {index: 1, sid: sid_b, check_limit: 25, send_limit: 25, x: 0.5, y: 4.5, dx_rule: Proc.new{|p_tick| p_tick > 10 ? -1 : 1}} )
+      def_request( {sid: sid_a, check_limit: 25, send_limit: 24, x: 3.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 10 ? 1 : -1}} )
+      def_request( {index: 1, sid: sid_b, check_limit: 25, send_limit: 24, x: 0.5, y: 4.5, dx_rule: Proc.new{|p_tick| p_tick > 10 ? -1 : 1}} )
     }
   end
 

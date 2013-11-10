@@ -6,13 +6,20 @@ end
 
 module ValidationHelper
 
+  @@synchron_websocket = false
+
+  def self.synchron_websocket?
+    return @@synchron_websocket
+  end
+
   def startTesting(params)
+    @@synchron_websocket = params["websocketMode"] == "sync"
     ActiveRecord::Base.subclasses.each(&:delete_all)
     ok
   end
 
   def check_action_params(action, params)
-    arr = {"startTesting" => [], "signup" => ["login", "password"], "signin" => ["login", "password"], "signout" => ["sid"],
+    arr = {"startTesting" => ["websocketMode"], "signup" => ["login", "password"], "signin" => ["login", "password"], "signout" => ["sid"],
           "sendMessage" => ["sid", "game", "text"], "getMessages" => ["sid", "game", "since"],
           "createGame" => ["sid", "name", "map", "maxPlayers"], "getGames" => ["sid"],
           "joinGame" => ["sid", "game"], "leaveGame" => ["sid"], "uploadMap" => ["sid", "name", "map", "maxPlayers"], "getMaps" => ["sid"]}

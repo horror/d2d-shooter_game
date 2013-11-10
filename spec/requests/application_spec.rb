@@ -6,7 +6,7 @@ describe "Application page" do
   map_id = game_a = game_b = sid_c = sid_b = sid_a = 0
 
   before(:all) do
-    request_and_checking("startTesting", {})
+    request_and_checking("startTesting", {websocketMode: "async"})
   end
 
   describe "bad json" do
@@ -475,5 +475,9 @@ describe "Application page" do
     it "with invalid game id" do
       request_and_checking("getMessages", {sid: sid_b, game: 155, since: 1196440219}, {result: "badGame"})
     end
+  end
+
+  after(:all) do
+    request_and_checking("startTesting", {websocket_mode: "simple"})
   end
 end
