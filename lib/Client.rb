@@ -125,7 +125,7 @@ class Client
   end
 
   def move_position
-    x, y = (@player[:x] + @player[:vx]).floor, (@player[:y] + @player[:vy]).floor
+    x, y = (@player[:x] + @player[:vx] - EPSILON*v_sign(@player[:vx])).floor, (@player[:y] + @player[:vy] - EPSILON*v_sign(@player[:vy])).floor
     symbol = x < 0.0 || y < 0.0 ? "" : @maps[game][y][x]
     @last_tp = {x: -1, y: -1} if symbol == VOID or symbol == RESPAWN
     #puts "symbol = " + symbol, "istp = " + @teleported.to_s, "x ,y = " + x.to_s + ", " + y.to_s
@@ -134,8 +134,8 @@ class Client
       return
     end
 
-    x = (@player[:x] + @player[:vx] + v_sign(@player[:vx]) * 0.5 + EPSILON*v_sign(@player[:vx])).floor
-    y = (@player[:y] + @player[:vy] + v_sign(@player[:vy]) * 0.5 + EPSILON*v_sign(@player[:vx])).floor
+    x = (@player[:x] + @player[:vx] + v_sign(@player[:vx]) * 0.5 - EPSILON*v_sign(@player[:vx])).floor
+    y = (@player[:y] + @player[:vy] + v_sign(@player[:vy]) * 0.5 - EPSILON*v_sign(@player[:vy])).floor
     symbol = x < 0.0 || y < 0.0 ? "" : @maps[game][y][x]
     x = v_sign(@player[:vx]) == 0 ? @player[:x] : v_sign(@player[:vx]) > 0 ? x - 0.5 : x + 1.5
     y = v_sign(@player[:vy]) == 0 ? @player[:y] : v_sign(@player[:vy]) > 0 ? y + 1.5 : y - 0.5

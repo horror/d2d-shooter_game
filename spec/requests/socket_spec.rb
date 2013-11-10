@@ -56,7 +56,7 @@ describe 'Socket server' do
     }
   end
 
-  describe "Simple movings, spawn, collisions" do
+  describe "simple movings, spawn, collisions: " do
 
     it "players spawn" do
       EM.run do
@@ -144,7 +144,7 @@ describe 'Socket server' do
     end
 
     it "stay at tp" do
-      EM.run { def_request( {sid: sid_a, check_limit: 10, send_limit: 4, x:1.6, y: 6.5, dx_rule: 1} ) }
+      EM.run { def_request( {sid: sid_a, check_limit: 10, send_limit: 4, x: 1.5, y: 6.5, dx_rule: 1} ) }
     end
 
     it "to right wall" do
