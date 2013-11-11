@@ -478,6 +478,6 @@ describe "Application page" do
   end
 
   after(:all) do
-    request_and_checking("startTesting", {websocket_mode: "simple"})
+    request_and_checking("startTesting", {websocketMode: "async"})
   end
 end
