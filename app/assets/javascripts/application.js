@@ -64,6 +64,7 @@ function signin()
         get_map();
     }
     send_request("signin", {"login": $("select, #users").val(), "password": "password"}, f)
+    $("#user_name").text($("select, #users").val());
 }
 
 function get_map()
