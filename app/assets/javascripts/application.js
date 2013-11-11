@@ -78,6 +78,8 @@ function get_map()
 
 function start_websocket()
 {
+    if (web_socket)
+        web_socket.close();
     web_socket = new WebSocket(web_socket_url);
 
     web_socket.onopen = function(event) {
