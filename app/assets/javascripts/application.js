@@ -1,11 +1,8 @@
 //= require jquery
 
 var sid = "", web_socket_url = 'ws://localhost:8001', server_url = 'http://localhost:3000', tick = 0,
-    maps = "", stage, newPlayers, web_socket;
+    maps = "", stage, curr_shape, web_socket;
 var SCALE = 20, users_list = ["user_a", "user_b"];
-
-newPlayers = new createjs.Shape();
-newPlayers.graphics.beginStroke("red")
 
 function send_request(action, params, call_back_func)
 {
@@ -90,12 +87,12 @@ function start_websocket()
     web_socket.onmessage = function(event) {
         tick = JSON.parse(event.data)['tick'];
         players = JSON.parse(event.data)['players'];
-        stage.removeChild(newPlayers);
-        newPlayers = new createjs.Shape();
-        newPlayers.graphics.beginStroke("red");
+        stage.removeChild(curr_shape);
+        curr_shape = new createjs.Shape();
+        curr_shape.graphics.beginStroke("red");
         for (var i = 0; i < players.length; ++i)
-            newPlayers.graphics.drawRect(players[i]["x"] * SCALE - 0.5 * SCALE, players[i]["y"] * SCALE - 0.5 * SCALE, SCALE, SCALE);
-        stage.addChild(newPlayers);
+            curr_shape.graphics.drawRect(players[i]["x"] * SCALE - 0.5 * SCALE, players[i]["y"] * SCALE - 0.5 * SCALE, SCALE, SCALE);
+        stage.addChild(curr_shape);
         stage.update();
         console.log('onmessage, ' + event.data);
     };
