@@ -1,2 +1,125 @@
-<%="anton, please add correct headers in http request"%>
-<%= debug(params) if Rails.env.development? %>
+<html>
+<head>
+  <script src="http://code.createjs.com/createjs-2013.09.25.min.js"></script>
+  <script>
+      var sid = "", web_socket_url = 'ws://localhost:8001', server_url = 'http://localhost:3000', tick = 0,
+              maps = "", stage, newPlayers, webSocket;
+      var SCALE = 20;
+
+      newPlayers = new createjs.Shape();
+      newPlayers.graphics.beginStroke("red")
+      function get_sid()
+      {
+          var action = "signin", login = "user_a", password = "password";
+          var xmlhttp = new XMLHttpRequest();
+          xmlhttp.open('POST', server_url, true);
+          xmlhttp.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+          arr = {"action": action, "params": {"login": login, "password": password}}
+          xmlhttp.send(JSON.stringify(arr));
+          xmlhttp.onreadystatechange = function() {
+              if (xmlhttp.readyState == 4 && xmlhttp.status == 200)
+              {
+                  sid = JSON.parse(xmlhttp.responseText)['sid'];
+                  get_map();
+              }
+          };
+      }
+
+      function get_map()
+      {
+          var action = "getMaps";
+          var xmlhttp = new XMLHttpRequest();
+          xmlhttp.open('POST', server_url, true);
+          xmlhttp.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+          arr = {"action": action, "params": {"sid": sid}}
+          xmlhttp.send(JSON.stringify(arr));
+          xmlhttp.onreadystatechange = function() {
+              if (xmlhttp.readyState == 4 && xmlhttp.status == 200)
+                  maps = JSON.parse(xmlhttp.responseText)['maps'];
+          };
+      }
+
+      function start_websocket()
+      {
+          webSocket = new WebSocket(web_socket_url);
+
+          webSocket.onopen = function(event) {
+              console.log('onopen');
+              webSocket.send(JSON.stringify({"action": "move", "params": {"sid": sid, "dx": 0, "dy": 0}}));
+          };
+
+          webSocket.onmessage = function(event) {
+              tick = JSON.parse(event.data)['tick'];
+              players = JSON.parse(event.data)['players'];
+              stage.removeChild(newPlayers);
+              newPlayers = new createjs.Shape();
+
+              for (var i = 0; i < players.length; ++i)
+              {
+                  newPlayers.graphics.beginStroke("red").drawRect(players[i]["x"] * SCALE - 0.5 * SCALE, players[i]["y"] * SCALE - 0.5 * SCALE, SCALE, SCALE);
+              }
+              stage.addChild(newPlayers);
+              stage.update();
+              console.log('onmessage, ' + event.data);
+          };
+
+          webSocket.onclose = function(event) {
+              console.log('onclose');
+          };
+      };
+
+      function test_draw()
+      {
+          map = maps[0]['map'];
+          canvas = document.getElementById("canvas");
+          stage = new createjs.Stage(canvas);
+          rect = new createjs.Shape();
+          rect.graphics.beginStroke("black").drawRect(0, 0, map[0].length * SCALE, map.length * SCALE).endStroke();
+          stage.addChild(rect);
+          for (var j = 0; j < map.length; ++j)
+              for (var i = 0; i < map[0].length; ++i)
+              {
+                  if (map[j][i] == "#")
+                      rect.graphics.beginFill("blue").drawRect(i * SCALE, j * SCALE, SCALE, SCALE);
+                  if (map[j][i] == "$")
+                      rect.graphics.beginFill("blue").drawCircle(i * SCALE + 0.5 * SCALE, j * SCALE + 0.5 * SCALE, SCALE / 5);
+                  if (!isNaN(parseInt(map[j][i], 10)))
+                      rect.graphics.beginFill("green").drawCircle(i * SCALE + 0.5 * SCALE, j * SCALE + 0.5 * SCALE, SCALE / 5);
+              }
+          stage.addChild(rect);
+          //Update stage will render next frame
+          stage.update();
+      }
+
+      var pressed = false
+
+      function left_hold()
+      {
+          webSocket.send(JSON.stringify({"action": "move", "params": {"sid": sid, "dx": -1, "dy": 0, "tick": tick}}))
+          if (pressed)
+              setTimeout('left_hold()', 60);
+      }
+
+      function right_hold()
+      {
+          webSocket.send(JSON.stringify({"action": "move", "params": {"sid": sid, "dx": 1, "dy": 0, "tick": tick}}))
+          if (pressed)
+              setTimeout('right_hold()', 60);
+      }
+
+      get_sid();
+
+
+  </script>
+</head>
+<body>
+<canvas height="500" width="500" id="canvas" style="float: left"></canvas>
+<div style="float: left;">
+  <button onmousedown='pressed = true; left_hold()' onmouseup='pressed = false'>left</button>
+  <button onmousedown='pressed = true; right_hold()' onmouseup='pressed = false'>right</button>
+  <button onclick='start_websocket()'>start</button>
+  <button onclick='test_draw()'>draw</button>
+  <div>
+  <div><%= debug(params) if Rails.env.development? %></div>
+</body>
+</html>
