@@ -9,7 +9,7 @@ EM.next_tick do
   @tick = 0
   @answered_players = {"0" => []}
 
-  EM::WebSocket.start(:host => '0.0.0.0', :port => 8001) do |ws|
+  EM::WebSocket.start(:host => '0.0.0.0', :port => 8080) do |ws|
     ws.onopen do
       @clients[ws] = Client.new(@players, @items, @maps)
       if !ValidationHelper::synchron_websocket?

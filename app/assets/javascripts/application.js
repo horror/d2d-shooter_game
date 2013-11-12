@@ -1,6 +1,6 @@
 //= require jquery
 var hostname = window.location.hostname.replace('www.',''), port = window.location.port,
-    sid = "", web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
+    sid = "", web_socket_url = 'ws://' + hostname, server_url = 'http://' + hostname + ':' + port, tick = 0,
     maps = "", stage, curr_shape, web_socket,
     SCALE = 20, users_list = ["user_a", "user_b"];
 
