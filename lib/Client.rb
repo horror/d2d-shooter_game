@@ -77,6 +77,7 @@ class Client
     init_position_new_player(player) if !@initialized
 
     send(data["action"], params)
+    @player[:sid] = @sid
     @players[game][@sid] = to_player
   end
 
