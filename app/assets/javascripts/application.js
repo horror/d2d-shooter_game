@@ -11,13 +11,13 @@ function send_request(action, params, call_back_func)
         type: "POST",
         url: server_url,
         data: JSON.stringify({"action": action, "params": params}),
-        success: function() {
+        success: function(data) {
             if (!call_back_func)
                 return
-            if (http_request.readyState == 4 && http_request.status == 200)
-                call_back_func(JSON.parse(http_request.responseText), params)
+            call_back_func(data, params)
         },
-        dataType: "json"
+        dataType: "json",
+        contentType: "application/json; charset=utf-8"
     });
 }
 
