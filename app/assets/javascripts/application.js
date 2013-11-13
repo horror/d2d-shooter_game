@@ -1,8 +1,9 @@
 //= require jquery
 
-var sid = "", web_socket_url = 'ws://localhost:8001', server_url = 'http://localhost:3000', tick = 0,
-    maps = "", stage, curr_shape, web_socket;
-var SCALE = 20, users_list = ["user_a", "user_b"];
+var hostname = window.location.hostname.replace('www.',''), port = window.location.port,
+    sid = "", web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
+    maps = "", stage, curr_shape, web_socket,
+    SCALE = 20, users_list = ["user_a", "user_b"];
 
 function send_request(action, params, call_back_func)
 {
