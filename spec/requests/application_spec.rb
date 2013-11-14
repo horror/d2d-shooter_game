@@ -243,7 +243,7 @@ describe "Application page" do
     end
 
     it "with exist name" do
-      check_it({sid: sid_a, name: "New game", map: map_id, maxPlayers: 10}, "gameExists")
+      check_it({sid: sid_b, name: "New game", map: map_id, maxPlayers: 10}, "gameExists")
     end
 
     it "with invalid user sid" do
@@ -251,27 +251,27 @@ describe "Application page" do
     end
 
     it "with invalid map id" do
-      check_it({sid: sid_a, name: "New game1", map: 100500, maxPlayers: 10}, "badMap")
+      check_it({sid: sid_b, name: "New game1", map: 100500, maxPlayers: 10}, "badMap")
     end
 
     it "with invalid name (blank)" do
-      check_it({sid: sid_a, name: "", map: map_id, maxPlayers: 10}, "badName")
+      check_it({sid: sid_b, name: "", map: map_id, maxPlayers: 10}, "badName")
     end
 
     it "with invalid maxPlayers (< 1)" do
-      check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: 0}, "badMaxPlayers")
+      check_it({sid: sid_b, name: "New game1", map: map_id, maxPlayers: 0}, "badMaxPlayers")
     end
 
     it "with invalid maxPlayers (> maxPlayers in map)" do
-      check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: 18}, "badMaxPlayers")
+      check_it({sid: sid_b, name: "New game1", map: map_id, maxPlayers: 18}, "badMaxPlayers")
     end
 
     it "with invalid maxPlayers (blank)" do
-      check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: ""}, "badMaxPlayers")
+      check_it({sid: sid_b, name: "New game1", map: map_id, maxPlayers: ""}, "badMaxPlayers")
     end
 
     it "with invalid maxPlayers (is not a number)" do
-      check_it({sid: sid_a, name: "New game1", map: map_id, maxPlayers: "sda"}, "badMaxPlayers")
+      check_it({sid: sid_b, name: "New game1", map: map_id, maxPlayers: "sda"}, "badMaxPlayers")
     end
   end
 
