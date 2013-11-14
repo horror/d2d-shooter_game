@@ -2,10 +2,10 @@ RESPAWN = "$"
 VOID = "."
 WALL = "#"
 MOVE = "move"
-DEFAULT_ACCELERATION = 0.1
+DEFAULT_ACCELERATION = 0.02
 EPSILON = 1e-7
 ACCURACY = 6
-MAX_VELOCITY = 1
+MAX_VELOCITY = 0.2
 
 class ActiveGame
   attr_accessor :players, :answered_players, :items, :map, :id, :map_bottom_bound, :map_right_bound
@@ -43,10 +43,11 @@ end
 
 class Client
 
-  attr_accessor :ws, :sid, :game_id, :games, :player
+  attr_accessor :ws, :sid, :game_id, :games, :player, :summed_move_params
 
   def initialize(ws, games)
     @player = {vx: 0.0, vy: 0.0, x: 0.0, y: 0.0, hp: 100}
+    @summed_move_params = {dx: 0.0, dy: 0.0}
     @position_changed = false
     @initialized = false
     @last_tp = {x: -1, y: -1}
@@ -65,7 +66,15 @@ class Client
 
   def on_message(tick)
     return if !@initialized
-    deceleration if not position_changed?
+
+    if position_changed?
+      move(summed_move_params)
+      game.players[sid] = player
+    else
+      deceleration
+    end
+
+    @summed_move_params = {dx: 0.0, dy: 0.0}
     @position_changed = false
     ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.players.values})) if game
   end
@@ -82,10 +91,13 @@ class Client
 
     init_player if !@initialized
 
-    send(data["action"], params)
-    @position_changed = true
-
-    game.players[sid] = player
+    if data["action"] == MOVE
+      summed_move_params[:dx] += params["dx"].to_f
+      summed_move_params[:dy] += params["dy"].to_f
+      @position_changed = true
+    else
+      send(data["action"], params)
+    end
   end
 
   def init_player
@@ -172,7 +184,7 @@ class Client
   end
 
   def v_sign(num)
-    return num.to_f - 0.0 < EPSILON ? 0.0 : num.to_f > 0.0 ? 1 : -1
+    return num.to_f.abs < EPSILON ? 0.0 : num.to_f > 0.0 ? 1 : -1
   end
 
   def normalize(dx, dy)
@@ -182,7 +194,7 @@ class Client
     return dx, dy
   end
 
-  def self.new_velocity(dx, dy, vx, vy)
+  def new_velocity(dx, dy, vx, vy)
     dx, dy = normalize(dx, dy)
     vx = (vx + dx * DEFAULT_ACCELERATION).round(ACCURACY)
     vy = (vy + dy * DEFAULT_ACCELERATION).round(ACCURACY)
@@ -191,7 +203,7 @@ class Client
 
   ###ACTIONS###
   def move(data)
-    player[:vx], player[:vy] = new_velocity(data["dx"], data["dy"], player[:vx], player[:vy])
+    player[:vx], player[:vy] = new_velocity(data[:dx], data[:dy], player[:vx], player[:vy])
     move_position
   end
 end
