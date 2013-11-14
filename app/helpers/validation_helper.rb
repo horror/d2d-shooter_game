@@ -14,7 +14,13 @@ module ValidationHelper
 
   def startTesting(params)
     @@synchron_websocket = params["websocketMode"] == "sync"
-    ActiveRecord::Base.subclasses.each(&:delete_all)
+    connection = ActiveRecord::Base.connection
+    connection.disable_referential_integrity do
+      connection.tables.each do |table_name|
+        next if connection.select_value("SELECT count(*) FROM #{table_name}") == 0
+        connection.execute("TRUNCATE TABLE #{table_name}")
+      end
+    end
     ok
   end
 
