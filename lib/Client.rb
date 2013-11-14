@@ -103,12 +103,10 @@ class Client
     send(data["action"], params)
     @position_changed = true
 
-
     game.players[sid] = player
   end
 
   def init_player
-    player[:sid] = sid
     resp = next_respawn
     set_position(resp[:x] + 0.5, resp[:y] + 0.5)
 
