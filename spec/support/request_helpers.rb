@@ -75,8 +75,8 @@ module Requests
     end
 
     def new_params(dx, dy, params, is_inc)
-      params['vx'], params['vy'] = is_inc ? new_velocity(dx, dy, params['vx'], params['vy']) :
-          new_velocity(-params['vx'], params['vy'], params['vx'], params['vy'])
+      params['vx'], params['vy'] = is_inc ? Client::new_velocity(dx, dy, params['vx'], params['vy']) :
+          Client::new_velocity(-params['vx'], params['vy'], params['vx'], params['vy'])
       params['x'] = (params['x'] + params['vx']).round(ACCURACY)
       params['y'] = (params['y'] + params['vy']).round(ACCURACY)
       return params

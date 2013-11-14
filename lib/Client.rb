@@ -7,24 +7,6 @@ EPSILON = 1e-7
 ACCURACY = 6
 MAX_VELOCITY = 1
 
-def v_sign(num)
-  return num.to_f == 0.0 ? 0.0 : num.to_f > 0.0 ? 1 : -1
-end
-
-def normalize(dx, dy)
-  return 0, 0 if (norm = Math.sqrt(dx.to_f**2 + dy.to_f**2)) == 0.0
-  dx /= norm
-  dy /= norm
-  return dx, dy
-end
-
-def new_velocity(dx, dy, vx, vy)
-  dx, dy = normalize(dx, dy)
-  #puts "login = #{@login}, vx = #{vx}, DX = #{dx * DEFAULT_ACCELERATION}, vx + DX = #{[(vx + dx * DEFAULT_ACCELERATION).round(ACCURACY), MAX_VELOCITY].min}"
-  vx, vy = (vx + dx * DEFAULT_ACCELERATION).round(ACCURACY), (vy + dy * DEFAULT_ACCELERATION).round(ACCURACY)
-  return [vx.abs, MAX_VELOCITY].min * v_sign(vx), [vy.abs, MAX_VELOCITY].min * v_sign(vy)
-end
-
 class ActiveGame
   attr_accessor :players, :answered_players, :items, :map, :id, :map_bottom_bound, :map_right_bound
 
@@ -120,38 +102,50 @@ class Client
     return result
   end
 
+  def move_position
+    return if try_tp
+    return if try_bump
 
-  def set_position(x, y)
-    player[:x] = x.round(ACCURACY)
-    player[:y] = y.round(ACCURACY)
+    set_position(player[:x] + player[:vx], player[:y] + player[:vy])
+
+    out_of_bounds_correction
   end
 
-  def move_position
+  def out_of_bounds_correction
+    if (player[:x] < 0.5 || player[:x] > game.map_right_bound.to_f - 0.5 ||
+       player[:y] < 0.5 || player[:y] > game.map_bottom_bound.to_f - 0.5
+    )
+      stop_movement([[0.5, player[:x]].max, game.map_right_bound.to_f - 0.5].min,
+                    [[0.5, player[:y]].max, game.map_bottom_bound.to_f - 0.5].min)
+    end
+  end
+
+  def try_bump
+    x = (player[:x] + player[:vx] + v_sign(player[:vx]) * 0.5 - EPSILON*v_sign(player[:vx])).floor
+    y = (player[:y] + player[:vy] + v_sign(player[:vy]) * 0.5 - EPSILON*v_sign(player[:vy])).floor
+    symbol = x < 0.0 || y < 0.0 ? "" : game.map[y][x]
+    x = player[:vx].abs < EPSILON ? player[:x] : v_sign(player[:vx]) > 0 ? x - 0.5 : x + 1.5
+    y = player[:vy].abs < EPSILON ? player[:y] : v_sign(player[:vy]) > 0 ? y + 1.5 : y - 0.5
+    if symbol == WALL
+      stop_movement(x, y)
+      return true
+    end
+    return false
+  end
+
+  def try_tp
     x = (player[:x] + player[:vx] - EPSILON*v_sign(player[:vx])).floor
     y = (player[:y] + player[:vy] - EPSILON*v_sign(player[:vy])).floor
+
     symbol = x < 0.0 || y < 0.0 ? "" : game.map[y][x]
     @last_tp = {x: -1, y: -1} if symbol == VOID or symbol == RESPAWN
 
     if ("0".."9").include?(symbol) && @last_tp != {x: x, y: y}
       make_tp(x, y)
-      return
+      return true
     end
 
-    x = (player[:x] + player[:vx] + v_sign(player[:vx]) * 0.5 - EPSILON*v_sign(player[:vx])).floor
-    y = (player[:y] + player[:vy] + v_sign(player[:vy]) * 0.5 - EPSILON*v_sign(player[:vy])).floor
-    symbol = x < 0.0 || y < 0.0 ? "" : game.map[y][x]
-    x = v_sign(player[:vx]) == 0 ? player[:x] : v_sign(player[:vx]) > 0 ? x - 0.5 : x + 1.5
-    y = v_sign(player[:vy]) == 0 ? player[:y] : v_sign(player[:vy]) > 0 ? y + 1.5 : y - 0.5
-    if symbol == WALL
-      stop_movement(x, y)
-      return
-    end
-
-    set_position(player[:x] + player[:vx], player[:y] + player[:vy])
-
-    if player[:x] < 0.5 || player[:x] > game.map_right_bound.to_f - 0.5 || player[:y] < 0.5 || player[:y] > game.map_bottom_bound.to_f - 0.5
-      stop_movement([[0.5, player[:x]].max, game.map_right_bound.to_f - 0.5].min, [[0.5, player[:y]].max, game.map_bottom_bound.to_f - 0.5].min)
-    end
+    return false
   end
 
   def make_tp(x, y)
@@ -167,9 +161,32 @@ class Client
     set_position(x, y)
   end
 
+  def set_position(x, y)
+    player[:x] = x.round(ACCURACY)
+    player[:y] = y.round(ACCURACY)
+  end
+
   def deceleration
     player[:vx], player[:vy] = new_velocity(-player[:vx], -player[:vy], player[:vx], player[:vy])
     move_position
+  end
+
+  def v_sign(num)
+    return num.to_f - 0.0 < EPSILON ? 0.0 : num.to_f > 0.0 ? 1 : -1
+  end
+
+  def normalize(dx, dy)
+    return 0, 0 if (norm = Math.sqrt(dx.to_f**2 + dy.to_f**2)) == 0.0
+    dx /= norm
+    dy /= norm
+    return dx, dy
+  end
+
+  def self.new_velocity(dx, dy, vx, vy)
+    dx, dy = normalize(dx, dy)
+    vx = (vx + dx * DEFAULT_ACCELERATION).round(ACCURACY)
+    vy = (vy + dy * DEFAULT_ACCELERATION).round(ACCURACY)
+    return [vx.abs, MAX_VELOCITY].min * v_sign(vx), [vy.abs, MAX_VELOCITY].min * v_sign(vy)
   end
 
   ###ACTIONS###
