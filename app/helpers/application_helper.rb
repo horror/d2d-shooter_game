@@ -47,6 +47,10 @@ module ApplicationHelper
     resp({result: "badMap"})
   end
 
+  def badText
+    resp({result: "badText"})
+  end
+
   def badSince
     resp({result: "badSince"})
   end

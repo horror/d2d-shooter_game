@@ -3,6 +3,7 @@ module ChatHelper
   def sendMessage(params)
     user = find_by_sid(params["sid"])
     find_by_id(Game, params["game"], "badGame", true)
+    raise BadParamsError.new(badText) unless params["text"].kind_of?(String)
 
     try_save(Message, {game_id: params["game"], user_id: user.id, text: params[:text]})
   end
