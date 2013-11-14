@@ -242,6 +242,10 @@ describe "Application page" do
       check_it({sid: sid_a, name: "New game", map: map_id, maxPlayers: 3})
     end
 
+    it "with user in already game" do
+      check_it({sid: sid_a, name: "New game 2", map: map_id, maxPlayers: 3}, "alreadyInGame")
+    end
+
     it "with exist name" do
       check_it({sid: sid_b, name: "New game", map: map_id, maxPlayers: 10}, "gameExists")
     end

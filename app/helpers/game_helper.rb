@@ -4,6 +4,7 @@ module GameHelper
     user = find_by_sid(params["sid"])
     find_by_id(Map, params["map"], "badMap")
 
+    raise BadParamsError.new(alreadyInGame) unless !Player.find_by_user_id(user.id)
     try_save(Game, {map_id: params["map"], user_id: user.id, name: params["name"], max_players: params["maxPlayers"]})
     try_save(Player, {user_id: user.id, game_id: Game.last.id})
   end
