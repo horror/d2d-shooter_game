@@ -11,7 +11,7 @@ EM.next_tick do
       @clients[ws] = Client.new(ws, @games)
 
       if !ValidationHelper::synchron_websocket?
-        @timer ||= EM::PeriodicTimer.new(0.1) do
+        @timer ||= EM::PeriodicTimer.new(0.03) do
           if @clients.empty?
             @timer.cancel
             @timer = nil

@@ -2,10 +2,14 @@ RESPAWN = "$"
 VOID = "."
 WALL = "#"
 MOVE = "move"
-DEFAULT_ACCELERATION = 0.02
+DEFAULT_ACCELERATION = 0.1
 EPSILON = 1e-7
 ACCURACY = 6
-MAX_VELOCITY = 0.2
+MAX_VELOCITY = 1
+
+def v_sign(num)
+  return num.to_f.abs < EPSILON ? 0.0 : num.to_f > 0.0 ? 1 : -1
+end
 
 class ActiveGame
   attr_accessor :players, :answered_players, :items, :map, :id, :map_bottom_bound, :map_right_bound
@@ -179,23 +183,19 @@ class Client
   end
 
   def deceleration
-    player[:vx], player[:vy] = new_velocity(-player[:vx], -player[:vy], player[:vx], player[:vy])
+    player[:vx], player[:vy] = Client::new_velocity(-player[:vx], -player[:vy], player[:vx], player[:vy])
     move_position
   end
 
-  def v_sign(num)
-    return num.to_f.abs < EPSILON ? 0.0 : num.to_f > 0.0 ? 1 : -1
-  end
-
-  def normalize(dx, dy)
+  def self.normalize(dx, dy)
     return 0, 0 if (norm = Math.sqrt(dx.to_f**2 + dy.to_f**2)) == 0.0
     dx /= norm
     dy /= norm
     return dx, dy
   end
 
-  def new_velocity(dx, dy, vx, vy)
-    dx, dy = normalize(dx, dy)
+  def self.new_velocity(dx, dy, vx, vy)
+    dx, dy = Client::normalize(dx, dy)
     vx = (vx + dx * DEFAULT_ACCELERATION).round(ACCURACY)
     vy = (vy + dy * DEFAULT_ACCELERATION).round(ACCURACY)
     return [vx.abs, MAX_VELOCITY].min * v_sign(vx), [vy.abs, MAX_VELOCITY].min * v_sign(vy)
@@ -203,7 +203,7 @@ class Client
 
   ###ACTIONS###
   def move(data)
-    player[:vx], player[:vy] = new_velocity(data[:dx], data[:dy], player[:vx], player[:vy])
+    player[:vx], player[:vy] = Client::new_velocity(data[:dx], data[:dy], player[:vx], player[:vy])
     move_position
   end
 end
