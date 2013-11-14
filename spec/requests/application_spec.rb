@@ -37,11 +37,11 @@ describe "Application page" do
     end
 
     it "with invalid login(not sended)" do
-      check_it({password: "lololol"}, "badParams")
+      check_it({password: "lololol"}, "badRequest")
     end
 
     it "with invalid password(not sended)" do
-      check_it({login: "vas"}, "badParams")
+      check_it({login: "vas"}, "badRequest")
     end
 
     it "with valid information" do
@@ -84,11 +84,11 @@ describe "Application page" do
 
   describe "sign in" do
     it "with invalid login(not sended)" do
-      request_and_checking("signin", {password: "lololol"}, {result: "badParams"})
+      request_and_checking("signin", {password: "lololol"}, {result: "badRequest"})
     end
 
     it "with invalid password(not sended)" do
-      request_and_checking("signin", {login: "vas"}, {result: "badParams"})
+      request_and_checking("signin", {login: "vas"}, {result: "badRequest"})
     end
 
     it "with valid information" do
@@ -112,7 +112,7 @@ describe "Application page" do
     end
 
     it "with invalid sid(not sended)" do
-      request_and_checking("signout", {}, {result: "badParams"})
+      request_and_checking("signout", {}, {result: "badRequest"})
     end
 
     it "with invalid information(badSid)" do
@@ -143,11 +143,11 @@ describe "Application page" do
     end
 
     it "with invalid user sid(not sended)" do
-      check_it({name: "New map"}, "badParams")
+      check_it({name: "New map"}, "badRequest")
     end
 
     it "with invalid user name(not sended)" do
-      check_it({sid: sid_a}, "badParams")
+      check_it({sid: sid_a}, "badRequest")
     end
 
     it "with valid information" do
@@ -201,7 +201,7 @@ describe "Application page" do
 
   describe "get maps" do
     it "with invalid user sid(not sended)" do
-      request_and_checking("getMaps", {}, {result: "badParams"})
+      request_and_checking("getMaps", {}, {result: "badRequest"})
     end
 
     it "with valid information" do
@@ -223,19 +223,19 @@ describe "Application page" do
     end
 
     it "with invalid user sid(not sended)" do
-      check_it({name: "New game1", map: map_id, maxPlayers: 10}, "badParams")
+      check_it({name: "New game1", map: map_id, maxPlayers: 10}, "badRequest")
     end
 
     it "with invalid map id(not sended)" do
-      check_it({sid: sid_a, name: "New game1", maxPlayers: 10}, "badParams")
+      check_it({sid: sid_a, name: "New game1", maxPlayers: 10}, "badRequest")
     end
 
     it "with invalid name (not sended)" do
-      check_it({sid: sid_a, map: map_id, maxPlayers: 10}, "badParams")
+      check_it({sid: sid_a, map: map_id, maxPlayers: 10}, "badRequest")
     end
 
     it "with invalid maxPlayers (not sended)" do
-      check_it({sid: sid_a, name: "New game1", map: map_id}, "badParams")
+      check_it({sid: sid_a, name: "New game1", map: map_id}, "badRequest")
     end
 
     it "with valid information" do
@@ -283,7 +283,7 @@ describe "Application page" do
     end
 
     it "with invalid sid(not sended)" do
-      request_and_checking("getGames", {}, {result: "badParams"})
+      request_and_checking("getGames", {}, {result: "badRequest"})
     end
 
     it "with valid information" do
@@ -335,7 +335,7 @@ describe "Application page" do
     end
 
     it "with invalid sid(not sended)" do
-      request_and_checking("leaveGame", {}, {result: "badParams"})
+      request_and_checking("leaveGame", {}, {result: "badRequest"})
     end
 
     it "with invalid sid" do
@@ -361,11 +361,11 @@ describe "Application page" do
     end
 
     it "with invalid game id(not sended)" do
-      request_and_checking("joinGame", {sid: sid_a}, {result: "badParams"})
+      request_and_checking("joinGame", {sid: sid_a}, {result: "badRequest"})
     end
 
     it "with invalid sid(not sended)" do
-      request_and_checking("joinGame", {game: game_a}, {result: "badParams"})
+      request_and_checking("joinGame", {game: game_a}, {result: "badRequest"})
     end
 
     it "with invalid game id" do
@@ -380,11 +380,11 @@ describe "Application page" do
 
   describe "send message" do
     it "with invalid sid(not sended)" do
-      request_and_checking("sendMessage", {game: "", text: "message #1"}, {result: "badParams"})
+      request_and_checking("sendMessage", {game: "", text: "message #1"}, {result: "badRequest"})
     end
 
     it "with invalid game(not sended)" do
-      request_and_checking("sendMessage", {sid: sid_a, text: "message #1"}, {result: "badParams"})
+      request_and_checking("sendMessage", {sid: sid_a, text: "message #1"}, {result: "badRequest"})
     end
 
     it "with valid information (common chat)" do
@@ -410,15 +410,15 @@ describe "Application page" do
     end
 
     it "with invalid since(not sended)" do
-      request_and_checking("getMessages", {sid: sid_b, game: ""}, {result: "badParams"})
+      request_and_checking("getMessages", {sid: sid_b, game: ""}, {result: "badRequest"})
     end
 
     it "with invalid user sid(not sended)" do
-      request_and_checking("getMessages", {game: "", since: 1196440219}, {result: "badParams"})
+      request_and_checking("getMessages", {game: "", since: 1196440219}, {result: "badRequest"})
     end
 
     it "with invalid game id(not sended)" do
-      request_and_checking("getMessages", {sid: sid_b, since: 1196440219}, {result: "badParams"})
+      request_and_checking("getMessages", {sid: sid_b, since: 1196440219}, {result: "badRequest"})
     end
 
     it "with valid information" do

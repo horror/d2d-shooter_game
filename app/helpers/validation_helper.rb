@@ -25,7 +25,7 @@ module ValidationHelper
           "joinGame" => ["sid", "game"], "leaveGame" => ["sid"], "uploadMap" => ["sid", "name", "map", "maxPlayers"], "getMaps" => ["sid"]}
 
     raise BadParamsError.new(badAction) unless arr.include?(action)
-    raise BadParamsError.new(badParams) unless params.is_a?(Hash) and (arr[action] - params.keys).length == 0
+    raise BadParamsError.new(badRequest) unless params.is_a?(Hash) and (arr[action] - params.keys).length == 0
 
   end
 

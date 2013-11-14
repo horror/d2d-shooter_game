@@ -1,21 +1,24 @@
 //= require jquery
+
 var hostname = window.location.hostname.replace('www.',''), port = window.location.port,
-    sid = "", web_socket_url = 'ws://' + hostname, server_url = 'http://' + hostname + ':' + port, tick = 0,
+    sid = "", web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
     maps = "", stage, curr_shape, web_socket,
     SCALE = 20, users_list = ["user_a", "user_b"];
 
 function send_request(action, params, call_back_func)
 {
-    var http_request = new XMLHttpRequest();
-    http_request.open('POST', server_url, true);
-    http_request.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
-    http_request.send(JSON.stringify({"action": action, "params": params}));
-    http_request.onreadystatechange = function() {
-        if (!call_back_func)
-            return
-        if (http_request.readyState == 4 && http_request.status == 200)
-            call_back_func(JSON.parse(http_request.responseText), params)
-    };
+    $.ajax({
+        type: "POST",
+        url: server_url,
+        data: JSON.stringify({"action": action, "params": params}),
+        success: function(data) {
+            if (!call_back_func)
+                return
+            call_back_func(data, params)
+        },
+        dataType: "json",
+        contentType: "application/json; charset=utf-8"
+    });
 }
 
 function init()

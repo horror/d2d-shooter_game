@@ -3,8 +3,8 @@ module ApplicationHelper
     resp({result: "badAction"})
   end
 
-  def badParams
-    resp({result: "badParams"})
+  def badRequest
+    resp({result: "badRequest"})
   end
 
   def badJSON
