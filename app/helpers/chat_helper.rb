@@ -4,14 +4,14 @@ module ChatHelper
     user = find_by_sid(params["sid"])
     find_by_id(Game, params["game"], "badGame", true)
     raise BadParamsError.new(badText) unless params["text"].kind_of?(String)
-
-    try_save(Message, {game_id: params["game"], user_id: user.id, text: params[:text]})
+    raise BadParamsError.new(badGame) unless params["game"] == "" || Player.where(user_id: user.id, game_id: params["game"]).exists?
+    try_save(Message, {game_id: params["game"], user_id: user.id, text: params["text"]})
   end
 
   def getMessages(params)
-
     user = find_by_sid(params["sid"])
     game = find_by_id(Game, params["game"], "badGame", true)
+    raise BadParamsError.new(badGame) unless params["game"] == "" || Player.where(user_id: user.id, game_id: params["game"]).exists?
 
     begin
       Time.at(params["since"]).to_i
