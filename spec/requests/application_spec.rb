@@ -91,6 +91,14 @@ describe "Application page" do
       request_and_checking("signin", {login: "vas"}, {result: "badRequest"})
     end
 
+    it "with invalid information(not string login)" do
+      request_and_checking("signin", {login: {sstring: "asasasas"}, password: "lololol"}, {result: "badLogin"})
+    end
+
+    it "with invalid information(not string pass)" do
+      request_and_checking("signin", {login: "user_a", password: {string: "asasasas"}}, {result: "badPassword"})
+    end
+
     it "with valid information" do
       send_request(action: "signin", params:{login: "user_a", password: "lololol"})
       response.code.to_s.should == "200" && json_decode(response.body)["result"].should == "ok"
