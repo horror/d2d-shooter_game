@@ -24,7 +24,7 @@ end
 gem 'jquery-rails'
 
 group :development, :test do
-  gem 'rspec-rails',      ">= 2.0.0.beta"
+  gem 'rspec-rails'
   gem "capybara"
   gem 'spork', '0.9.2'
   gem 'annotate'
