@@ -4,10 +4,6 @@ module Requests
   module JsonHelpers
     attr_reader :response
     attr_reader :ws_requests
-    TEST_HOST = 'localhost'
-    TEST_PORT = ':3000'
-    TEST_SOCKET_PORT = ':8001'
-    EPS = 1e-7
 
     def json_encode(obj)
       ActiveSupport::JSON.encode(obj)
@@ -19,7 +15,7 @@ module Requests
 
     def xhr_wrap(json)
       #xhr :post, 'http://' + TEST_HOST + TEST_PORT, json, "CONTENT_TYPE" => 'application/json; charset=utf-8', "DATA_TYPE" => 'json'
-      @response = RestClient.post 'http://' +  TEST_HOST + TEST_PORT, json, :content_type => "application/json; charset=utf-8"
+      @response = RestClient.post 'http://' + Settings.host + Settings.port, json, :content_type => "application/json; charset=utf-8"
     end
 
     def send_request(obj)
@@ -45,7 +41,7 @@ module Requests
 
     def web_socket_request(sid)
       request = EventMachine::WebsocketRequest.new(
-          'ws://' + TEST_HOST + TEST_SOCKET_PORT,
+          'ws://' + Settings.host + Settings.web_socket_port,
           inactivity_timeout: 5,
           connect_timeout: 5
       ).get
@@ -77,13 +73,13 @@ module Requests
     def new_params(dx, dy, params, is_inc)
       params['vx'], params['vy'] = is_inc ? Client::new_velocity(dx, dy, params['vx'], params['vy']) :
           Client::new_velocity(-params['vx'], params['vy'], params['vx'], params['vy'])
-      params['x'] = (params['x'] + params['vx']).round(ACCURACY)
-      params['y'] = (params['y'] + params['vy']).round(ACCURACY)
+      params['x'] = (params['x'] + params['vx']).round(Settings.accuracy)
+      params['y'] = (params['y'] + params['vy']).round(Settings.accuracy)
       return params
     end
 
     def should_eql(a,b)
-      (a - b).abs.should < EPS
+      (a - b).abs.should < Settings.eps
     end
   end
 end

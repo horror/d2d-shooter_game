@@ -1,11 +1,11 @@
 require "spec_helper"
 
 describe 'Socket server' do
-  EPS = 1e-7
 
   sid_a = sid_b = ""
   map_id = game_id = 0
   def_params = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100}
+  game_consts = {accel: 0.05, max_velocity: 0.5, gravity: 0.05, friction: 0.05}
 
   before(:all) do
     send_request(action: "startTesting", params: {websocketMode: "sync"})
@@ -19,7 +19,8 @@ describe 'Socket server' do
                                                map: ['1.$.2', '#####', '..31.', '#####', '.3.#.', '#####', '#2..#']})
     send_request(action: "getMaps", params: {sid: sid_a})
     map_id = json_decode(response.body)["maps"][0]["id"]
-    send_request(action: "createGame", params: {sid: sid_a, name: "New game", map: map_id, maxPlayers: 10})
+    consts = {accel: game_consts[:accel], maxVelocity: game_consts[:max_velocity], gravity: game_consts[:gravity], friction: game_consts[:friction]}
+    send_request(action: "createGame", params: {sid: sid_a, name: "New game", map: map_id, maxPlayers: 10, consts: consts})
     send_request(action: "getGames", params: {sid: sid_a})
     game_id = json_decode(response.body)["games"][0]["id"]
     send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
@@ -30,7 +31,7 @@ describe 'Socket server' do
   end
 
   def def_request (params, &checking)
-    params_list = [:dx_rule, :dy_rule, :index, :x, :y, :vx, :vy, :check_limit, :send_limit]
+    params_list = [:dx_rule, :dy_rule, :index, :x, :y, :vx, :vy, :check_limit, :send_limit, :name]
     params_list.each {|i| params[i] ||= 0 }
     request = web_socket_request(params[:sid])
     p_tick = 0
@@ -40,6 +41,7 @@ describe 'Socket server' do
       should_eql(player['vx'], params[:vx])
       should_eql(player['vy'], params[:vy])
     }
+    #puts "\n\n #{params[:name]}:\n\n"
     request.stream { |message, type|
       tick = json_decode(message)['tick']
       player = json_decode(message)['players'][params[:index]]
@@ -81,7 +83,7 @@ describe 'Socket server' do
         request.stream { |message, type|
           arr = json_decode(message)
           player = arr['players'][0]
-          if player['vx'].abs < EPS
+          if player['vx'].abs < Settings.eps
             case p_tick
               when 0
                 send_ws_request(request, "move", {sid: sid_a, dx: 1, dy: 0, tick: arr['tick']})
@@ -113,13 +115,13 @@ describe 'Socket server' do
           arr = json_decode(message)
           player = arr['players'][0]
           curr_player_params.should == player
-          curr_player_params = new_params(1, 0, curr_player_params, is_moving)
+          curr_player_params = new_params(1, 0, curr_player_params, is_moving, game_consts)
           if is_moving
             send_ws_request(request, "move", {sid: sid_a, dx: 1, dy: 0, tick: arr['tick']})
             is_moving = curr_player_params['vx'] <= 0.2
           end
-          send_ws_request(request, "empty", {sid: sid_a, tick: arr['tick']}) if !is_moving && curr_player_params['vx'].abs >= EPS
-          close_socket(request, sid_a) if !is_moving && curr_player_params['vx'].abs < EPS
+          send_ws_request(request, "empty", {sid: sid_a, tick: arr['tick']}) if !is_moving && curr_player_params['vx'].abs >= Settings.eps
+          close_socket(request, sid_a) if !is_moving && curr_player_params['vx'].abs < Settings.eps
         }
       end
     end
@@ -144,39 +146,40 @@ describe 'Socket server' do
     end
 
     it "stay at tp" do
-      EM.run { def_request( {sid: sid_a, check_limit: 10, send_limit: 4, x: 1.5, y: 6.5, dx_rule: 1} ) }
+      EM.run { def_request( {sid: sid_a, check_limit: 15, send_limit: 6, x: 1.65, y: 6.5, dx_rule: 1} ) }
     end
 
     it "to right wall" do
-      EM.run { def_request( {sid: sid_a, check_limit: 15, send_limit: 10, x: 3.5, y: 6.5, dx_rule: 1} ) }
+      EM.run { def_request( {sid: sid_a, check_limit: 20, send_limit: 10, x: 3.5, y: 6.5, dx_rule: 1} ) }
     end
 
     it "to left wall" do
       EM.run {
-        def_request( {sid: sid_a, check_limit: 15, send_limit: 15, x: 1.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 3 ? -1 : 1}} )
+        def_request( {sid: sid_a, check_limit: 15, send_limit: 15, x: 1.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 5 ? -1 : 1}} )
       }
     end
 
     it "left border" do
-      EM.run { def_request( {sid: sid_a, check_limit: 10, send_limit: 10, x: 0.5, y: 4.5, dx_rule: -1} ) }
+      EM.run { def_request( {sid: sid_a, check_limit: 20, send_limit: 10, x: 0.5, y: 4.5, dx_rule: -1} ) }
     end
 
     it "right border" do
       EM.run {
-        def_request( {sid: sid_a, check_limit: 15, send_limit: 15, x: 4.5, y: 2.5, dx_rule: Proc.new{|p_tick| p_tick > 3 ? 1 : -1}} )
+        def_request( {sid: sid_a, check_limit: 20, send_limit: 20, x: 4.5, y: 2.5, dx_rule: Proc.new{|p_tick| p_tick > 5 ? 1 : -1}} )
       }
     end
 
     it "two players run" do
       EM.run {
-        def_request( {sid: sid_a, check_limit: 25, send_limit: 24, x: 3.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 10 ? 1 : -1}} )
-        def_request( {index: 1, sid: sid_b, check_limit: 25, send_limit: 24, x: 0.5, y: 4.5, dx_rule: Proc.new{|p_tick| p_tick > 10 ? -1 : 1}} )
+        def_request( {sid: sid_a, check_limit: 40, send_limit: 40, x: 3.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 15 ? 1 : -1}} )
+        def_request( {index: 1, sid: sid_b, check_limit: 40, send_limit: 40, x: 0.5, y: 4.5, dx_rule: Proc.new{|p_tick| p_tick > 15 ? -1 : 1}} )
       }
     end
 
     it "max velocity" do
       EM.run {
-        def_request( {sid: sid_a, check_limit: 21, send_limit: 21, x: 1.5, y: 6.5, vx: 1.0, dx_rule: Proc.new{|p_tick| p_tick > 10 ? 1 : -1}} )
+        def_request( {sid: sid_a, check_limit: 30, send_limit: 30, x: 3.85, y: 0.5, vx: game_consts[:max_velocity],
+                      dx_rule: Proc.new{|p_tick| p_tick > 15 ? 1 : -1}} )
       }
     end
   end

@@ -3,12 +3,10 @@ VOID = "."
 WALL = "#"
 MOVE = "move"
 DEFAULT_ACCELERATION = 0.1
-EPSILON = 1e-7
-ACCURACY = 6
 MAX_VELOCITY = 1
 
 def v_sign(num)
-  return num.to_f.abs < EPSILON ? 0.0 : num.to_f > 0.0 ? 1 : -1
+  return num.to_f.abs < Settings.eps ? 0.0 : num.to_f > 0.0 ? 1 : -1
 end
 
 class ActiveGame
@@ -131,19 +129,19 @@ class Client
   end
 
   def try_bump
-    x = (player[:x] + player[:vx] + v_sign(player[:vx]) * 0.5 - EPSILON*v_sign(player[:vx])).floor
-    y = (player[:y] + player[:vy] + v_sign(player[:vy]) * 0.5 - EPSILON*v_sign(player[:vy])).floor
+    x = (player[:x] + player[:vx] + v_sign(player[:vx]) * 0.5 - Settings.eps*v_sign(player[:vx])).floor
+    y = (player[:y] + player[:vy] + v_sign(player[:vy]) * 0.5 - Settings.eps*v_sign(player[:vy])).floor
     return false if game.symbol(x, y) != WALL
 
-    x = player[:vx].abs < EPSILON ? player[:x] : v_sign(player[:vx]) > 0 ? x - 0.5 : x + 1.5
-    y = player[:vy].abs < EPSILON ? player[:y] : v_sign(player[:vy]) > 0 ? y - 0.5 : y + 1.5
+    x = player[:vx].abs < Settings.eps ? player[:x] : v_sign(player[:vx]) > 0 ? x - 0.5 : x + 1.5
+    y = player[:vy].abs < Settings.eps ? player[:y] : v_sign(player[:vy]) > 0 ? y - 0.5 : y + 1.5
     stop_movement(x, y)
     return true
   end
 
   def try_tp
-    x = (player[:x] + player[:vx] - EPSILON*v_sign(player[:vx])).floor
-    y = (player[:y] + player[:vy] - EPSILON*v_sign(player[:vy])).floor
+    x = (player[:x] + player[:vx] - Settings.eps*v_sign(player[:vx])).floor
+    y = (player[:y] + player[:vy] - Settings.eps*v_sign(player[:vy])).floor
 
     @last_tp = {x: -1, y: -1} if game.symbol(x, y) == VOID or game.symbol(x, y) == RESPAWN
     if ("0".."9").include?(game.symbol(x, y)) && @last_tp != {x: x, y: y}
@@ -168,8 +166,8 @@ class Client
   end
 
   def set_position(x, y)
-    player[:x] = x.round(ACCURACY)
-    player[:y] = y.round(ACCURACY)
+    player[:x] = x.round(Settings.accuracy)
+    player[:y] = y.round(Settings.accuracy)
   end
 
   def deceleration
