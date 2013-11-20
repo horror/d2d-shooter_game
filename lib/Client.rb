@@ -20,12 +20,15 @@ class ActiveGame
     @map = Array.new
     @items = Hash.new
 
-
     items["respawns"] = Array.new
     items["teleports"] = Hash.new
     @id = id
     @map = ActiveSupport::JSON.decode(json_map)
     init_items
+  end
+
+  def symbol(x, y)
+    return map[y + 1][x + 1]
   end
 
   def init_items
@@ -42,6 +45,7 @@ class ActiveGame
       end
     end
     items['last_respawn'] = 0
+    puts @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
   end
 end
 
@@ -119,44 +123,30 @@ class Client
   end
 
   def move_position
-    return if try_tp
-    return if try_bump
+    return if try_tp || try_bump
 
     set_position(player[:x] + player[:vx], player[:y] + player[:vy])
-
-    out_of_bounds_correction
   end
 
-  def out_of_bounds_correction
-    if (player[:x] < 0.5 || player[:x] > game.map_right_bound.to_f - 0.5 ||
-       player[:y] < 0.5 || player[:y] > game.map_bottom_bound.to_f - 0.5
-    )
-      stop_movement([[0.5, player[:x]].max, game.map_right_bound.to_f - 0.5].min,
-                    [[0.5, player[:y]].max, game.map_bottom_bound.to_f - 0.5].min)
-    end
   end
 
   def try_bump
     x = (player[:x] + player[:vx] + v_sign(player[:vx]) * 0.5 - EPSILON*v_sign(player[:vx])).floor
     y = (player[:y] + player[:vy] + v_sign(player[:vy]) * 0.5 - EPSILON*v_sign(player[:vy])).floor
-    symbol = x < 0.0 || y < 0.0 ? "" : game.map[y][x]
+    return false if game.symbol(x, y) != WALL
+
     x = player[:vx].abs < EPSILON ? player[:x] : v_sign(player[:vx]) > 0 ? x - 0.5 : x + 1.5
-    y = player[:vy].abs < EPSILON ? player[:y] : v_sign(player[:vy]) > 0 ? y + 1.5 : y - 0.5
-    if symbol == WALL
-      stop_movement(x, y)
-      return true
-    end
-    return false
+    y = player[:vy].abs < EPSILON ? player[:y] : v_sign(player[:vy]) > 0 ? y - 0.5 : y + 1.5
+    stop_movement(x, y)
+    return true
   end
 
   def try_tp
     x = (player[:x] + player[:vx] - EPSILON*v_sign(player[:vx])).floor
     y = (player[:y] + player[:vy] - EPSILON*v_sign(player[:vy])).floor
 
-    symbol = x < 0.0 || y < 0.0 ? "" : game.map[y][x]
-    @last_tp = {x: -1, y: -1} if symbol == VOID or symbol == RESPAWN
-
-    if ("0".."9").include?(symbol) && @last_tp != {x: x, y: y}
+    @last_tp = {x: -1, y: -1} if game.symbol(x, y) == VOID or game.symbol(x, y) == RESPAWN
+    if ("0".."9").include?(game.symbol(x, y)) && @last_tp != {x: x, y: y}
       make_tp(x, y)
       return true
     end
@@ -165,7 +155,7 @@ class Client
   end
 
   def make_tp(x, y)
-    tps = game.items["teleports"][game.map[y][x]]
+    tps = game.items["teleports"][game.symbol(x,y)]
     tp = tps[0][:x] == x && tps[0][:y] == y ? tps[1] : tps[0]
     set_position(tp[:x].to_f + 0.5, tp[:y].to_f + 0.5)
     @last_tp = tp
