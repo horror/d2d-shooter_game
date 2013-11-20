@@ -11,16 +11,20 @@
 #
 # It's strongly recommended to check this file into your version control system.
 
-ActiveRecord::Schema.define(:version => 20131020025027) do
+ActiveRecord::Schema.define(:version => 20131120064616) do
 
   create_table "games", :force => true do |t|
-    t.datetime "created_at",                 :null => false
-    t.datetime "updated_at",                 :null => false
+    t.datetime "created_at",                  :null => false
+    t.datetime "updated_at",                  :null => false
     t.integer  "user_id"
     t.integer  "map_id"
     t.integer  "max_players"
     t.string   "name"
-    t.integer  "status",      :default => 0
+    t.integer  "status",       :default => 0
+    t.float    "accel"
+    t.float    "max_velocity"
+    t.float    "friction"
+    t.float    "gravity"
   end
 
   create_table "maps", :force => true do |t|

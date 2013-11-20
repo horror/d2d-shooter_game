@@ -8,12 +8,12 @@
 #
 
 class Game < ActiveRecord::Base
-  attr_accessible :user_id, :map_id, :name, :max_players
+  attr_accessible :user_id, :map_id, :name, :max_players, :accel, :max_velocity, :friction, :gravity
 
   has_many :players
   belongs_to :map
 
-  validates :name, presence: true, uniqueness: true
+  validates :name, presence: true, length: { minimum: 1 }, uniqueness: true
   validates :max_players, presence: true, numericality: { greater_than: 0 }
 
   validates_with GameMustHaveLowerMaxPlayers

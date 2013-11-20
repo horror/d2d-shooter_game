@@ -2,10 +2,25 @@ module GameHelper
 
   def createGame(params)
     user = find_by_sid(params["sid"])
+    raise BadParamsError.new(badMap) unless params["map"].kind_of?(Integer)
     find_by_id(Map, params["map"], "badMap")
 
     raise BadParamsError.new(alreadyInGame) unless !Player.find_by_user_id(user.id)
-    try_save(Game, {map_id: params["map"], user_id: user.id, name: params["name"], max_players: params["maxPlayers"]})
+
+    def_consts = Settings.def_game_consts
+    valid_consts = Proc.new{|consts|
+      result = true
+      def_consts.each{|name, val|
+        result &&= consts[name].kind_of?(Numeric)
+        result &&= consts[name] > 0 && consts[name] < 1
+        result &&= consts[name] <= 0.1 if name != "maxVelocity"
+      }
+      result
+    }
+    consts = !params.include?('consts') || !valid_consts.call(params['consts']) ? def_consts : params['consts']
+
+    try_save(Game, {map_id: params["map"], user_id: user.id, name: params["name"], max_players: params["maxPlayers"],
+                    accel: consts['accel'], friction: consts['friction'], max_velocity: consts['maxVelocity'], gravity: consts['gravity']})
     try_save(Player, {user_id: user.id, game_id: Game.last.id})
   end
 

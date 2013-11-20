@@ -2,8 +2,6 @@ RESPAWN = "$"
 VOID = "."
 WALL = "#"
 MOVE = "move"
-DEFAULT_ACCELERATION = 0.1
-MAX_VELOCITY = 1
 
 def v_sign(num)
   return num.to_f.abs < Settings.eps ? 0.0 : num.to_f > 0.0 ? 1 : -1
@@ -43,7 +41,7 @@ class ActiveGame
       end
     end
     items['last_respawn'] = 0
-    puts @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
+    @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
   end
 end
 
@@ -60,6 +58,7 @@ class Client
     @ws = ws
     @games = games
     @login = ""
+    @consts = {}
   end
 
   def position_changed?
@@ -93,6 +92,8 @@ class Client
     @login ||= user.login
     @game_id ||= player_model.game_id
     @sid ||= params["sid"]
+    @consts = {accel: player_model.game.accel, max_velocity: player_model.game.max_velocity,
+               friction: player_model.game.friction, gravity: player_model.game.gravity}
     games[game_id] = ActiveGame.new(game_id, player_model.game.map.map) if !@games.include?(game_id)
 
     init_player if !@initialized
@@ -171,7 +172,7 @@ class Client
   end
 
   def deceleration
-    player[:vx], player[:vy] = Client::new_velocity(-player[:vx], -player[:vy], player[:vx], player[:vy])
+    player[:vx], player[:vy] = Client::new_velocity(-player[:vx], -player[:vy], player[:vx], player[:vy], @consts)
     move_position
   end
 
@@ -182,16 +183,16 @@ class Client
     return dx, dy
   end
 
-  def self.new_velocity(dx, dy, vx, vy)
+  def self.new_velocity(dx, dy, vx, vy, consts)
     dx, dy = Client::normalize(dx, dy)
-    vx = (vx + dx * DEFAULT_ACCELERATION).round(ACCURACY)
-    vy = (vy + dy * DEFAULT_ACCELERATION).round(ACCURACY)
-    return [vx.abs, MAX_VELOCITY].min * v_sign(vx), [vy.abs, MAX_VELOCITY].min * v_sign(vy)
+    vx = (vx + dx * consts[:accel]).round(Settings.accuracy)
+    vy = (vy + dy * consts[:accel]).round(Settings.accuracy)
+    return [vx.abs, consts[:max_velocity]].min * v_sign(vx), [vy.abs, consts[:max_velocity]].min * v_sign(vy)
   end
 
   ###ACTIONS###
   def move(data)
-    player[:vx], player[:vy] = Client::new_velocity(data[:dx], data[:dy], player[:vx], player[:vy])
+    player[:vx], player[:vy] = Client::new_velocity(data[:dx], data[:dy], player[:vx], player[:vy], @consts)
     move_position
   end
 end

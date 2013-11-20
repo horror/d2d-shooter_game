@@ -4,3 +4,4 @@ port: ":3000"
 accuracy: 6
 eps: 1.0e-07
 tick_size: 30
+def_game_consts: {accel: 0.02, friction: 0.02, maxVelocity: 0.2, gravity: 0.02}

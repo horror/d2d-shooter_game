@@ -70,9 +70,9 @@ module Requests
       request.send(json_encode({action: action, params: params}))
     end
 
-    def new_params(dx, dy, params, is_inc)
-      params['vx'], params['vy'] = is_inc ? Client::new_velocity(dx, dy, params['vx'], params['vy']) :
-          Client::new_velocity(-params['vx'], params['vy'], params['vx'], params['vy'])
+    def new_params(dx, dy, params, is_inc, consts)
+      params['vx'], params['vy'] = is_inc ? Client::new_velocity(dx, dy, params['vx'], params['vy'], consts) :
+          Client::new_velocity(-params['vx'], params['vy'], params['vx'], params['vy'], consts)
       params['x'] = (params['x'] + params['vx']).round(Settings.accuracy)
       params['y'] = (params['y'] + params['vy']).round(Settings.accuracy)
       return params
