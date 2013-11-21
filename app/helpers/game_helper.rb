@@ -13,7 +13,7 @@ module GameHelper
       def_consts.each{|name, val|
         result &&= consts[name].kind_of?(Numeric)
         result &&= consts[name] > 0 && consts[name] < 1
-        result &&= consts[name] <= 0.1 if name != "maxVelocity"
+        result &&= consts[name] <= 0.1 if name != :maxVelocity
       }
       result
     }

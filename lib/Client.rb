@@ -127,8 +127,6 @@ class Client
     set_position(player[:x] + player[:vx], player[:y] + player[:vy])
   end
 
-  end
-
   def try_bump
     x = (player[:x] + player[:vx] + v_sign(player[:vx]) * 0.5 - Settings.eps*v_sign(player[:vx])).floor
     y = (player[:y] + player[:vy] + v_sign(player[:vy]) * 0.5 - Settings.eps*v_sign(player[:vy])).floor
