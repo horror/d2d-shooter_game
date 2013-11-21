@@ -24,6 +24,8 @@ class ApplicationController < ActionController::Base
           render :json => ActiveSupport::JSON.encode(@response_obj == nil ? "fatalError" : @response_obj)
           puts "Response = #{@response_obj}\n"
       end
+    else
+      render :file => 'public/client/index.html' and return
     end
   end
 end

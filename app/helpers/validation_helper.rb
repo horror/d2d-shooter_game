@@ -17,7 +17,7 @@ module ValidationHelper
     connection = ActiveRecord::Base.connection
     connection.disable_referential_integrity do
       connection.tables.each do |table_name|
-        next if connection.select_value("SELECT count(*) FROM #{table_name}") == 0
+        next if connection.select_value("SELECT count(*) FROM #{table_name}") == 0 || table_name == "schema_migrations"
         connection.execute("TRUNCATE TABLE #{table_name}")
       end
     end
