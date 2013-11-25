@@ -4,6 +4,8 @@ D2d::Application.routes.draw do
   #match '/handtest', to: redirect('/hand_test.html')
   match '/', :controller => 'application', :action => 'options', :constrains => {:method => 'OPTIONS'}
 
+  get '/views/:name.:format', to: redirect {|params, req| "/client/views/#{params[:name]}.#{params[:format]}" }
+
   # The priority is based upon order of creation:
   # first created -> highest priority.
 

@@ -1,0 +1,9 @@
+    <%
+    _.each(Messages, function(message,key,list){
+    %>
+    <li>
+        <%= message.login %> спизднул: <%= message.text %>
+    </li>
+    <%
+    });
+    %>

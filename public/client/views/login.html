@@ -1,0 +1,12 @@
+<form id="form-signin" class="form-signin">
+    <h2 class="form-signin-heading">Please <%=AppState.state%></h2>
+    <div id="validation_error">
+    </div>
+    <input name="login" class="form-control" type="text" class="input-block-level" placeholder="Name" required autofocus>
+    <input name="password" class="form-control" type="password" class="input-block-level" placeholder="Password" required>
+    <a href="/" class="btn btn-lg btn-primary btn-block" id="<%=AppState.state%>"><%=AppState.state%></a>
+    <% if (AppState.state != "signup") { %>
+    <p class="or">or</p>
+    <a href="/" class="btn btn-lg btn-primary btn-block" id="to_signup">register</a>
+    <% } %>
+</form>

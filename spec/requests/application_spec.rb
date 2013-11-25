@@ -489,7 +489,4 @@ describe "Application page" do
     end
   end
 
-  after(:all) do
-    request_and_checking("startTesting", {websocketMode: "async"})
-  end
 end

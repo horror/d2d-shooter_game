@@ -72,7 +72,7 @@ module ApplicationHelper
   end
 
   def incorrect
-    resp({result: "incorrect"})
+    resp({result: "incorrect", message: "Combination name and password incorrect"})
   end
 
   def ok(other_params = {})
