@@ -1,9 +1,17 @@
 //= require jquery
 
-var hostname = window.location.hostname.replace('www.',''), port = window.location.port,
+const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81;
+var keys_to_params = {
+        38: {"action": "move", "params": {"dx": 0, "dy": -1}},
+        40: {"action": "move", "params": {"dx": 0, "dy": 1}},
+        37: {"action": "move", "params": {"dx": -1, "dy": 0}},
+        39: {"action": "move", "params": {"dx": 1, "dy": 0}},
+        81: {"action": "empty", "params": {}}
+    },
+    hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     sid = "", web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
     maps = "", stage, curr_shape, web_socket,
-    SCALE = 20, users_list = ["user_a", "user_b"];
+    SCALE = 30, users_list = ["user_a", "user_b"];
 
 function send_request(action, params, call_back_func)
 {
@@ -39,7 +47,7 @@ function init()
     uploadMap_callback = function(request, params) { send_request("getMaps", {sid: sid_a}, getMaps_callback) }
 
     a_signin_callback = function(request, params) {
-        sid_a = request['sid'];
+        sid = sid_a = request['sid'];
         send_request("uploadMap", {sid: sid_a, name: "New map", maxPlayers: 10, map: map}, uploadMap_callback)
     }
 
@@ -127,7 +135,23 @@ function draw_map()
     stage.update();
 }
 
-var pressed = false
+var pressed_keys = {38: false, 37: false, 39: false, 40: false, 81: false}
+var pressed = false;
+
+function key_hold()
+{
+    for (i in pressed_keys)
+        if (pressed_keys[i])
+        {
+            pressed = true;
+            var arr = keys_to_params[i];
+            arr["params"]["sid"] = sid;
+            arr["params"]["tick"] = tick;
+            web_socket.send(JSON.stringify(arr));
+        }
+    if (pressed)
+        setTimeout('key_hold()', 50);
+}
 
 function left_hold()
 {
@@ -148,4 +172,18 @@ $(document).ready( function () {
         $("select, #users").append(
             $("<\option>", {"text": users_list[i], "name": users_list[i]})
         );
+    document.onkeydown = function(event) {
+        if (!(event.keyCode in pressed_keys))
+            return
+        pressed_keys[event.keyCode] = true
+        if (!pressed)
+            key_hold()
+    }
+    document.onkeyup = function(event) {
+        if (!(event.keyCode in pressed_keys))
+            return
+        pressed = pressed_keys[event.keyCode] = false
+        for (i in pressed_keys)
+            pressed = pressed || pressed_keys[i]
+    }
 })
