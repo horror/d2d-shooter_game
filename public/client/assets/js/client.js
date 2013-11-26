@@ -87,7 +87,11 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
 
         refreshData: function (callback) {
             var that = this;
-
+            if (!that.get('id')) {
+                if (callback != undefined)
+                    callback();
+                return;
+            }
             games.update(function () {
                 if (games.length == 0) {
                     if (callback != undefined)
@@ -101,10 +105,11 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
                     maps.update(function () {
                         maps.each(function (map) {
                             var map = map.toJSON();
-                            if (map['name'] == that.get('map'))
+                            if (map['name'] == that.get('map')) {
                                 that.set({mapData: JSON.stringify(map['map'])});
-                            if (callback != undefined)
-                                callback();
+                                if (callback != undefined)
+                                    callback();
+                            }
                         })
                     });
                 })
@@ -426,11 +431,10 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         },
     });
 
-
     curr_game.refreshData(function () {
-        var app = new App({ model: appState });
-        controller.navigate("!/run_game", true);
-        console.log(app.sid());
+        new App({ model: appState });
+
         Backbone.history.start();
+        appState.set({ state: "runGame" });
     });
 });})(jQuery);
