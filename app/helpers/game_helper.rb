@@ -56,7 +56,6 @@ module GameHelper
     user = find_by_sid(params["sid"])
     check_error((not (player = Player.find_by_user_id(user.id))), "notInGame")
     if (game = Game.find(player.game_id)).players.length == 1
-      game.map.delete
       game.delete
     end
     player.delete
