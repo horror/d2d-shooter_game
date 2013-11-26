@@ -28,7 +28,7 @@ module GameHelper
     user = find_by_sid(params["sid"])
 
     games = Game.all(
-        :select => "g.id, g.name, m.name AS map, g.max_players AS maxplayers, g.status, u.login AS player",
+        :select => "g.id, g.name, m.id AS map, g.max_players AS maxplayers, g.status, u.login AS player",
         :from => 'games g',
         :joins => "LEFT JOIN players p ON g.id = p.game_id
                   LEFT JOIN users u ON p.user_id = u.id

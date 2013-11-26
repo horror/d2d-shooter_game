@@ -79,6 +79,7 @@ function getTemplateAttrs(models, collections) {
 function sendRequest(data, callback) {
     $.ajax({
         url: 'http://' + hostname + ':' + port + '/',
+        timeout: 8000,
         type: 'POST',
         data: JSON.stringify(data),
         contentType: 'application/json; charset=utf-8'
