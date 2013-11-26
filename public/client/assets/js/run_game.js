@@ -78,6 +78,6 @@ function key_hold(sid)
             web_socket.send(JSON.stringify(arr));
         }
     if (pressed)
-        setTimeout('key_hold()', 50);
+        setTimeout('key_hold(' + sid + ')', 50);
 }
 
