@@ -87,19 +87,27 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
 
         refreshData: function (callback) {
             var that = this;
-            games.update(function () {games.each(function (game) {
-                var game = game.toJSON();
-                if (game['id'] == that.get('id'))
-                    that.set(game);
-                maps.update(function () {maps.each(function (map) {
-                    var map = map.toJSON();
-                    if (map['name'] == that.get('map'))
-                        that.set({mapData: JSON.stringify(map['map'])});
+
+            games.update(function () {
+                if (games.length == 0) {
                     if (callback != undefined)
                         callback();
+                    return;
+                }
+                games.each(function (game) {
+                    var game = game.toJSON();
+                    if (game['id'] == that.get('id'))
+                        that.set(game);
+                    maps.update(function () {
+                        maps.each(function (map) {
+                            var map = map.toJSON();
+                            if (map['name'] == that.get('map'))
+                                that.set({mapData: JSON.stringify(map['map'])});
+                            if (callback != undefined)
+                                callback();
+                        })
+                    });
                 })
-                });
-            })
             });
         },
 
