@@ -121,7 +121,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             $.cookie("game_id", id);
             this.refreshData(callback);
         },
-        leave: function (id) {
+        leave: function () {
             this.set({id: undefined});
             $.removeCookie("game_id");
         }
@@ -429,12 +429,15 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         in_game: function () {
             return curr_game.get("id") && this.sid();
         },
+
+        start: function () {
+            controller.navigate("!/run_game", true);
+        }
     });
 
     curr_game.refreshData(function () {
-        new App({ model: appState });
-
+        var app = new App({ model: appState });
         Backbone.history.start();
-        appState.set({ state: "runGame" });
+        app.start();
     });
 });})(jQuery);
