@@ -1,3 +1,5 @@
+var hostname = window.location.hostname.replace('www.',''), port = window.location.port;
+
 tpl = {
 
     // Hash of preloaded templates for the app
@@ -41,6 +43,9 @@ $.fn.serializeObjectAPI = function(action)
     o["params"] = {};
     var a = this.serializeArray();
     $.each(a, function() {
+        if (this.value == parseInt(this.value))
+            this.value = parseInt(this.value);
+
         if (o["params"][this.name] !== undefined) {
             if (!o["params"][this.name].push) {
                 o["params"][this.name] = [o["params"][this.name]];
@@ -79,7 +84,7 @@ function getTemplateAttrs(models, collections) {
 
 function sendRequest(data, callback) {
     $.ajax({
-        url: '/',
+        url: 'http://' + hostname + ':' + port + '/',
         type: 'POST',
         data: JSON.stringify(data),
         contentType: 'application/json; charset=utf-8'

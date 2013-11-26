@@ -1,7 +1,6 @@
 (function($){
-var hostname = window.location.hostname.replace('www.',''), port = window.location.port;
 $(document).on('click', 'a', function() {return false;});
-tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
+tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'new_game'], function() {
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++ MODELS +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
     var AppState = Backbone.Model.extend({
@@ -43,8 +42,10 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
         send: function(data, callback) {
             var that = this;
             sendRequest(data, function (response){
-                that.set(data["params"]);
-                callback();
+                process(response, function() {
+                    that.set(data["params"]);
+                    callback();
+                });
             });
         },
     });
@@ -67,18 +68,30 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
         },
         name: "Message",
     });
+
+    var Map = SendActionModel.extend({
+        defaults: {
+            sid: '',
+            name: '',
+            map: '',
+            maxPlayers: '',
+        },
+        name: "Map",
+    });
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++ COLLECTIONS +++++++++++++++++++++++++++++++++++++++++++++++++++ */
     var AddNewUpdateActionCollection = Backbone.Collection.extend({
         url: 'http://' + hostname + ':' + port + '/',
         type: 'POST',
         contentType: 'application/json; charset=utf-8',
 
-        addNew: function(data) {
+        addNew: function(data, callback) {
             var m = new this.model();
             var that = this;
             data["params"]["sid"] = app.sid();
             m.send(data, function() {
                 that.add(m);
+                if (callback != undefined)
+                    callback();
             });
         },
 
@@ -128,12 +141,29 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
         name: "Games",
     });
     var games = new Games;
+
+    var Maps = AddNewUpdateActionCollection.extend({
+        model: Map,
+
+        data: function(){ return JSON.stringify({
+            action: "getMaps",
+            params: {
+                sid: appState.get('sid'),
+            }})
+        },
+        parse: function(response){
+            return response.maps;
+        },
+        name: "Maps",
+    });
+    var maps = new Maps;
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++ CONTROLLER +++++++++++++++++++++++++++++++++++++++++++++++++++ */
     var Controller = Backbone.Router.extend({
         routes: {
             "!/signin": "signin",
             "!/signup": "signup",
             "!/lobby": "lobby",
+            "!/new_game": "newGame",
         },
 
         signin: function () {
@@ -147,6 +177,10 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
         lobby: function () {
             appState.set({ state: "lobby" });
         },
+
+        newGame: function () {
+            appState.set({ state: "newGame" });
+        },
     });
     var controller = new Controller();
 
@@ -154,10 +188,15 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
     var App = Backbone.View.extend({
         el: $("#container"),
 
+        header: function () {
+            return _.template(tpl.get('header'))(this.model.toJSON());
+        },
+
         templates: { // Шаблоны на разное состояние
             signin: _.template(tpl.get('login')),
             signup: _.template(tpl.get('login')),
             lobby: _.template(tpl.get('lobby')),
+            newGame: _.template(tpl.get('new_game')),
         },
 
         models: {
@@ -166,25 +205,24 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
         },
 
         collections: {
-            lobby: [messages],
+            newGame: [maps],
         },
 
-        fetchAllColections: function() {
-            $.each(this.collections, function(index, collection) {
-                collection.map(function(item) {
-                    var obj = {
-                        data: item.data(),
-                        type: 'POST',
-                        contentType: 'application/json; charset=utf-8',
-                    }
-                    item.fetch(obj);
+        refresh: function() {
+            var that = this;
+            $.each(that.collections, function(index, collections) {
+                collections.map(function(collection) {
+                    collection.update(function() {});
                 });
             });
+            that.render();
         },
 
         initialize: function () { // Подписка на событие модели
             _.bindAll(this, 'signin');
-            this.model.bind('change', this.render, this);
+            this.model.bind('change', this.refresh, this);
+
+            maps.bind("add change remvoe", this.render, this);
         },
 
         events: {
@@ -205,8 +243,12 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
                 $('#message_text').val("");
             },
             'click a#create_game': function () {
-                messages.addNew($('#game-form').serializeObjectAPI("createGame"));
-                controller.navigate("!/lobby", true);
+                messages.addNew($('#game-form').serializeObjectAPI("createGame"), function () {
+                    controller.navigate("!/lobby", true);//"!/game"
+                });
+            },
+            'click a#to_new_game': function () {
+                controller.navigate("!/new_game", true);
             },
         },
 
@@ -230,8 +272,8 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
 
         render: function(){
             var state = this.state();
-            var params = getTemplateAttrs(this.models[state]);
-            this.$el.html(this.templates[state](params));
+            var params = getTemplateAttrs(this.models[state], this.collections[state]);
+            this.$el.html(this.header() + this.templates[state](params));
             return this;
         },
 
