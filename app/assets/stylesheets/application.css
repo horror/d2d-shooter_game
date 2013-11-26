@@ -13,3 +13,12 @@
 #connect_buttons {
     margin: 10px 0 10px 0;
 }
+
+#connect_params {
+    widht: 100%;
+}
+
+#init_map {
+    width: 300px;
+    height: 60px;
+}

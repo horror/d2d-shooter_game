@@ -23,7 +23,8 @@ function send_request(action, params, call_back_func)
 
 function init()
 {
-    var sid_a, sid_b, map = ['1.$.2', '#####', '..31.', '#####', '.3.#.', '#####', '#2..#'];
+    var sid_a, sid_b, map = $('#init_map').val();
+    map = map == "" ? ['1.$.2', '#####', '..31.', '#####', '.3.#.', '#####', '#2..#'] : map.split("\n");
 
     getGames_callback = function(request, params) {
         send_request("joinGame", {"sid": sid_b, "game": request["games"][0]["id"]});

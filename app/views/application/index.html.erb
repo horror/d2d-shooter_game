@@ -13,7 +13,11 @@
             <button onmousedown='pressed = true; right_hold()' onmouseup='pressed = false'>right</button>
           </div>
           <div id="connect_buttons">
-            <select id="users"></select>
+            <div id="connect_params">
+              <select id="users"></select>
+              <br>
+              <textarea id="init_map"></textarea>
+            </div>
             <button onclick='start_websocket()'>start</button>
             <button onclick='signin()'>signin</button>
             <button onclick='init()'>init</button>
