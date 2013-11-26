@@ -1,6 +1,6 @@
 (function($){
 $(document).on('click', 'a', function() {return false;});
-tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'new_game'], function() {
+tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'new_game', 'new_map'], function() {
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++ MODELS +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
     var AppState = Backbone.Model.extend({
@@ -88,6 +88,8 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             var m = new this.model();
             var that = this;
             data["params"]["sid"] = app.sid();
+            if (that.name == "Maps")
+                data["params"]["map"] = data["params"]["map"].split("\r\n");
             m.send(data, function() {
                 that.add(m);
                 if (callback != undefined)
@@ -109,7 +111,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
     var Messages = AddNewUpdateActionCollection.extend({
         model: Message,
 
-        data: function(){ return JSON.stringify({
+        data: function() { return JSON.stringify({
             action: "getMessages",
             params: {
                 sid: appState.get('sid'),
@@ -129,7 +131,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
     var Games = AddNewUpdateActionCollection.extend({
         model: Game,
 
-        data: function(){ return JSON.stringify({
+        data: function() { return JSON.stringify({
             action: "getGames",
             params: {
                 sid: appState.get('sid'),
@@ -145,7 +147,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
     var Maps = AddNewUpdateActionCollection.extend({
         model: Map,
 
-        data: function(){ return JSON.stringify({
+        data: function() { return JSON.stringify({
             action: "getMaps",
             params: {
                 sid: appState.get('sid'),
@@ -164,6 +166,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             "!/signup": "signup",
             "!/lobby": "lobby",
             "!/new_game": "newGame",
+            "!/new_map": "newMap",
         },
 
         signin: function () {
@@ -181,6 +184,10 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         newGame: function () {
             appState.set({ state: "newGame" });
         },
+
+        newMap: function () {
+            appState.set({ state: "newMap" });
+        },
     });
     var controller = new Controller();
 
@@ -197,6 +204,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             signup: _.template(tpl.get('login')),
             lobby: _.template(tpl.get('lobby')),
             newGame: _.template(tpl.get('new_game')),
+            newMap: _.template(tpl.get('new_map')),
         },
 
         models: {
@@ -249,6 +257,14 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             },
             'click a#to_new_game': function () {
                 controller.navigate("!/new_game", true);
+            },
+            'click a#to_new_map': function () {
+                controller.navigate("!/new_map", true);
+            },
+            'click a#upload_map': function () {
+                maps.addNew($('#map-form').serializeObjectAPI("uploadMap"), function () {
+                    controller.navigate("!/new_game", true);
+                });
             },
         },
 

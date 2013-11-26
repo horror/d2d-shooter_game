@@ -1,14 +1,9 @@
 var hostname = window.location.hostname.replace('www.',''), port = window.location.port;
 
 tpl = {
+    templates: {},
 
-    // Hash of preloaded templates for the app
-    templates:{},
-
-    // Recursively pre-load all the templates for the app.
-    // This implementation should be changed in a production environment. All the template files should be
-    // concatenated in a single file.
-    loadTemplates:function (names, callback) {
+    loadTemplates: function (names, callback) {
 
         var that = this;
 
@@ -29,8 +24,7 @@ tpl = {
         loadTemplate(0);
     },
 
-    // Get template by name from hash of preloaded templates
-    get:function (name) {
+    get: function (name) {
         return this.templates[name];
     }
 
@@ -63,19 +57,19 @@ function getTemplateAttrs(models, collections) {
 
     if (models != undefined)
         $.each(models, function(index, model) {
-            var m_name = model.name;
-            result[m_name] = {};
+            var mName = model.name;
+            result[mName] = {};
             for (var attr in model.attributes)
-                result[m_name][attr] = model.attributes[attr];
+                result[mName][attr] = model.attributes[attr];
         });
 
     if (collections != undefined)
         $.each(collections, function(index, collection) {
-            var c_name = collection.name;
-            result[c_name] = [];
+            var cName = collection.name;
+            result[cName] = [];
             var items = collection.map(function(item) { return item.attributes});
             $.each(items, function(index, item) {
-                result[c_name].push(item);
+                result[cName].push(item);
             });
         });
 
