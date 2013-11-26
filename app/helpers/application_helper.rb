@@ -60,7 +60,7 @@ module ApplicationHelper
   end
 
   def alreadyInGame
-    resp({result: "alreadyInGame", message: "U already playing in this game"})
+    resp({result: "alreadyInGame", message: "U already playing"})
   end
 
   def notInGame

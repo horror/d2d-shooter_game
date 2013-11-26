@@ -21,7 +21,7 @@ class ApplicationController < ActionController::Base
         send(req["action"], req["params"])
       rescue
       ensure
-          render :json => ActiveSupport::JSON.encode(@response_obj == nil ? "fatalError" : @response_obj)
+          render :json => ActiveSupport::JSON.encode(@response_obj == nil ? {result: "fatalError"} : @response_obj)
           puts "Response = #{@response_obj}\n"
       end
     else

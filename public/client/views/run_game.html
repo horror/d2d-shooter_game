@@ -1,19 +1,18 @@
 <div class="row">
     <div id="validation_error">
     </div>
-    <div class="col-lg-2">
-        <ul id="games">
-            wait...
-        </ul>
-        <a href="/" class="btn btn-lg btn-primary btn-block" id="to_new_game">Create</a>
+    <h4>Game id: <%=Game.id%>, Your sid: <%=AppState.sid%></h4>
+    <div class="col-lg-4">
+        <a href="/" class="btn btn-lg btn-primary btn-block" id="leave_game">Leave game</a>
+        <canvas id="main_canvas" width="500" height="500"></canvas>
     </div>
-    <div id="chatArea" class="col-lg-10">
+    <div class="col-lg-8">
         <ul id="chat_messages">
             wait...
         </ul>
         <form id="chat-form">
             <input id='message_text' name='text' type="text" />
-            <input name='game' type="hidden" value="" />
+            <input name='game' type="hidden" value="<%=Game.id%>" />
             <a href="/" class="btn btn-lg btn-primary btn-block" id="send_message">send</a>
         </form>
     </div>

@@ -1,6 +1,6 @@
 (function($){
 $(document).on('click', 'a', function() {return false;});
-tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'new_game', 'new_map'], function() {
+tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'new_game', 'new_map', 'run_game'], function() {
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++ MODELS +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
     var AppState = Backbone.Model.extend({
@@ -10,32 +10,58 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             chatRefrashIntervalHandler: "",
             gameListRefrashIntervalHandler: "",
         },
-        name: "AppState"
+        name: "AppState",
+        signin: function(sid) {
+            this.set({sid: sid});
+            $.cookie("sid", sid);
+        },
+        signout: function () {
+            this.set({sid: undefined});
+            $.removeCookie("sid");
+        },
     });
     var appState = new AppState();
 
     appState.bind("change:state", function () { // подписка на смену состояния для контроллера
         var state = this.get("state");
-        if (state != "signup" && state != "signin" && !this.get("sid")) {
+
+        if (state != "signup" && state != "signin" && !this.get("sid")) { //незалогинился
             controller.navigate("!/signin", true);
             return;
         }
-        if (state == "lobby") {
+
+        if (this.get("sid") && curr_game.get("id") && state != "runGame") { //продолжить играть
+            controller.navigate("!/run_game", true);
+            return;
+        }
+
+        if (state == "runGame" && !curr_game.get("id")) { //перейти в лобби, если мы уже не играем
+            controller.navigate("!/lobby", true);
+            return;
+        }
+
+        (state == "runGame") ? messages.curr_game_params() :  messages.lobby_params();
+
+        if (state == "lobby" || state == "runGame") {
             this.chatRefrashIntervalHandler = setInterval(function(){
+
                 messages.update(function(){
                     $("#chat_messages").html( _.template(tpl.get('chat_messages'))({Messages: messages.toJSON()}));
                 });
             },1000);
-            this.gameListRefrashIntervalHandler = setInterval(function(){
-                games.update(function(){
-                    $("#games").html( _.template(tpl.get('game_list'))({Games: games.toJSON()}));
-                });
-            },6000);
+
+            if (state == "lobby")
+                this.gameListRefrashIntervalHandler = setInterval(function(){
+                    games.update(function(){
+                        $("#games").html( _.template(tpl.get('game_list'))({Games: games.toJSON()}));
+                    });
+                },6000);
         }
-        else {
+        else
             clearInterval(this.chatRefrashIntervalHandler);
+
+        if (state == "runGame")
             clearInterval(this.gameListRefrashIntervalHandler);
-        }
     });
 
     var SendActionModel = Backbone.Model.extend({
@@ -53,12 +79,22 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
     var Game = SendActionModel.extend({
         defaults: {
             sid: '',
+            id: '',
             name: '',
             map: '',
             maxPlayers: '',
         },
         name: "Game",
+        join: function (id) {
+            this.set({id: id});
+            $.cookie("game_id", id);
+        },
+        leave: function (id) {
+            this.set({id: undefined});
+            $.removeCookie("game_id");
+        }
     });
+    var curr_game = new Game({id: $.cookie("game_id")});
 
     var Message = SendActionModel.extend({
         defaults: {
@@ -105,20 +141,40 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
                 type: this.type,
                 contentType: this.contentType,
             });
-        }
+        },
+
+        params: {
+            sid: appState.get('sid'),
+        },
+
+        defineParams: function (params) {
+            this.params = params;
+        },
+
+        data: function() { return JSON.stringify({
+                action: this.action,
+                params: this.params
+            })
+        },
     });
 
     var Messages = AddNewUpdateActionCollection.extend({
         model: Message,
 
-        data: function() { return JSON.stringify({
-            action: "getMessages",
-            params: {
-                sid: appState.get('sid'),
-                game: "",
-                since: 0,//new Date().getTime(),
+        action: "getMessages",
 
-            }})
+        params: {
+            sid: appState.get('sid'),
+            game: "",
+            since: 0,//new Date().getTime(),
+        },
+
+        curr_game_params: function () {
+            this.params['game'] = curr_game.get('id') * 1;
+        },
+
+        lobby_params: function () {
+            this.params['game'] = "";
         },
 
         parse: function(response){
@@ -131,12 +187,8 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
     var Games = AddNewUpdateActionCollection.extend({
         model: Game,
 
-        data: function() { return JSON.stringify({
-            action: "getGames",
-            params: {
-                sid: appState.get('sid'),
-            }})
-        },
+        action: "getGames",
+
         parse: function(response){
             return response.games;
         },
@@ -147,12 +199,8 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
     var Maps = AddNewUpdateActionCollection.extend({
         model: Map,
 
-        data: function() { return JSON.stringify({
-            action: "getMaps",
-            params: {
-                sid: appState.get('sid'),
-            }})
-        },
+        action: "getMaps",
+
         parse: function(response){
             return response.maps;
         },
@@ -167,6 +215,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             "!/lobby": "lobby",
             "!/new_game": "newGame",
             "!/new_map": "newMap",
+            "!/run_game": "runGame",
         },
 
         signin: function () {
@@ -188,6 +237,10 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         newMap: function () {
             appState.set({ state: "newMap" });
         },
+
+        runGame: function () {
+            appState.set({ state: "runGame" });
+        },
     });
     var controller = new Controller();
 
@@ -205,11 +258,13 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             lobby: _.template(tpl.get('lobby')),
             newGame: _.template(tpl.get('new_game')),
             newMap: _.template(tpl.get('new_map')),
+            runGame: _.template(tpl.get('run_game')),
         },
 
         models: {
             signin: [appState],
             signup: [appState],
+            runGame: [curr_game, appState],
         },
 
         collections: {
@@ -238,8 +293,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             'click a#signup': 'signup',
             'click a#signout': function () {
                 sendRequest({action: "signout", params: {sid: this.sid()}}, function(response) {
-                    appState.set({sid: undefined});
-                    $.removeCookie("sid");
+                    appState.signout();
                     controller.navigate("!/signin", true);
                 });
             },
@@ -251,8 +305,35 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
                 $('#message_text').val("");
             },
             'click a#create_game': function () {
-                messages.addNew($('#game-form').serializeObjectAPI("createGame"), function () {
-                    controller.navigate("!/lobby", true);//"!/game"
+                var data = $('#game-form').serializeObjectAPI("createGame");
+                var game_name = data["params"]["name"];
+                games.addNew(data, function () {
+                    games.update(function () {
+                        games.each(function(game) {
+                            game = game.toJSON();
+                            if (game["name"] == game_name)
+                                curr_game.join(game["id"]);
+                        });
+                        controller.navigate("!/run_game", true);
+                    });
+                });
+            },
+            'click a.join_game': function (e) {
+                e.preventDefault();
+                var game_id = $(e.currentTarget).attr("id");
+                sendRequest({action: "joinGame", params: {sid: this.sid(), game: game_id}}, function(response) {
+                    process(response, function () {
+                        curr_game.join(game_id);
+                        controller.navigate("!/run_game", true);
+                    });
+                });
+            },
+            'click a#leave_game': function () {
+                sendRequest({action: "leaveGame", params: {sid: this.sid()}}, function(response) {
+                    process(response, function () {
+                        curr_game.leave();
+                        controller.navigate("!/lobby", true);
+                    });
                 });
             },
             'click a#to_new_game': function () {
@@ -269,11 +350,9 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         },
 
         signin: function () {
-            var that = this;
             sendRequest($('#form-signin').serializeObjectAPI("signin"), function(response) {
                 process(response, function(){
-                    that.sid(response["sid"]);
-                    $.cookie("sid", that.sid());
+                    appState.signin(response["sid"]);
                     controller.navigate("!/lobby", true);
                 });
             })
@@ -303,16 +382,17 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             if (sid != undefined)
                 this.model.set({sid: sid})
             return this.model.get("sid");
-        }
+        },
+
+        in_game: function () {
+            return curr_game.get("id") && this.sid();
+        },
     });
     var app = new App({ model: appState });
 
     Backbone.history.start();
 
-    if ((app.state() == "" || app.state() != "signup") && app.sid() === undefined)
-        controller.navigate("!/signin", true);
-    else if (app.state() == "" && app.sid() != "")
-        controller.navigate("!/lobby", true);
+    controller.navigate("!/run_game", true);
 
     console.log(app.sid())
 });})(jQuery);
