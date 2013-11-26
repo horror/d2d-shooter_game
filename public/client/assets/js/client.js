@@ -78,16 +78,35 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
 
     var Game = SendActionModel.extend({
         defaults: {
-            sid: '',
             id: '',
             name: '',
             map: '',
             maxPlayers: '',
         },
         name: "Game",
-        join: function (id) {
+
+        refreshData: function (callback) {
+            var that = this;
+            games.update(function () {games.each(function (game) {
+                var game = game.toJSON();
+                if (game['id'] == that.get('id'))
+                    that.set(game);
+                maps.update(function () {maps.each(function (map) {
+                    var map = map.toJSON();
+                    if (map['name'] == that.get('map'))
+                        that.set({mapData: JSON.stringify(map['map'])});
+                    if (callback != undefined)
+                        callback();
+                })
+                });
+            })
+            });
+        },
+
+        join: function (id, callback) {
             this.set({id: id});
             $.cookie("game_id", id);
+            this.refreshData(callback);
         },
         leave: function (id) {
             this.set({id: undefined});
@@ -123,7 +142,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         addNew: function(data, callback) {
             var m = new this.model();
             var that = this;
-            data["params"]["sid"] = app.sid();
+            data["params"]["sid"] = appState.get("sid");
             if (that.name == "Maps")
                 data["params"]["map"] = data["params"]["map"].split("\r\n");
             m.send(data, function() {
@@ -137,7 +156,6 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             this.fetch({
                 success: callback,
                 data: this.data(),
-                data: this.data(),
                 type: this.type,
                 contentType: this.contentType,
             });
@@ -147,13 +165,22 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             sid: appState.get('sid'),
         },
 
+        getAction: function () {
+            return this.action;
+        },
+
+        getParams: function () {
+            this.params['sid'] = appState.get('sid') //обновляем сид перед запросом
+            return this.params;
+        },
+
         defineParams: function (params) {
             this.params = params;
         },
 
         data: function() { return JSON.stringify({
-                action: this.action,
-                params: this.params
+                action: this.getAction(),
+                params: this.getParams(),
             })
         },
     });
@@ -312,9 +339,10 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
                         games.each(function(game) {
                             game = game.toJSON();
                             if (game["name"] == game_name)
-                                curr_game.join(game["id"]);
+                                curr_game.join(game["id"], function () {
+                                    controller.navigate("!/run_game", true);
+                                });
                         });
-                        controller.navigate("!/run_game", true);
                     });
                 });
             },
@@ -323,8 +351,9 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
                 var game_id = $(e.currentTarget).attr("id");
                 sendRequest({action: "joinGame", params: {sid: this.sid(), game: game_id}}, function(response) {
                     process(response, function () {
-                        curr_game.join(game_id);
-                        controller.navigate("!/run_game", true);
+                        curr_game.join(game_id, function () {
+                            controller.navigate("!/run_game", true);
+                        });
                     });
                 });
             },
@@ -388,11 +417,12 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             return curr_game.get("id") && this.sid();
         },
     });
-    var app = new App({ model: appState });
 
-    Backbone.history.start();
 
-    controller.navigate("!/run_game", true);
-
-    console.log(app.sid())
+    curr_game.refreshData(function () {
+        var app = new App({ model: appState });
+        controller.navigate("!/run_game", true);
+        console.log(app.sid());
+        Backbone.history.start();
+    });
 });})(jQuery);

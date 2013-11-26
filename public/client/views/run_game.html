@@ -1,12 +1,12 @@
 <div class="row">
     <div id="validation_error">
     </div>
-    <h4>Game id: <%=Game.id%>, Your sid: <%=AppState.sid%></h4>
-    <div class="col-lg-4">
+    <h4>Game: <%=Game.name%>, Your sid: <%=AppState.sid%></h4>
+    <div class="col-lg-7">
         <a href="/" class="btn btn-lg btn-primary btn-block" id="leave_game">Leave game</a>
         <canvas id="main_canvas" width="500" height="500"></canvas>
     </div>
-    <div class="col-lg-8">
+    <div class="col-lg-5">
         <ul id="chat_messages">
             wait...
         </ul>
@@ -17,3 +17,24 @@
         </form>
     </div>
 </div>
+<script>
+    $(document).ready( function () {
+        draw_map(<%=Game.mapData%>);
+        start_websocket("<%=AppState.sid%>")
+
+        document.onkeydown = function(event) {
+            if (!(event.keyCode in pressed_keys))
+                return
+            pressed_keys[event.keyCode] = true
+            if (!pressed)
+                key_hold("<%=AppState.sid%>")
+        }
+        document.onkeyup = function(event) {
+            if (!(event.keyCode in pressed_keys))
+                return
+            pressed = pressed_keys[event.keyCode] = false
+            for (i in pressed_keys)
+                pressed = pressed || pressed_keys[i]
+        }
+    })
+</script>
