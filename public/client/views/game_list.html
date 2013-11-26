@@ -1,0 +1,9 @@
+<%
+_.each(Games, function(game,key,list){
+%>
+<li>
+    <%= game.name %> <a href="/" class="join" id="<%= game.id %>">join</a>
+</li>
+<%
+});
+%>

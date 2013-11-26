@@ -1,0 +1,22 @@
+<div class="row">
+    <div class="col-lg-12">
+        <form id="game-form">
+            <div id="validation_error">
+            </div>
+            <label for="name">Name: </label><input id="name" name='name' type="text" />
+            <label for="map">Map: </label><select id="map" name='map'>
+            <%
+            _.each(Maps, function(map,key,list){
+            %>
+            <option value="<%= map.id %>">
+                <%= map.name %>
+            </option>
+            <%
+            });
+            %>
+            </select>
+            <label for="max_players">Max players: </label><input id="max_players" name='maxPlayers' type="number" />
+            <a href="/" class="btn btn-lg btn-primary btn-block" id="create_game">Create</a>
+        </form>
+    </div>
+</div>
