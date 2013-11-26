@@ -1,12 +1,15 @@
 (function($){
 var hostname = window.location.hostname.replace('www.',''), port = window.location.port;
 $(document).on('click', 'a', function() {return false;});
-tpl.loadTemplates(['login', 'lobby', 'chat_messages'], function() {
+tpl.loadTemplates(['login', 'lobby', 'chat_messages', 'game_list'], function() {
+
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++ MODELS +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
     var AppState = Backbone.Model.extend({
         defaults: {
             sid: $.cookie("sid"),
             state: "",
             chatRefrashIntervalHandler: "",
+            gameListRefrashIntervalHandler: "",
         },
         name: "AppState"
     });
@@ -18,27 +21,25 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages'], function() {
             controller.navigate("!/signin", true);
             return;
         }
-        if (state == "lobby")
+        if (state == "lobby") {
             this.chatRefrashIntervalHandler = setInterval(function(){
-                messages.fetch({
-                    success: function(){
-                        $("#chat_messages").html( _.template(tpl.get('chat_messages'))({Messages: messages.toJSON()}));
-                    },
-                    data: messages.data(),
-                    type: 'POST',
-                    contentType: 'application/json; charset=utf-8',
+                messages.update(function(){
+                    $("#chat_messages").html( _.template(tpl.get('chat_messages'))({Messages: messages.toJSON()}));
                 });
             },1000);
-        else
+            this.gameListRefrashIntervalHandler = setInterval(function(){
+                games.update(function(){
+                    $("#games").html( _.template(tpl.get('game_list'))({Games: games.toJSON()}));
+                });
+            },6000);
+        }
+        else {
             clearInterval(this.chatRefrashIntervalHandler);
+            clearInterval(this.gameListRefrashIntervalHandler);
+        }
     });
 
-    var Message = Backbone.Model.extend({
-        defaults: {
-            sid: '',
-            text: '',
-            game: '',
-        },
+    var SendActionModel = Backbone.Model.extend({
         send: function(data, callback) {
             var that = this;
             sendRequest(data, function (response){
@@ -46,12 +47,55 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages'], function() {
                 callback();
             });
         },
-        name: "Message",
     });
 
-    var Messages = Backbone.Collection.extend({
-        model: Message,
+    var Game = SendActionModel.extend({
+        defaults: {
+            sid: '',
+            name: '',
+            map: '',
+            maxPlayers: '',
+        },
+        name: "Game",
+    });
+
+    var Message = SendActionModel.extend({
+        defaults: {
+            sid: '',
+            text: '',
+            game: '',
+        },
+        name: "Message",
+    });
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++ COLLECTIONS +++++++++++++++++++++++++++++++++++++++++++++++++++ */
+    var AddNewUpdateActionCollection = Backbone.Collection.extend({
         url: 'http://' + hostname + ':' + port + '/',
+        type: 'POST',
+        contentType: 'application/json; charset=utf-8',
+
+        addNew: function(data) {
+            var m = new this.model();
+            var that = this;
+            data["params"]["sid"] = app.sid();
+            m.send(data, function() {
+                that.add(m);
+            });
+        },
+
+        update: function (callback) {
+            this.fetch({
+                success: callback,
+                data: this.data(),
+                data: this.data(),
+                type: this.type,
+                contentType: this.contentType,
+            });
+        }
+    });
+
+    var Messages = AddNewUpdateActionCollection.extend({
+        model: Message,
+
         data: function(){ return JSON.stringify({
             action: "getMessages",
             params: {
@@ -61,14 +105,7 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages'], function() {
 
             }})
         },
-        addNew: function(data) {
-            var m = new Message();
-            var that = this;
-            data["params"]["sid"] = app.sid();
-            m.send(data, function() {
-                that.add(m);
-            });
-        },
+
         parse: function(response){
             return response.messages.reverse();
         },
@@ -76,6 +113,22 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages'], function() {
     });
     var messages = new Messages;
 
+    var Games = AddNewUpdateActionCollection.extend({
+        model: Game,
+
+        data: function(){ return JSON.stringify({
+            action: "getGames",
+            params: {
+                sid: appState.get('sid'),
+            }})
+        },
+        parse: function(response){
+            return response.games;
+        },
+        name: "Games",
+    });
+    var games = new Games;
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++ CONTROLLER +++++++++++++++++++++++++++++++++++++++++++++++++++ */
     var Controller = Backbone.Router.extend({
         routes: {
             "!/signin": "signin",
@@ -95,9 +148,9 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages'], function() {
             appState.set({ state: "lobby" });
         },
     });
-    var controller = new Controller(); // Создаём контроллер
+    var controller = new Controller();
 
-
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++ APPLICATION +++++++++++++++++++++++++++++++++++++++++++++++++++ */
     var App = Backbone.View.extend({
         el: $("#container"),
 
@@ -151,6 +204,10 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages'], function() {
                 messages.addNew($('#chat-form').serializeObjectAPI("sendMessage"));
                 $('#message_text').val("");
             },
+            'click a#create_game': function () {
+                messages.addNew($('#game-form').serializeObjectAPI("createGame"));
+                controller.navigate("!/lobby", true);
+            },
         },
 
         signin: function () {
@@ -173,7 +230,7 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages'], function() {
 
         render: function(){
             var state = this.state();
-            var params = getTemplateAttrs(this.models[state], this.collections[state]);
+            var params = getTemplateAttrs(this.models[state]);
             this.$el.html(this.templates[state](params));
             return this;
         },
@@ -191,10 +248,6 @@ tpl.loadTemplates(['login', 'lobby', 'chat_messages'], function() {
         }
     });
     var app = new App({ model: appState });
-
-    messages.bind('add', function(message) {
-        messages.fetch({success: function(){app.render();}});
-    });
 
     Backbone.history.start();
 

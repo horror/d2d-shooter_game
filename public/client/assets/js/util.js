@@ -103,3 +103,11 @@ function process(response, callback) {
     else
         validationError(response);
 }
+
+function updateModel(handler, data, callback) {
+    var that = handler;
+    sendRequest(data, function (response){
+        that.set(data["params"]);
+        callback();
+    });
+}
