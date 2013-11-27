@@ -190,19 +190,62 @@ class Client
   end
 
   def move_position
-    return if try_tp || try_bump
+    check_collisions
+    return if try_tp
 
-    set_position(player[:x] + player[:vx], player[:y] + player[:vy])
+    set_position(player[:coord] + player[:velocity])
   end
 
-  def try_bump
-    x = (player[:x] + player[:vx] + v_sign(player[:vx]) * 0.5 - Settings.eps*v_sign(player[:vx])).floor
-    y = (player[:y] + player[:vy] + v_sign(player[:vy]) * 0.5 - Settings.eps*v_sign(player[:vy])).floor
-    return false if game.symbol(x, y) != WALL
+  @wall_offset
 
-    x = player[:vx].abs < Settings.eps ? player[:x] : v_sign(player[:vx]) > 0 ? x - 0.5 : x + 1.5
-    y = player[:vy].abs < Settings.eps ? player[:y] : v_sign(player[:vy]) > 0 ? y - 0.5 : y + 1.5
-    stop_movement(x, y)
+  def calc_wall_offset(cell, player_cell, player_box, der_vectors)
+    cell_pos = Point.new(player_cell.x - cell.x, player_cell.y - cell.y)
+    offset = Settings.player_halfrect
+    cell_h_edge = Line.new(Point.new(cell.x, cell.y), Point.new(cell.x + 1, cell.y))
+    cell_v_edge = Line.new(Point.new(cell_pos.x == 1 ? cell.x + 1 : cell.x, cell.y),
+                           Point.new(cell_pos.x == 1 ? cell.x + 1 : cell.x, cell.y + 1))
+    player_h_edge = Line.new(Point.new(player_box.x, player_box.y), Point.new(player_box.x + offset * 2, player_box.y))
+    player_v_edge = Line.new(Point.new(player_box.x, player_box.y), Point.new(player_box.x, player_box.y + offset * 2))
+    has_intersect = false
+    der_vectors.each{|i|
+      has_intersect ||= i.prj_intersect(cell_h_edge, :x) && i.prj_intersect(cell_v_edge, :y)
+    }
+    return if !has_intersect
+    if cell_pos.x != 0 && symbol(cell.x + cell_pos.x, cell.y) != WALL && !player_h_edge.prj_intersect(cell_h_edge, :x) && player[:velocity].x.abs > Settings.eps
+      @wall_offset.x = (cell_pos.x == 1 ? cell.x + 1 : cell.x) - (player[:coord].x - offset * cell_pos.x)
+    end
+    if cell_pos.y != 0 && symbol(cell.x, cell.y + cell_pos.y) != WALL && !player_v_edge.prj_intersect(cell_v_edge, :y) && player[:velocity].y.abs > Settings.eps
+      @wall_offset.y = (cell_pos.y == 1 ? cell.y + 1 : cell.y) - (player[:coord].y - offset * cell_pos.y)
+    end
+    @wall_offset.x = 1 if cell_pos.y == -1 && @wall_offset.eq?(0, 0)
+  end
+
+  def check_collisions
+    v_der = player[:velocity].map{|i| v_sign(i)}
+    return if v_der.x == 0 && v_der.y == 0
+    offset = Settings.player_halfrect
+    player_box  = player[:coord] - offset
+    player_cell = (player[:coord] + v_der * offset - v_der * Settings.eps).map{|i| i.floor}
+    @wall_offset = Point.new(1, 1)
+    der_vectors = Array.new()
+    der_vectors.push Line.new(player[:coord] + v_der * offset,
+                              player[:coord] + v_der * offset + player[:velocity])                    if v_der.y == 0 || v_der.x == 0
+    der_vectors.push Line.new(player_box, player_box + player[:velocity])                             if v_der.y < 0 || v_der.x < 0
+    der_vectors.push Line.new(Point.new(player_box.x + offset * 2, player_box.y),
+                              Point.new(player_box.x + offset * 2, player_box.y) + player[:velocity]) if v_der.y < 0 || v_der.x > 0
+    der_vectors.push Line.new(Point.new(player_box.x, player_box.y + offset * 2),
+                              Point.new(player_box.x, player_box.y + offset * 2) + player[:velocity]) if v_der.y > 0 || v_der.x < 0
+    der_vectors.push Line.new(player_box + offset * 2, player_box + offset * 2 + player[:velocity])   if v_der.y > 0 || v_der.x > 0
+
+    (-1..1).each{ |i|
+      (-1..1).each{ |j|
+        tmp = player_cell + Point.new(j, i)
+        calc_wall_offset(tmp, player_cell, player_box, der_vectors) if symbol(tmp) == WALL
+      }
+    }
+    return false if @wall_offset.eq?(1, 1)
+    player[:velocity].set(@wall_offset.x != 1 ? 0 : player[:velocity].x, @wall_offset.y != 1 ? 0 : player[:velocity].y)
+    player[:coord] = player[:coord] + Point.new(@wall_offset.x == 1 ? 0 : @wall_offset.x, @wall_offset.y == 1 ? 0 : @wall_offset.y)
     return true
   end
 
