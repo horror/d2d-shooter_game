@@ -217,7 +217,7 @@ class Client
     if cell_pos.y != 0 && symbol(cell.x, cell.y - cell_pos.y) != WALL && !player_v_edge.prj_intersect(cell_v_edge, :y)
       @wall_offset.y = (cell_pos.y == 1 ? cell.y : cell.y + 1) - (player[:coord].y + offset * cell_pos.y)
     end
-    @wall_offset.x = 1 if cell_pos.y == -1 && @wall_offset.eq?(0, 0)
+    @wall_offset.x = 1 if cell_pos.y == 1 && cell_pos.x != 0 && @wall_offset.eq?(0, 0) #проверка диагонального сталкновения с нижней левой/правой стенкой
   end
 
   def check_collisions
