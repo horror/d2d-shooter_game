@@ -199,11 +199,11 @@ class Client
   @wall_offset
 
   def calc_wall_offset(cell, player_cell, player_box, der_vectors)
-    cell_pos = Point.new(player_cell.x - cell.x, player_cell.y - cell.y)
+    cell_pos = Point.new(cell.x - player_cell.x, cell.y - player_cell.y)
     offset = Settings.player_halfrect
     cell_h_edge = Line.new(Point.new(cell.x, cell.y), Point.new(cell.x + 1, cell.y))
-    cell_v_edge = Line.new(Point.new(cell_pos.x == 1 ? cell.x + 1 : cell.x, cell.y),
-                           Point.new(cell_pos.x == 1 ? cell.x + 1 : cell.x, cell.y + 1))
+    cell_v_edge = Line.new(Point.new(cell_pos.x == 1 ? cell.x : cell.x + 1, cell.y),
+                           Point.new(cell_pos.x == 1 ? cell.x : cell.x + 1, cell.y + 1))
     player_h_edge = Line.new(Point.new(player_box.x, player_box.y), Point.new(player_box.x + offset * 2, player_box.y))
     player_v_edge = Line.new(Point.new(player_box.x, player_box.y), Point.new(player_box.x, player_box.y + offset * 2))
     has_intersect = false
@@ -211,11 +211,11 @@ class Client
       has_intersect ||= i.prj_intersect(cell_h_edge, :x) && i.prj_intersect(cell_v_edge, :y)
     }
     return if !has_intersect
-    if cell_pos.x != 0 && symbol(cell.x + cell_pos.x, cell.y) != WALL && !player_h_edge.prj_intersect(cell_h_edge, :x) && player[:velocity].x.abs > Settings.eps
-      @wall_offset.x = (cell_pos.x == 1 ? cell.x + 1 : cell.x) - (player[:coord].x - offset * cell_pos.x)
+    if cell_pos.x != 0 && symbol(cell.x - cell_pos.x, cell.y) != WALL && !player_h_edge.prj_intersect(cell_h_edge, :x)
+      @wall_offset.x = (cell_pos.x == 1 ? cell.x : cell.x + 1) - (player[:coord].x + offset * cell_pos.x)
     end
-    if cell_pos.y != 0 && symbol(cell.x, cell.y + cell_pos.y) != WALL && !player_v_edge.prj_intersect(cell_v_edge, :y) && player[:velocity].y.abs > Settings.eps
-      @wall_offset.y = (cell_pos.y == 1 ? cell.y + 1 : cell.y) - (player[:coord].y - offset * cell_pos.y)
+    if cell_pos.y != 0 && symbol(cell.x, cell.y - cell_pos.y) != WALL && !player_v_edge.prj_intersect(cell_v_edge, :y)
+      @wall_offset.y = (cell_pos.y == 1 ? cell.y : cell.y + 1) - (player[:coord].y + offset * cell_pos.y)
     end
     @wall_offset.x = 1 if cell_pos.y == -1 && @wall_offset.eq?(0, 0)
   end
