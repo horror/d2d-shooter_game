@@ -199,18 +199,24 @@ class Client
   @wall_offset
 
   def calc_wall_offset(cell, player_cell, player_box, der_vectors, der)
+    #позиция текущей стенки относительно ячейки игрока
     cell_pos = Point.new(cell.x - player_cell.x, cell.y - player_cell.y)
     offset = Settings.player_halfrect
+    #внутренние горизантальная и вертикальная грани текущей стенки
     cell_h_edge = Line.new(Point.new(cell.x, cell.y), Point.new(cell.x + 1, cell.y))
     cell_v_edge = Line.new(Point.new(cell_pos.x == 1 ? cell.x : cell.x + 1, cell.y),
                            Point.new(cell_pos.x == 1 ? cell.x : cell.x + 1, cell.y + 1))
+    #горизантальная и вертикальная грани квадрата игрока
     player_h_edge = Line.new(Point.new(player_box.x, player_box.y), Point.new(player_box.x + offset * 2, player_box.y))
     player_v_edge = Line.new(Point.new(player_box.x, player_box.y), Point.new(player_box.x, player_box.y + offset * 2))
+    #проверка пересечений проекций граней стенок со всеми векторами движения
     has_intersect = false
     der_vectors.each{|i|
       has_intersect ||= i.prj_intersect(cell_h_edge, :x) && i.prj_intersect(cell_v_edge, :y)
     }
     return if !has_intersect
+    #сохранить смещение по Х до стенки, если она не находится над или под ячекой игрока, и если слева/справа от текущей стенки нету другой стенки,
+    #и если нету пересечения проекций текущей стенки и ячейки игрока на ось Y
     if cell_pos.x != 0 && symbol(cell.x - cell_pos.x, cell.y) != WALL && !player_h_edge.prj_intersect(cell_h_edge, :x)
       @wall_offset.x = (cell_pos.x == 1 ? cell.x : cell.x + 1) - (player[:coord].x + offset * cell_pos.x)
     end
@@ -220,7 +226,7 @@ class Client
 
     bottom_left_cell = symbol(player_cell.x - 1, player_cell.y)
     bottom_right_cell = symbol(player_cell.x + 1, player_cell.y)
-    #не обнулять компаненту X, если произашло сталкновение с нижней левой/правой стенкой ровно в угол и нету стенок слева/стправа
+    #не обнулять компаненту X, если произашло столкновение с нижней левой/правой стенкой ровно в угол и нету стенок слева/стправа
     @wall_offset.x = 1 if @wall_offset.eq?(0, 0) && (der.x < 0 && bottom_left_cell != WALL || der.x > 0 && bottom_right_cell != WALL)
   end
 
@@ -228,25 +234,36 @@ class Client
     v_der = player[:velocity].map{|i| v_sign(i)}
     return if v_der.x == 0 && v_der.y == 0
     offset = Settings.player_halfrect
+    #координаты(левая верхная точка) квадрата игрока до движения
     player_box  = player[:coord] - offset
+    #координаты ячейки в которой находится начало вектора движения игрока
     player_cell = (player[:coord] + v_der * offset - v_der * Settings.eps).map{|i| i.floor}
+    #смещение до стенок по x,y
     @wall_offset = Point.new(1, 1)
+    #массив векторов движения игрока
     der_vectors = Array.new()
+    #движение вправо/влево или вверх/вниз
     der_vectors.push Line.new(player[:coord] + v_der * offset,
                               player[:coord] + v_der * offset + player[:velocity])                    if v_der.y == 0 || v_der.x == 0
+    #движение влево-вверх
     der_vectors.push Line.new(player_box, player_box + player[:velocity])                             if v_der.y < 0 || v_der.x < 0
+    #движение вправо-вверх
     der_vectors.push Line.new(Point.new(player_box.x + offset * 2, player_box.y),
                               Point.new(player_box.x + offset * 2, player_box.y) + player[:velocity]) if v_der.y < 0 || v_der.x > 0
+    #движение влево-вниз
     der_vectors.push Line.new(Point.new(player_box.x, player_box.y + offset * 2),
                               Point.new(player_box.x, player_box.y + offset * 2) + player[:velocity]) if v_der.y > 0 || v_der.x < 0
+    #движение вправо-вниз
     der_vectors.push Line.new(player_box + offset * 2, player_box + offset * 2 + player[:velocity])   if v_der.y > 0 || v_der.x > 0
 
+    #перебор по всем стенкам вокруг player_cell
     (-1..1).each{ |i|
       (-1..1).each{ |j|
         tmp = player_cell + Point.new(j, i)
         calc_wall_offset(tmp, player_cell, player_box, der_vectors, v_der) if symbol(tmp) == WALL
       }
     }
+    #смещение = 1,1 => столкновения не было
     return false if @wall_offset.eq?(1, 1)
     player[:velocity].set(@wall_offset.x != 1 ? 0 : player[:velocity].x, @wall_offset.y != 1 ? 0 : player[:velocity].y)
     player[:coord] = player[:coord] + Point.new(@wall_offset.x == 1 ? 0 : @wall_offset.x, @wall_offset.y == 1 ? 0 : @wall_offset.y)
