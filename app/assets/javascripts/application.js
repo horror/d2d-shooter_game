@@ -153,20 +153,6 @@ function key_hold()
         setTimeout('key_hold()', 50);
 }
 
-function left_hold()
-{
-    web_socket.send(JSON.stringify({"action": "move", "params": {"sid": sid, "dx": -1, "dy": 0, "tick": tick}}))
-    if (pressed)
-        setTimeout('left_hold()', 60);
-}
-
-function right_hold()
-{
-    web_socket.send(JSON.stringify({"action": "move", "params": {"sid": sid, "dx": 1, "dy": 0, "tick": tick}}))
-    if (pressed)
-        setTimeout('right_hold()', 60);
-}
-
 $(document).ready( function () {
     for (var i = 0; i < users_list.length; ++i)
         $("select, #users").append(
