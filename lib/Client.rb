@@ -94,25 +94,20 @@ class ActiveGame
     init_items
   end
 
-  def symbol(x, y)
-    return map[y + 1][x + 1]
-  end
-
   def init_items
     @map_bottom_bound = map.size.to_i
     @map_right_bound = map[0].length.to_i
-
-    for i in 0..map_bottom_bound - 1
-      for j in 0..map_right_bound - 1
-        items["respawns"] << {x: j, y: i} if map[i][j] == RESPAWN
+    @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
+    for i in 0..map.size.to_i - 1
+      for j in 0..map[0].length.to_i - 1
+        items["respawns"] << Point.new(j, i) if map[i][j] == RESPAWN
         if ("0".."9").include?(map[i][j])
           items["teleports"][map[i][j].to_s] ||= Array.new
-          items["teleports"][map[i][j].to_s] << {x: j, y: i}
+          items["teleports"][map[i][j].to_s] << Point.new(j, i)
         end
       end
     end
     items['last_respawn'] = 0
-    @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
   end
 end
 
@@ -121,11 +116,11 @@ class Client
   attr_accessor :ws, :sid, :game_id, :games, :player, :summed_move_params
 
   def initialize(ws, games)
-    @player = {vx: 0.0, vy: 0.0, x: 0.0, y: 0.0, hp: 100}
-    @summed_move_params = {dx: 0.0, dy: 0.0}
+    @player = {velocity: Point.new(0.0, 0.0), coord: Point.new(0.0, 0.0), hp: 100}
+    @summed_move_params = Point.new(0.0, 0.0)
     @position_changed = false
     @initialized = false
-    @last_tp = {x: -1, y: -1}
+    @last_tp = Point.new(-1, -1)
     @ws = ws
     @games = games
     @login = ""
@@ -140,17 +135,19 @@ class Client
     game_id ? games[game_id] : nil
   end
 
+  def symbol(arg_1, arg_2 = nil)
+    return arg_2 ? game.map[arg_2][arg_1] : game.map[arg_1.y][arg_1.x]
+  end
+
   def on_message(tick)
     return if !@initialized
 
-    if position_changed?
-      move(summed_move_params)
-      game.players[sid] = player
-    else
-      deceleration
-    end
-
-    @summed_move_params = {dx: 0.0, dy: 0.0}
+    position_changed? ? move(summed_move_params) : deceleration
+    result = {x: (player[:coord].x - 1).round(Settings.accuracy), y: (player[:coord].y - 1).round(Settings.accuracy),
+              vx: player[:velocity].x, vy: player[:velocity].y,
+              hp: player[:hp]}
+    game.players[sid] = result
+    @summed_move_params = Point.new(0.0, 0.0)
     @position_changed = false
     ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.players.values})) if game
   end
@@ -170,8 +167,8 @@ class Client
     init_player if !@initialized
 
     if data["action"] == MOVE
-      summed_move_params[:dx] += params["dx"].to_f
-      summed_move_params[:dy] += params["dy"].to_f
+      summed_move_params.x += params["dx"].to_f
+      summed_move_params.y += params["dy"].to_f
       @position_changed = true
     else
       send(data["action"], params)
@@ -180,7 +177,7 @@ class Client
 
   def init_player
     resp = next_respawn
-    set_position(resp[:x] + 0.5, resp[:y] + 0.5)
+    set_position(resp + 0.5)
 
     @initialized = true
   end
@@ -210,58 +207,58 @@ class Client
   end
 
   def try_tp
-    x = (player[:x] + player[:vx] - Settings.eps*v_sign(player[:vx])).floor
-    y = (player[:y] + player[:vy] - Settings.eps*v_sign(player[:vy])).floor
-
-    @last_tp = {x: -1, y: -1} if game.symbol(x, y) == VOID or game.symbol(x, y) == RESPAWN
-    if ("0".."9").include?(game.symbol(x, y)) && @last_tp != {x: x, y: y}
-      make_tp(x, y)
+    coord = (player[:coord] + player[:velocity] - player[:velocity].map{|i| Settings.eps * v_sign(i)}).map{|i| i.floor}
+    @last_tp.set(-1, -1) if symbol(coord) == VOID or symbol(coord) == RESPAWN
+    if ("0".."9").include?(symbol(coord)) && !(@last_tp == coord)
+      make_tp(coord)
       return true
     end
 
     return false
   end
 
-  def make_tp(x, y)
-    tps = game.items["teleports"][game.symbol(x,y)]
-    tp = tps[0][:x] == x && tps[0][:y] == y ? tps[1] : tps[0]
-    set_position(tp[:x].to_f + 0.5, tp[:y].to_f + 0.5)
-    @last_tp = tp
+  def make_tp(coord)
+    tps = game.items["teleports"][symbol(coord)]
+    tp = tps[0] == coord ? tps[1] : tps[0]
+    set_position(tp + 0.5)
+    @last_tp.set(tp.x, tp.y)
   end
 
-  def stop_movement(x, y)
-    player[:vx] = 0.0
-    player[:vy] = 0.0
-    set_position(x, y)
-  end
-
-  def set_position(x, y)
-    player[:x] = x.round(Settings.accuracy)
-    player[:y] = y.round(Settings.accuracy)
+  def set_position(new_pos)
+    player[:coord] = new_pos.map{|i| i.round(Settings.accuracy)}
   end
 
   def deceleration
-    player[:vx], player[:vy] = Client::new_velocity(-player[:vx], -player[:vy], player[:vx], player[:vy], @consts)
+    player[:velocity].y += @consts[:gravity] if !has_floor
+    player[:velocity].x = player[:velocity].x.abs <= @consts[:friction] ? 0 :
+                          player[:velocity].x - v_sign(player[:velocity].x) * @consts[:friction]
+    player[:velocity] = player[:velocity].map{|i| [i.abs, @consts[:max_velocity]].min.round(Settings.accuracy) * v_sign(i)}
     move_position
   end
 
-  def self.normalize(dx, dy)
-    return 0, 0 if (norm = Math.sqrt(dx.to_f**2 + dy.to_f**2)) == 0.0
-    dx /= norm
-    dy /= norm
-    return dx, dy
+  def self.normalize(der)
+    return Point.new(0, 0) if (norm = Math.sqrt(der.x.to_f**2 + der.y.to_f**2)) == 0.0
+    return der.map{|i| i /= norm}
   end
 
-  def self.new_velocity(dx, dy, vx, vy, consts)
-    dx, dy = Client::normalize(dx, dy)
-    vx = (vx + dx * consts[:accel]).round(Settings.accuracy)
-    vy = (vy + dy * consts[:accel]).round(Settings.accuracy)
-    return [vx.abs, consts[:max_velocity]].min * v_sign(vx), [vy.abs, consts[:max_velocity]].min * v_sign(vy)
+  def has_floor
+    y = (player[:coord].y + Settings.player_halfrect).floor
+    x1 = (player[:coord].x - Settings.player_halfrect + Settings.eps).floor
+    x2 = (player[:coord].x + Settings.player_halfrect - Settings.eps).floor
+    return symbol(x1, y) == WALL || symbol(x2, y) == WALL
+  end
+
+  def self.new_velocity(der, velocity, has_floor, consts)
+    der = Client::normalize(der)
+    velocity.y += consts[:gravity] if !has_floor
+    velocity.y = -consts[:max_velocity] if has_floor && der.y < 0
+    velocity.set((velocity.x + der.x * consts[:accel]).round(Settings.accuracy), velocity.y.round(Settings.accuracy))
+    return velocity.map{|i| [i.abs, consts[:max_velocity]].min * v_sign(i)}
   end
 
   ###ACTIONS###
   def move(data)
-    player[:vx], player[:vy] = Client::new_velocity(data[:dx], data[:dy], player[:vx], player[:vy], @consts)
+    player[:velocity] = Client::new_velocity(data, player[:velocity], has_floor, @consts)
     move_position
   end
 end
