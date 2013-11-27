@@ -114,14 +114,16 @@ describe 'Socket server' do
         request.stream { |message, type|
           arr = json_decode(message)
           player = arr['players'][0]
-          curr_player_params.should == player
-          curr_player_params = new_params(1, 0, curr_player_params, is_moving, game_consts)
+          should_eql(curr_player_params['x'], player['x'])
+          should_eql(curr_player_params['vx'], player['vx'])
+          curr_player_params['vx'] += is_moving ? game_consts[:accel] : -game_consts[:friction]
+          curr_player_params['x'] += curr_player_params['vx']
           if is_moving
             send_ws_request(request, "move", {sid: sid_a, dx: 1, dy: 0, tick: arr['tick']})
-            is_moving = curr_player_params['vx'] <= 0.2
+            is_moving = player['vx'] <= 0.1
           end
-          send_ws_request(request, "empty", {sid: sid_a, tick: arr['tick']}) if !is_moving && curr_player_params['vx'].abs >= Settings.eps
-          close_socket(request, sid_a) if !is_moving && curr_player_params['vx'].abs < Settings.eps
+          send_ws_request(request, "empty", {sid: sid_a, tick: arr['tick']}) if !is_moving && player['vx'].abs >= Settings.eps
+          close_socket(request, sid_a) if !is_moving && player['vx'].abs < Settings.eps
         }
       end
     end
