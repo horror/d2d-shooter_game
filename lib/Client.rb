@@ -3,8 +3,79 @@ VOID = "."
 WALL = "#"
 MOVE = "move"
 
+def f_eq(a, b)
+  (a - b).abs < Settings.eps
+end
+
 def v_sign(num)
-  return num.to_f.abs < Settings.eps ? 0.0 : num.to_f > 0.0 ? 1 : -1
+  return f_eq(num.to_f, 0) ? 0.0 : num.to_f > 0.0 ? 1 : -1
+end
+
+class Point
+  attr_accessor :x, :y
+
+  def initialize(x, y)
+    set(x, y)
+  end
+
+  def set(x, y)
+    @x = x
+    @y = y
+  end
+
+  def +(arg)
+    return Point.new(x + arg.x, y + arg.y) if arg.kind_of?(Point)
+    return Point.new(x + arg, y + arg) if arg.kind_of?(Numeric)
+  end
+
+  def -(arg)
+    return Point.new(x - arg.x, y - arg.y) if arg.kind_of?(Point)
+    return Point.new(x - arg, y - arg) if arg.kind_of?(Numeric)
+  end
+
+  def *(arg)
+    return Point.new(x * arg.x, y * arg.y) if arg.kind_of?(Point)
+    return Point.new(x * arg, y * arg) if arg.kind_of?(Numeric)
+  end
+
+  def neg
+    return Point.new(-x, -y)
+  end
+
+  def ==(point)
+    f_eq(x, point.x) && f_eq(y, point.y)
+  end
+
+  def eq?(x, y)
+    f_eq(@x, x) && f_eq(@y, y)
+  end
+
+  def map(&proc)
+    new_x = proc.call(@x)
+    new_y = proc.call(@y)
+    return Point.new(new_x, new_y)
+  end
+end
+
+class Line
+  attr_accessor :p1, :p2
+
+  def initialize(p1, p2)
+    @p1 = p1
+    @p2 = p2
+  end
+
+  def prj_intersect(line, v_der)
+    return intersect_by_coords(p1.send(v_der), p2.send(v_der), line.p1.send(v_der), line.p2.send(v_der))
+  end
+
+  private
+
+  def intersect_by_coords(a_1, a_2, b_1, b_2)
+    a_1, a_2 = [a_1, a_2].min, [a_1, a_2].max
+    b_1, b_2 = [b_1, b_2].min, [b_1, b_2].max
+    return !f_eq(a_2, b_1) && !f_eq(a_1, b_2) && a_2 > b_1 && b_2 > a_1
+  end
 end
 
 class ActiveGame
