@@ -198,7 +198,7 @@ class Client
 
   @wall_offset
 
-  def calc_wall_offset(cell, player_cell, player_box, der_vectors)
+  def calc_wall_offset(cell, player_cell, player_box, der_vectors, der)
     cell_pos = Point.new(cell.x - player_cell.x, cell.y - player_cell.y)
     offset = Settings.player_halfrect
     cell_h_edge = Line.new(Point.new(cell.x, cell.y), Point.new(cell.x + 1, cell.y))
@@ -217,7 +217,11 @@ class Client
     if cell_pos.y != 0 && symbol(cell.x, cell.y - cell_pos.y) != WALL && !player_v_edge.prj_intersect(cell_v_edge, :y)
       @wall_offset.y = (cell_pos.y == 1 ? cell.y : cell.y + 1) - (player[:coord].y + offset * cell_pos.y)
     end
-    @wall_offset.x = 1 if cell_pos.y == 1 && cell_pos.x != 0 && @wall_offset.eq?(0, 0) #проверка диагонального сталкновения с нижней левой/правой стенкой
+
+    bottom_left_cell = symbol(player_cell.x - 1, player_cell.y)
+    bottom_right_cell = symbol(player_cell.x + 1, player_cell.y)
+    #не обнулять компаненту X, если произашло сталкновение с нижней левой/правой стенкой ровно в угол и нету стенок слева/стправа
+    @wall_offset.x = 1 if @wall_offset.eq?(0, 0) && (der.x < 0 && bottom_left_cell != WALL || der.x > 0 && bottom_right_cell != WALL)
   end
 
   def check_collisions
@@ -240,7 +244,7 @@ class Client
     (-1..1).each{ |i|
       (-1..1).each{ |j|
         tmp = player_cell + Point.new(j, i)
-        calc_wall_offset(tmp, player_cell, player_box, der_vectors) if symbol(tmp) == WALL
+        calc_wall_offset(tmp, player_cell, player_box, der_vectors, der) if symbol(tmp) == WALL
       }
     }
     return false if @wall_offset.eq?(1, 1)
