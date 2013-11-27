@@ -244,7 +244,7 @@ class Client
     (-1..1).each{ |i|
       (-1..1).each{ |j|
         tmp = player_cell + Point.new(j, i)
-        calc_wall_offset(tmp, player_cell, player_box, der_vectors, der) if symbol(tmp) == WALL
+        calc_wall_offset(tmp, player_cell, player_box, der_vectors, v_der) if symbol(tmp) == WALL
       }
     }
     return false if @wall_offset.eq?(1, 1)
