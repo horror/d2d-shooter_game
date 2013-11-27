@@ -1,6 +1,7 @@
 //= require jquery
 
-const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81;
+const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81,
+      SCALE = 30, PLAYER_HALFRECT = 0.5;
 var keys_to_params = {
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
         40: {"action": "move", "params": {"dx": 0, "dy": 1}},
@@ -10,8 +11,7 @@ var keys_to_params = {
     },
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
-    stage, curr_shape, web_socket,
-    SCALE = 30;
+    stage, curr_shape, web_socket;
 
 
 function start_websocket(sid)
@@ -32,7 +32,9 @@ function start_websocket(sid)
         curr_shape = new createjs.Shape();
         curr_shape.graphics.beginStroke("red");
         for (var i = 0; i < players.length; ++i)
-            curr_shape.graphics.drawRect(players[i]["x"] * SCALE - 0.5 * SCALE, players[i]["y"] * SCALE - 0.5 * SCALE, SCALE, SCALE);
+            curr_shape.graphics.drawRect(players[i]["x"] * SCALE - PLAYER_HALFRECT * SCALE,
+                players[i]["y"] * SCALE - PLAYER_HALFRECT * SCALE,
+                SCALE * PLAYER_HALFRECT * 2, SCALE * PLAYER_HALFRECT * 2);
         stage.addChild(curr_shape);
         stage.update();
        // console.log('onmessage, ' + event.data);
@@ -55,9 +57,10 @@ function draw_map(map)
             if (map[j][i] == "#")
                 rect.graphics.beginFill("blue").drawRect(i * SCALE, j * SCALE, SCALE, SCALE);
             if (map[j][i] == "$")
-                rect.graphics.beginFill("blue").drawCircle(i * SCALE + 0.5 * SCALE, j * SCALE + 0.5 * SCALE, SCALE / 5);
+                rect.graphics.beginFill("blue").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
             if (!isNaN(parseInt(map[j][i], 10)))
-                rect.graphics.beginFill("green").drawCircle(i * SCALE + 0.5 * SCALE, j * SCALE + 0.5 * SCALE, SCALE / 5);
+                rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
+
         }
     stage.addChild(rect);
     stage.update();
