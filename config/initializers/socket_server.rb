@@ -17,6 +17,7 @@ EM.next_tick do
             @timer = nil
           end
           @tick += 1
+          @clients.each { |ws_handler, client| client.apply_changes }
           @clients.each { |ws_handler, client| client.on_message(@tick) }
         end
       end

@@ -113,7 +113,7 @@ end
 
 class Client
 
-  attr_accessor :ws, :sid, :game_id, :games, :player, :summed_move_params
+  attr_accessor :ws, :sid, :game_id, :games, :player, :summed_move_params, :position_changed
 
   def initialize(ws, games)
     @player = {velocity: Point.new(0.0, 0.0), coord: Point.new(0.0, 0.0), hp: 100}
@@ -139,16 +139,21 @@ class Client
     return arg_2 ? game.map[arg_2][arg_1] : game.map[arg_1.y][arg_1.x]
   end
 
+  def apply_changes
+    return if !@initialized
+
+    position_changed ? move(summed_move_params) : deceleration
+    @summed_move_params = Point.new(0.0, 0.0)
+    @position_changed = false
+
+    game.players[sid] = {x: (player[:coord].x - 1).round(Settings.accuracy), y: (player[:coord].y - 1).round(Settings.accuracy),
+                         vx: player[:velocity].x, vy: player[:velocity].y,
+                         hp: player[:hp]}
+  end
+
   def on_message(tick)
     return if !@initialized
 
-    position_changed? ? move(summed_move_params) : deceleration
-    result = {x: (player[:coord].x - 1).round(Settings.accuracy), y: (player[:coord].y - 1).round(Settings.accuracy),
-              vx: player[:velocity].x, vy: player[:velocity].y,
-              hp: player[:hp]}
-    game.players[sid] = result
-    @summed_move_params = Point.new(0.0, 0.0)
-    @position_changed = false
     ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.players.values})) if game
   end
 
