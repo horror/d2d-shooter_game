@@ -5,4 +5,4 @@ accuracy: 6
 eps: 1.0e-07
 tick_size: 50
 player_halfrect: 0.5
-def_game_consts: {accel: 0.05, friction: 0.05, maxVelocity: 0.5, gravity: 0.05}
+def_game_consts: {accel: 0.05, friction: 0.05, maxVelocity: 0.5, gravity: 0.05, gunVelocity: 0.4}

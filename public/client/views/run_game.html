@@ -1,7 +1,7 @@
 <div class="row">
     <div id="validation_error">
     </div>
-    <h4>Game: <%=Game.name%>, Your sid: <%=AppState.sid%></h4>
+    <h4>Game: <%=Game.name%>, Your: <%=AppState.username%></h4>
     <div class="col-lg-7">
         <a href="/" class="btn btn-lg btn-primary btn-block" id="leave_game">Leave game</a>
         <canvas id="main_canvas" width="1000" height="1000"></canvas>
@@ -20,21 +20,29 @@
 <script>
     $(document).ready( function () {
         draw_map(<%=Game.mapData%>);
-        start_websocket("<%=AppState.sid%>")
+        start_websocket("<%=AppState.sid%>", "<%=AppState.username%>");
 
         document.onkeydown = function(event) {
             if (!(event.keyCode in pressed_keys))
-                return
-            pressed_keys[event.keyCode] = true
+                return;
+            pressed_keys[event.keyCode] = true;
             if (!pressed)
-                key_hold("<%=AppState.sid%>")
-        }
+                key_hold("<%=AppState.sid%>");
+        };
         document.onkeyup = function(event) {
             if (!(event.keyCode in pressed_keys))
-                return
-            pressed = pressed_keys[event.keyCode] = false
+                return;
+            pressed = pressed_keys[event.keyCode] = false;
             for (i in pressed_keys)
-                pressed = pressed || pressed_keys[i]
-        }
+                pressed = pressed || pressed_keys[i];
+        };
+
+        $('#main_canvas').click(function (e)
+        {
+            var offset = $(this).offset();
+            var x = e.clientX - offset.left,
+                    y = e.clientY - offset.top;
+            fire(x, y, "<%=AppState.sid%>");
+        })
     })
 </script>

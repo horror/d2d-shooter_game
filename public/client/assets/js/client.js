@@ -7,17 +7,22 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         defaults: {
             sid: $.cookie("sid"),
             state: "",
+            username: $.cookie("username"),
             chatRefrashIntervalHandler: "",
             gameListRefrashIntervalHandler: "",
         },
         name: "AppState",
-        signin: function(sid) {
+        signin: function(sid, username) {
             this.set({sid: sid});
+            this.set({username: username});
             $.cookie("sid", sid);
+            $.cookie("username", username);
         },
         signout: function () {
             this.set({sid: undefined});
+            this.set({username: undefined});
             $.removeCookie("sid");
+            $.removeCookie("username");
         },
     });
     var appState = new AppState();
@@ -394,9 +399,10 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         },
 
         signin: function () {
-            sendRequest($('#form-signin').serializeObjectAPI("signin"), function(response) {
+            var data = $('#form-signin').serializeObjectAPI("signin");
+            sendRequest(data, function(response) {
                 process(response, function(){
-                    appState.signin(response["sid"]);
+                    appState.signin(response["sid"], data["params"]["login"]);
                     controller.navigate("!/lobby", true);
                 });
             })

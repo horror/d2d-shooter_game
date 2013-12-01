@@ -79,10 +79,11 @@ class Line
 end
 
 class ActiveGame
-  attr_accessor :players, :answered_players, :items, :map, :id, :map_bottom_bound, :map_right_bound
+  attr_accessor :players, :projectiles, :answered_players, :items, :map, :id, :map_bottom_bound, :map_right_bound
 
   def initialize(id, json_map)
     @players = Hash.new
+    @projectiles = Hash.new
     @answered_players = Hash.new
     @map = Array.new
     @items = Hash.new
@@ -92,6 +93,28 @@ class ActiveGame
     @id = id
     @map = ActiveSupport::JSON.decode(json_map)
     init_items
+  end
+
+  def get_players
+    players.map do |sid, player|
+      {x: (player[:coord].x - 1).round(Settings.accuracy), y: (player[:coord].y - 1).round(Settings.accuracy),
+       vx: player[:velocity].x, vy: player[:velocity].y,
+       hp: player[:hp],
+       login: player[:login]}
+    end
+  end
+
+  def get_projectiles
+    result = Array.new
+    projectiles.each do |owner, proj|
+      result += proj.map do |projectile|
+        {x: projectile[:coord].x - 1, y: projectile[:coord].y - 1,
+         vx: Settings.def_game_consts[:gunVelocity], vy: Settings.def_game_consts[:gunVelocity],
+         owner: owner}
+      end
+    end
+
+    result
   end
 
   def init_items
@@ -113,17 +136,17 @@ end
 
 class Client
 
-  attr_accessor :ws, :sid, :game_id, :games, :player, :summed_move_params, :position_changed
+  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :projectiles, :summed_move_params, :position_changed
 
   def initialize(ws, games)
     @player = {velocity: Point.new(0.0, 0.0), coord: Point.new(0.0, 0.0), hp: 100}
+    @projectiles = Array.new
     @summed_move_params = Point.new(0.0, 0.0)
     @position_changed = false
     @initialized = false
     @last_tp = Point.new(-1, -1)
     @ws = ws
     @games = games
-    @login = ""
     @consts = {}
   end
 
@@ -145,16 +168,16 @@ class Client
     position_changed ? move(summed_move_params) : deceleration
     @summed_move_params = Point.new(0.0, 0.0)
     @position_changed = false
+    move_projectiles
 
-    game.players[sid] = {x: (player[:coord].x - 1).round(Settings.accuracy), y: (player[:coord].y - 1).round(Settings.accuracy),
-                         vx: player[:velocity].x, vy: player[:velocity].y,
-                         hp: player[:hp]}
+    game.players[sid] = player
+    game.projectiles[login] = projectiles
   end
 
   def on_message(tick)
     return if !@initialized
 
-    ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.players.values})) if game
+    ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.get_players, projectiles: game.get_projectiles})) if game
   end
 
   def process(data, tick)
@@ -183,7 +206,7 @@ class Client
   def init_player
     resp = next_respawn
     set_position(resp + 0.5)
-
+    player[:login] = login
     @initialized = true
   end
 
@@ -201,14 +224,12 @@ class Client
     set_position(player[:coord] + player[:velocity])
   end
 
-  @wall_offset
-
-  def calc_wall_offset(cell, player_cell, player_box, der_vectors, der)
+  def calc_wall_offset(cell, player_cell, player_box, der_vectors, der, wall_offset)
     #позиция текущей стенки относительно ячейки игрока
-    cell_pos = Point.new(cell.x - player_cell.x, cell.y - player_cell.y)
+    cell_pos = cell - player_cell
     offset = Settings.player_halfrect
     #внутренние горизантальная и вертикальная грани текущей стенки
-    cell_h_edge = Line.new(Point.new(cell.x, cell.y), Point.new(cell.x + 1, cell.y))
+    cell_h_edge = Line.new(cell, Point.new(cell.x + 1, cell.y))
     cell_v_edge = Line.new(Point.new(cell_pos.x == 1 ? cell.x : cell.x + 1, cell.y),
                            Point.new(cell_pos.x == 1 ? cell.x : cell.x + 1, cell.y + 1))
     #горизантальная и вертикальная грани квадрата игрока
@@ -223,16 +244,16 @@ class Client
     #сохранить смещение по Х до стенки, если она не находится над или под ячекой игрока, и если слева/справа от текущей стенки нету другой стенки,
     #и если нету пересечения проекций текущей стенки и ячейки игрока на ось Y
     if cell_pos.x != 0 && symbol(cell.x - cell_pos.x, cell.y) != WALL && !player_h_edge.prj_intersect(cell_h_edge, :x)
-      @wall_offset.x = (cell_pos.x == 1 ? cell.x : cell.x + 1) - (player[:coord].x + offset * cell_pos.x)
+      wall_offset.x = (cell_pos.x == 1 ? cell.x : cell.x + 1) - (player[:coord].x + offset * cell_pos.x)
     end
     if cell_pos.y != 0 && symbol(cell.x, cell.y - cell_pos.y) != WALL && !player_v_edge.prj_intersect(cell_v_edge, :y)
-      @wall_offset.y = (cell_pos.y == 1 ? cell.y : cell.y + 1) - (player[:coord].y + offset * cell_pos.y)
+      wall_offset.y = (cell_pos.y == 1 ? cell.y : cell.y + 1) - (player[:coord].y + offset * cell_pos.y)
     end
 
     bottom_left_cell = symbol(player_cell.x - 1, player_cell.y)
     bottom_right_cell = symbol(player_cell.x + 1, player_cell.y)
     #не обнулять компаненту X, если произашло столкновение с нижней левой/правой стенкой ровно в угол и нету стенок слева/стправа
-    @wall_offset.x = 1 if @wall_offset.eq?(0, 0) && (der.x < 0 && bottom_left_cell != WALL || der.x > 0 && bottom_right_cell != WALL)
+    wall_offset.x = 1 if wall_offset.eq?(0, 0) && (der.x < 0 && bottom_left_cell != WALL || der.x > 0 && bottom_right_cell != WALL)
   end
 
   def check_collisions
@@ -244,7 +265,7 @@ class Client
     #координаты ячейки в которой находится начало вектора движения игрока
     player_cell = (player[:coord] + v_der * offset - v_der * Settings.eps).map{|i| i.floor}
     #смещение до стенок по x,y
-    @wall_offset = Point.new(1, 1)
+    wall_offset = Point.new(1, 1)
     #массив векторов движения игрока
     der_vectors = Array.new()
     #движение вправо/влево или вверх/вниз
@@ -265,13 +286,13 @@ class Client
     (-1..1).each{ |i|
       (-1..1).each{ |j|
         tmp = player_cell + Point.new(j, i)
-        calc_wall_offset(tmp, player_cell, player_box, der_vectors, v_der) if symbol(tmp) == WALL
+        calc_wall_offset(tmp, player_cell, player_box, der_vectors, v_der, wall_offset) if symbol(tmp) == WALL
       }
     }
     #смещение = 1,1 => столкновения не было
-    return false if @wall_offset.eq?(1, 1)
-    player[:velocity].set(@wall_offset.x != 1 ? 0 : player[:velocity].x, @wall_offset.y != 1 ? 0 : player[:velocity].y)
-    player[:coord] = player[:coord] + Point.new(@wall_offset.x == 1 ? 0 : @wall_offset.x, @wall_offset.y == 1 ? 0 : @wall_offset.y)
+    return false if wall_offset.eq?(1, 1)
+    player[:velocity].set(wall_offset.x != 1 ? 0 : player[:velocity].x, wall_offset.y != 1 ? 0 : player[:velocity].y)
+    player[:coord] = player[:coord] + Point.new(wall_offset.x == 1 ? 0 : wall_offset.x, wall_offset.y == 1 ? 0 : wall_offset.y)
     return true
   end
 
@@ -325,9 +346,20 @@ class Client
     return velocity.map{|i| [i.abs, consts[:max_velocity]].min * v_sign(i)}
   end
 
+  def move_projectiles
+    projectiles.map! do |projectile|
+      projectile[:coord] += projectile[:der] * Settings.def_game_consts[:gunVelocity]
+      projectile
+    end
+  end
+
   ###ACTIONS###
   def move(data)
     player[:velocity] = Client::new_velocity(data, player[:velocity], has_floor, @consts)
     move_position
+  end
+
+  def fire(data)
+    projectiles << {coord: player[:coord], der: Client::normalize(Point.new(data["dx"], data["dy"])), type: "gun"}
   end
 end

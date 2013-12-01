@@ -11,10 +11,10 @@ var keys_to_params = {
     },
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
-    stage, curr_shape, web_socket;
+    stage, container, web_socket, player_x = 0, player_y = 0;
 
 
-function start_websocket(sid)
+function start_websocket(sid, login)
 {
     if (web_socket)
         web_socket.close();
@@ -27,15 +27,37 @@ function start_websocket(sid)
 
     web_socket.onmessage = function(event) {
         tick = JSON.parse(event.data)['tick'];
-        players = JSON.parse(event.data)['players'];
-        stage.removeChild(curr_shape);
-        curr_shape = new createjs.Shape();
-        curr_shape.graphics.beginStroke("red");
-        for (var i = 0; i < players.length; ++i)
-            curr_shape.graphics.drawRect(players[i]["x"] * SCALE - PLAYER_HALFRECT * SCALE,
-                players[i]["y"] * SCALE - PLAYER_HALFRECT * SCALE,
+        var players = JSON.parse(event.data)['players'];
+        var projectiles = JSON.parse(event.data)['projectiles'];
+        stage.removeChild(container);
+        container = new createjs.Container();
+        var players_bodies = new createjs.Shape();
+        container.addChild(players_bodies);
+        players_bodies.graphics.beginStroke("red");
+        for (var i = 0; i < players.length; ++i) {
+            var player = players[i];
+
+            if (player["login"] == login) {
+                player_x = player["x"];
+                player_y = player["y"];
+            }
+            var login_text = new createjs.Text(player["login"], "12px Arial", "blue");
+            login_text.textBaseline = "alphabetic";
+            login_text.x = (player["x"] - PLAYER_HALFRECT) * SCALE;
+            login_text.y = (player["y"] - PLAYER_HALFRECT - 0.2) * SCALE;
+            container.addChild(login_text);
+            players_bodies.graphics.drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
+                player["y"] * SCALE - PLAYER_HALFRECT * SCALE,
                 SCALE * PLAYER_HALFRECT * 2, SCALE * PLAYER_HALFRECT * 2);
-        stage.addChild(curr_shape);
+        }
+
+        for (var i = 0; i < projectiles.length; ++i) {
+            var projectile = projectiles[i];
+            console.log(projectile);
+            players_bodies.graphics.beginFill("red").drawCircle(projectile["x"] * SCALE ,
+                projectile["y"] * SCALE, SCALE / 10);
+        }
+        stage.addChild(container);
         stage.update();
        // console.log('onmessage, ' + event.data);
     };
@@ -54,6 +76,7 @@ function draw_map(map)
     for (var j = 0; j < map.length; ++j)
         for (var i = 0; i < map[0].length; ++i)
         {
+
             if (map[j][i] == "#")
                 rect.graphics.beginFill("blue").drawRect(i * SCALE, j * SCALE, SCALE, SCALE);
             if (map[j][i] == "$")
@@ -82,5 +105,12 @@ function key_hold(sid)
         }
     if (pressed)
         setTimeout('key_hold("' + sid + '")', 50);
+}
+
+function fire(x, y, sid)
+{
+    var dx = x - player_x * SCALE,
+        dy = y - player_y * SCALE;
+    web_socket.send(JSON.stringify({action: "fire", params: {tick: tick, sid: sid, dx: dx, dy: dy}}));
 }
 
