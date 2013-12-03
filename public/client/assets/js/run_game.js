@@ -69,6 +69,8 @@ function start_websocket(sid, login)
 
 function draw_map(map)
 {
+    $("#main_canvas").attr("width", map[0].length * SCALE);
+    $("#main_canvas").attr("height", map.length * SCALE);
     stage = new createjs.Stage($("#main_canvas")[0]);
     rect = new createjs.Shape();
     rect.graphics.beginStroke("black").drawRect(0, 0, map[0].length * SCALE, map.length * SCALE).endStroke();
