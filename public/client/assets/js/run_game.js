@@ -30,10 +30,10 @@ function start_websocket(sid, login)
         var players = JSON.parse(event.data)['players'];
         var projectiles = JSON.parse(event.data)['projectiles'];
         stage.removeChild(container);
+        var moving_objects = new createjs.Shape();
         container = new createjs.Container();
-        var players_bodies = new createjs.Shape();
-        container.addChild(players_bodies);
-        players_bodies.graphics.beginStroke("red");
+        container.addChild(moving_objects);
+        moving_objects.graphics.beginStroke("red");
         for (var i = 0; i < players.length; ++i) {
             var player = players[i];
 
@@ -41,20 +41,31 @@ function start_websocket(sid, login)
                 player_x = player["x"];
                 player_y = player["y"];
             }
+
+            //НИК
             var login_text = new createjs.Text(player["login"], "12px Arial", "blue");
             login_text.textBaseline = "alphabetic";
             login_text.x = (player["x"] - PLAYER_HALFRECT) * SCALE;
             login_text.y = (player["y"] - PLAYER_HALFRECT - 0.2) * SCALE;
             container.addChild(login_text);
-            players_bodies.graphics.drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
+            //ХП
+            moving_objects.graphics.drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
+                player["y"] * SCALE - PLAYER_HALFRECT * SCALE * 2,
+                SCALE * PLAYER_HALFRECT * 2, 0.3 * SCALE);
+            moving_objects.graphics.beginFill("red").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
+                player["y"] * SCALE - PLAYER_HALFRECT * SCALE * 2,
+                SCALE * PLAYER_HALFRECT * 2 * player["hp"] / 100, 0.3 * SCALE);
+            //ИГРОК
+            moving_objects.graphics.drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
                 player["y"] * SCALE - PLAYER_HALFRECT * SCALE,
                 SCALE * PLAYER_HALFRECT * 2, SCALE * PLAYER_HALFRECT * 2);
+
         }
 
         for (var i = 0; i < projectiles.length; ++i) {
             var projectile = projectiles[i];
             console.log(projectile);
-            players_bodies.graphics.beginFill("red").drawCircle(projectile["x"] * SCALE ,
+            moving_objects.graphics.beginFill("red").drawCircle(projectile["x"] * SCALE ,
                 projectile["y"] * SCALE, SCALE / 10);
         }
         stage.addChild(container);
