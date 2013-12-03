@@ -40,7 +40,8 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             return;
         }
 
-        if (state == "runGame" && !curr_game.get("id")) { //перейти в лобби, если мы уже не играем
+        if (state == "runGame" && !curr_game.get("id") ||
+            (state == "signup" || state == "signin") && this.get("sid")) { //перейти в лобби, если мы уже не играем или пытаемся перейти на лоигн и регистрацию
             controller.navigate("!/lobby", true);
             return;
         }

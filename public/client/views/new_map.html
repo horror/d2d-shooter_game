@@ -1,13 +1,34 @@
-<div class="row">
-    <div class="col-lg-12">
-        <form id="map-form">
-            <div id="validation_error">
+<div class="well">
+    <form class="bs-example form-horizontal" id="map-form">
+        <fieldset>
+            <legend>Uploading Map</legend>
+            <div class="form-group" >
+                <label for="inputName" class="col-lg-2 control-label">Name</label>
+                <div class="col-lg-10">
+                    <input type="text" name="name" class="form-control" id="inputName" placeholder="Name">
+                </div>
             </div>
-            <label for="name">Name: </label><input id="name" name='name' type="text" />
-            <label for="map">Map: </label>
-            <textarea id="map" name="map"></textarea>
-            <label for="max_players">Max players: </label><input id="max_players" name='maxPlayers' type="number" />
-            <a href="/" class="btn btn-lg btn-primary btn-block" id="upload_map">Upload</a>
-        </form>
-    </div>
+
+            <div class="form-group">
+                <label for="textArea" class="col-lg-2 control-label">Map</label>
+                <div class="col-lg-10">
+                    <textarea class="form-control" rows="3" name="map" id="textArea"></textarea>
+                    <span class="help-block">Map must contain only following symbols: .$#[a-z][A-Z][0-9] </span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="inputMaxPlayers" class="col-lg-2 control-label">Name</label>
+                <div class="col-lg-10">
+                    <input type="number" name="maxPlayers" class="form-control" id="inputMaxPlayers" placeholder="Max players">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="col-lg-10 col-lg-offset-2">
+                    <a href="/" class="btn btn-primary" id="upload_map">Upload</a>
+                </div>
+            </div>
+        </fieldset>
+    </form>
 </div>

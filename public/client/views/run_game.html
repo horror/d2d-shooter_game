@@ -1,20 +1,32 @@
 <div class="row">
     <div id="validation_error">
     </div>
-    <h4>Game: <%=Game.name%>, Your: <%=AppState.username%></h4>
     <div class="col-lg-7">
-        <a href="/" class="btn btn-lg btn-primary btn-block" id="leave_game">Leave game</a>
-        <canvas id="main_canvas"></canvas>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Game: <%=Game.name%></h3>
+            </div>
+            <div class="panel-body">
+                <canvas id="main_canvas"></canvas>
+            </div>
+        </div>
     </div>
     <div class="col-lg-5">
-        <ul id="chat_messages">
-            wait...
-        </ul>
-        <form id="chat-form">
-            <input id='message_text' name='text' type="text" />
-            <input name='game' type="hidden" value="<%=Game.id%>" />
-            <a href="/" class="btn btn-lg btn-primary btn-block" id="send_message">send</a>
-        </form>
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Chat</h3>
+            </div>
+            <div class="panel-body">
+                <ul id="chat_messages" class="list-group">
+                    wait...
+                </ul>
+                <form id="chat-form">
+                    <input id='message_text' name='text' class="form-control" type="text" />
+                    <input name='game' type="hidden" value="<%=Game.id%>" />
+                    <a href="/" class="btn btn-lg btn-default btn-block" id="send_message">send</a>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 <script>
