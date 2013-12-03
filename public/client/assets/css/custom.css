@@ -3,6 +3,10 @@ input, select, textarea {
     height: 30px;
 }
 
+textarea {
+    font-family: monospace;
+}
+
 body {
     padding-top: 100px;
 }
