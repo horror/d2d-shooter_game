@@ -34,27 +34,34 @@
         draw_map(<%=Game.mapData%>);
         start_websocket("<%=AppState.sid%>", "<%=AppState.username%>");
 
-        document.onkeydown = function(event) {
-            if (!(event.keyCode in pressed_keys))
+        var onbuttondown = function(e) {
+            var key = e.type == "keydown" ? e.keyCode : KEY_MOUSE,
+                offset = $(this).offset();
+            var x = key == KEY_MOUSE ? e.clientX - offset.left : 0,
+                y = key == KEY_MOUSE ? e.clientY - offset.top : 0;
+            if (!(key in pressed_keys))
                 return;
-            pressed_keys[event.keyCode] = true;
+            pressed_keys[key] = true;
             if (!pressed)
-                key_hold("<%=AppState.sid%>");
+                key_hold("<%=AppState.sid%>", x, y);
         };
-        document.onkeyup = function(event) {
-            if (!(event.keyCode in pressed_keys))
+        var onbuttonup = function(e) {
+            var key = e.type == "keyup" ? e.keyCode : KEY_MOUSE;
+            if (!(key in pressed_keys))
                 return;
-            pressed = pressed_keys[event.keyCode] = false;
+            pressed = pressed_keys[key] = false;
             for (i in pressed_keys)
                 pressed = pressed || pressed_keys[i];
         };
-
-        $('#main_canvas').click(function (e)
+        document.onkeydown = onbuttondown
+        document.onkeyup = onbuttonup
+        $('#main_canvas').mousemove(function (e)
         {
             var offset = $(this).offset();
-            var x = e.clientX - offset.left,
-                    y = e.clientY - offset.top;
-            fire(x, y, "<%=AppState.sid%>");
-        })
+            mouse_x = e.clientX - offset.left,
+            mouse_y = e.clientY - offset.top;
+        });
+        $('#main_canvas').mousedown(onbuttondown);
+        $(document).mouseup(onbuttonup);
     })
 </script>
