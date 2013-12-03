@@ -2,6 +2,8 @@ RESPAWN = "$"
 VOID = "."
 WALL = "#"
 MOVE = "move"
+ALIVE = "alive"
+DEAD = "dead"
 
 def f_eq(a, b)
   (a - b).abs < Settings.eps
@@ -79,12 +81,10 @@ class Line
 end
 
 class ActiveGame
-  attr_accessor :players, :projectiles, :answered_players, :items, :map, :id, :map_bottom_bound, :map_right_bound
+  attr_accessor :clients, :items, :map, :id, :map_bottom_bound, :map_right_bound
 
   def initialize(id, json_map)
-    @players = Hash.new
-    @projectiles = Hash.new
-    @answered_players = Hash.new
+    @clients = Hash.new
     @map = Array.new
     @items = Hash.new
 
@@ -96,21 +96,24 @@ class ActiveGame
   end
 
   def get_players
-    players.map do |sid, player|
+    clients.map do |sid, client|
+      player = client.player
+
       {x: (player[:coord].x - 1).round(Settings.accuracy), y: (player[:coord].y - 1).round(Settings.accuracy),
        vx: player[:velocity].x, vy: player[:velocity].y,
-       hp: player[:hp],
-       login: player[:login]}
+       hp: player[:hp], status: player[:status], respawn: player[:respawn], login: player[:login]
+      }
     end
   end
 
   def get_projectiles
     result = Array.new
-    projectiles.each do |owner, proj|
+    clients.each do |sid, client|
+      proj = client.projectiles
       result += proj.map do |projectile|
         {x: projectile[:coord].x - 1, y: projectile[:coord].y - 1,
          vx: Settings.def_game_consts[:gunVelocity], vy: Settings.def_game_consts[:gunVelocity],
-         owner: owner}
+         owner: client.login}
       end
     end
 
@@ -139,7 +142,7 @@ class Client
   attr_accessor :ws, :sid, :login, :game_id, :games, :player, :projectiles, :summed_move_params, :position_changed
 
   def initialize(ws, games)
-    @player = {velocity: Point.new(0.0, 0.0), coord: Point.new(0.0, 0.0), hp: 100}
+    @player = {velocity: Point.new(0.0, 0.0), coord: Point.new(0.0, 0.0), hp: 100, status: ALIVE, respawn: 0}
     @projectiles = Array.new
     @summed_move_params = Point.new(0.0, 0.0)
     @position_changed = false
@@ -162,16 +165,26 @@ class Client
     return arg_2 ? game.map[arg_2][arg_1] : game.map[arg_1.y][arg_1.x]
   end
 
-  def apply_changes
+  def apply_player_changes
     return if !@initialized
 
     position_changed ? move(summed_move_params) : deceleration
     @summed_move_params = Point.new(0.0, 0.0)
     @position_changed = false
-    move_projectiles
 
-    game.players[sid] = player
-    game.projectiles[login] = projectiles
+    if player[:status] == DEAD
+      player[:respawn] -= 1
+      if player[:respawn] == 0
+        player[:status] = ALIVE
+        init_player
+      end
+    end
+  end
+
+  def apply_projectiles_changes
+    return if !@initialized
+
+    move_projectiles
   end
 
   def on_message(tick)
@@ -192,7 +205,12 @@ class Client
                friction: player_model.game.friction, gravity: player_model.game.gravity}
     games[game_id] = ActiveGame.new(game_id, player_model.game.map.map) if !@games.include?(game_id)
 
-    init_player if !@initialized
+    if !@initialized
+      init_player
+      game.clients[sid] = self
+    end
+
+    return if player[:status] == DEAD
 
     if data["action"] == MOVE
       summed_move_params.x += params["dx"].to_f
@@ -207,6 +225,7 @@ class Client
     resp = next_respawn
     set_position(resp + 0.5)
     player[:login] = login
+    player[:hp] = 100
     @initialized = true
   end
 
@@ -371,6 +390,20 @@ class Client
           end
         }
       }
+
+      game.clients.each do |c_sid, client|
+        c_player = client.player
+        if c_player[:status] == ALIVE && check_intersect(c_player[:coord] - Point.new(0.5, 0.5), [der]) && c_sid != sid
+          c_player[:hp] =  [c_player[:hp] - Settings.def_game_consts[:gunDamage], 0].max
+          if c_player[:hp] == 0
+            c_player[:status] = DEAD
+            c_player[:respawn] = Settings.respawn_ticks
+          end
+          intersected = true
+          break
+        end
+      end
+
       intersected
     end
   end

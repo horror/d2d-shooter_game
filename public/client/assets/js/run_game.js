@@ -1,7 +1,7 @@
 //= require jquery
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81,
-      SCALE = 30, PLAYER_HALFRECT = 0.5;
+      SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead";
 var keys_to_params = {
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
         40: {"action": "move", "params": {"dx": 0, "dy": 1}},
@@ -37,6 +37,9 @@ function start_websocket(sid, login)
         for (var i = 0; i < players.length; ++i) {
             var player = players[i];
 
+            if (player["status"] == DEAD)
+                continue;
+
             if (player["login"] == login) {
                 player_x = player["x"];
                 player_y = player["y"];
@@ -49,7 +52,7 @@ function start_websocket(sid, login)
             login_text.y = (player["y"] - PLAYER_HALFRECT - 0.2) * SCALE;
             container.addChild(login_text);
             //ХП
-            moving_objects.graphics.drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
+            moving_objects.graphics.beginFill("#FFFFFF").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
                 player["y"] * SCALE - PLAYER_HALFRECT * SCALE * 2,
                 SCALE * PLAYER_HALFRECT * 2, 0.3 * SCALE);
             moving_objects.graphics.beginFill("red").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
