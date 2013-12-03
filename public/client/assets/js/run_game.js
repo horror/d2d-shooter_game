@@ -1,8 +1,9 @@
 //= require jquery
 
-const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81,
-      SCALE = 30, PLAYER_HALFRECT = 0.5;
+const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
+    SCALE = 30, PLAYER_HALFRECT = 0.5;
 var keys_to_params = {
+        "m": {"action": "fire", params: {}},
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
         40: {"action": "move", "params": {"dx": 0, "dy": 1}},
         37: {"action": "move", "params": {"dx": -1, "dy": 0}},
@@ -11,7 +12,8 @@ var keys_to_params = {
     },
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
-    stage, container, web_socket, player_x = 0, player_y = 0;
+    stage, container, web_socket, player_x = 0, player_y = 0,
+    mouse_x, mouse_y;
 
 
 function start_websocket(sid, login)
@@ -102,7 +104,7 @@ function draw_map(map)
     stage.update();
 }
 
-var pressed_keys = {38: false, 37: false, 39: false, 40: false, 81: false}
+var pressed_keys = {38: false, 37: false, 39: false, 40: false, 81: false, "m": false}
 var pressed = false;
 
 function key_hold(sid)
@@ -114,16 +116,13 @@ function key_hold(sid)
             var arr = keys_to_params[i];
             arr["params"]["sid"] = sid;
             arr["params"]["tick"] = tick;
+            if (i == KEY_MOUSE)
+            {
+                arr["params"]["dx"] = mouse_x - player_x * SCALE,
+                    arr["params"]["dy"] = mouse_y - player_y * SCALE;
+            }
             web_socket.send(JSON.stringify(arr));
         }
     if (pressed)
-        setTimeout('key_hold("' + sid + '")', 50);
+        setTimeout("key_hold('" + sid + "')", 50);
 }
-
-function fire(x, y, sid)
-{
-    var dx = x - player_x * SCALE,
-        dy = y - player_y * SCALE;
-    web_socket.send(JSON.stringify({action: "fire", params: {tick: tick, sid: sid, dx: dx, dy: dy}}));
-}
-
