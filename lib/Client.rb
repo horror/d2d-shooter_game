@@ -139,7 +139,7 @@ end
 
 class Client
 
-  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :projectiles, :summed_move_params, :position_changed
+  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :projectiles, :summed_move_params, :position_changed, :answered
 
   def initialize(ws, games)
     @player = {velocity: Point.new(0.0, 0.0), coord: Point.new(0.0, 0.0), hp: 100, status: ALIVE, respawn: 0}
@@ -150,6 +150,7 @@ class Client
     @last_tp = Point.new(-1, -1)
     @ws = ws
     @games = games
+    @answered = true
     @consts = {}
   end
 

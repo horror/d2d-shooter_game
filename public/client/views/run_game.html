@@ -58,8 +58,9 @@
         $('#main_canvas').mousemove(function (e)
         {
             var offset = $(this).offset();
-            mouse_x = e.clientX - offset.left,
-            mouse_y = e.clientY - offset.top;
+
+            mouse_x = e.pageX - offset.left,
+            mouse_y = e.pageY - offset.top;
         });
         $('#main_canvas').mousedown(onbuttondown);
         $(document).mouseup(onbuttonup);
