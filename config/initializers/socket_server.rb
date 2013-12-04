@@ -7,10 +7,10 @@ EM.next_tick do
   @games = Hash.new
 
   def send_clients_response(ws)
-    check_game_id = ValidationHelper.synchron_websocket?
-    @clients.each { |ws_handler, client| client.apply_player_changes if check_game_id && client.game_id == @clients[ws].game_id }
-    @clients.each { |ws_handler, client| client.apply_projectiles_changes if check_game_id && client.game_id == @clients[ws].game_id }
-    @clients.each { |ws_handler, client| client.on_message(@tick) if check_game_id && client.game_id == @clients[ws].game_id }
+    synch = !ValidationHelper.synchron_websocket?
+    @clients.each { |ws_handler, client| client.apply_player_changes if synch || client.game_id == @clients[ws].game_id }
+    @clients.each { |ws_handler, client| client.apply_projectiles_changes if synch || client.game_id == @clients[ws].game_id }
+    @clients.each { |ws_handler, client| client.on_message(@tick) if synch || client.game_id == @clients[ws].game_id }
   end
 
   EM::WebSocket.start(:host => '0.0.0.0', :port => 8001) do |ws|
