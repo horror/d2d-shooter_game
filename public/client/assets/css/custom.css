@@ -43,3 +43,7 @@ body {
 .badge {
     background-color: #424242;
 }
+
+canvas:hover {
+    cursor: url("./images/gun_cursor.png") 26 26, auto;
+}
