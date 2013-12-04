@@ -1,7 +1,6 @@
-//= require jquery
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
-    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead";
+    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", SPRITE_SCALE = 0.8, SPRITE_SHIFT_X = 0.4, SPRITE_SHIFT_Y = 0.6;
 var keys_to_params = {
         "m": {"action": "fire", params: {}},
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
@@ -13,8 +12,21 @@ var keys_to_params = {
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
     stage, container, web_socket, player_x = 0, player_y = 0,
-    mouse_x, mouse_y;
+    mouse_x, mouse_y, sprites = {};
 
+var ss = new createjs.SpriteSheet({
+    animations: {
+        run_left: [0, 4],
+        run_right: [5, 9],
+        jump_left: [12],
+        jump_right: [10],
+    },
+    images:["assets/img/walkcyclex.png"],
+    frames:{
+        height: 64,
+        width: 64,
+    },
+});
 
 function start_websocket(sid, login)
 {
@@ -61,10 +73,19 @@ function start_websocket(sid, login)
                 player["y"] * SCALE - PLAYER_HALFRECT * SCALE * 2,
                 SCALE * PLAYER_HALFRECT * 2 * player["hp"] / 100, 0.3 * SCALE);
             //ИГРОК
-            moving_objects.graphics.drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
-                player["y"] * SCALE - PLAYER_HALFRECT * SCALE,
-                SCALE * PLAYER_HALFRECT * 2, SCALE * PLAYER_HALFRECT * 2);
+            if (sprites[player["login"]] == undefined) {
+                sprites[player["login"]] = new createjs.Sprite(ss);
+                sprites[player["login"]].scaleY = sprites[player["login"]].scaleX = SPRITE_SCALE;
+            }
 
+            var sprite = sprites[player["login"]];
+            var curr_animation = ((player["vy"] != 0) ? "jump_" : "run_") + ((player["vx"] > 0) ? "right" : "left");
+            if (player["vx"] == 0)
+                sprite.stop();
+            else if (curr_animation != sprite.currentAnimation || sprite.paused)
+                sprite.gotoAndPlay(curr_animation);
+            container.addChild(sprite)
+                .set({graphics: moving_objects, x: (player["x"] - SPRITE_SHIFT_X) * SCALE - PLAYER_HALFRECT * SCALE , y: (player["y"] - SPRITE_SHIFT_Y) * SCALE - PLAYER_HALFRECT * SCALE});
         }
 
         for (var i = 0; i < projectiles.length; ++i) {
