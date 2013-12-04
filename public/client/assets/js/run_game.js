@@ -1,6 +1,6 @@
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
-    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", SPRITE_SCALE = 0.8, SPRITE_SHIFT_X = 0.4, SPRITE_SHIFT_Y = 0.6;
+    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", SPRITE_SCALE = 0.9, SPRITE_SHIFT_X = 0.45, SPRITE_SHIFT_Y = 0.8;
 var keys_to_params = {
         "m": {"action": "fire", params: {}},
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
