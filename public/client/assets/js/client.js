@@ -349,9 +349,10 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             'click a#to_signup': function () {
                 controller.navigate("!/signup", true);
             },
-            'click a#send_message': function () {
+            'submit #chat-form': function () {
                 messages.addNew($('#chat-form').serializeObjectAPI("sendMessage"));
                 $('#message_text').val("");
+                return false;
             },
             'click a#create_game': function () {
                 var data = $('#game-form').serializeObjectAPI("createGame");

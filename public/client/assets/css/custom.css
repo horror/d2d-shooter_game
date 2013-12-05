@@ -47,3 +47,7 @@ body {
 canvas:hover {
     cursor: url("./images/gun_cursor.png") 26 26, auto;
 }
+
+#send_message {
+    height: 53px;
+}
