@@ -160,7 +160,7 @@ class Client
     @summed_move_params = Point(0.0, 0.0)
     @position_changed = false
     @initialized = false
-    @last_tp = Point.new(-1, -1)
+    @updated_velocity = Point(0.0, 0.0)
     @ws = ws
     @games = games
     @answered = true
@@ -251,10 +251,11 @@ class Client
   end
 
   def move_position
+    @updated_velocity.set(player[:velocity])
     check_collisions
-    return if try_tp
+    return if check_items == "teleport"
 
-    set_position(player[:coord] + player[:velocity])
+    set_position(player[:coord] + @updated_velocity)
   end
 
   def walk_cells_around_coord(coord, velocity, is_rect, &block)
@@ -341,26 +342,54 @@ class Client
       calc_wall_offset(itr_cell, player_new_floor_cell, player_cell, der_vectors, v_der, wall_offset) if symbol(itr_cell) == WALL
     }
     player[:velocity].set(wall_offset.x != 1 ? 0 : player[:velocity].x, wall_offset.y != 1 ? 0 : player[:velocity].y)
-    player[:coord] = player[:coord] + Point.new(wall_offset.x == 1 ? 0 : wall_offset.x, wall_offset.y == 1 ? 0 : wall_offset.y)
-    return true
+    @updated_velocity.set(wall_offset.x != 1 ? wall_offset.x : player[:velocity].x,
+                          wall_offset.y != 1 ? wall_offset.y : player[:velocity].y)
   end
 
-  def try_tp
-    coord = (player[:coord] + player[:velocity] - player[:velocity].map{|i| Settings.eps * v_sign(i)}).map{|i| i.floor}
-    @last_tp.set(-1, -1) if symbol(coord) == VOID or symbol(coord) == RESPAWN
-    if ("0".."9").include?(symbol(coord)) && !(@last_tp == coord)
-      make_tp(coord)
-      return true
-    end
+  def polygon_include_point?(start_rect_point, end_rect_point, point)
+    p1, p2 = start_rect_point, end_rect_point
+    offset = Settings.player_halfrect - Settings.eps
+    der = (p2 - p1).map{|i| v_sign(i)} * offset
+    points = [Point(p1.x - der.x, p1.y + der.y), p1 - der, Point(p1.x + der.x, p1.y - der.y),
+              Point(p2.x + der.x, p2.y - der.y), p2 + der, Point(p2.x - der.x, p2.y + der.y)]
+    points = [Point(p1.x - offset, p1.y - der.y), Point(p1.x + offset, p1.y - der.y),
+              Point(p2.x + offset, p2.y + der.y), Point(p2.x - offset, p2.y + der.y)] if f_eq(p1.x, p2.x)
+    points = [Point(p1.x - der.x, p1.y - offset), Point(p1.x - der.x, p1.y + offset),
+              Point(p2.x + der.x, p2.y + offset), Point(p2.x + der.x, p2.y - offset)] if f_eq(p1.y, p2.y)
+    Geometry::Polygon.new(points).contains?(point)
+  end
 
-    return false
+  def rect_include_point?(center, point)
+    offset = Settings.player_halfrect
+    center.x - offset < point.x && center.x + offset > point.x && center.y - offset < point.y && center.y + offset > point.y
+  end
+
+  def line_len(p1, p2)
+    Math::sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
+  end
+
+  def check_items
+    tp_cell = Point(0, 0)
+    min_tp_dist = 2
+    walk_cells_around_coord(player[:coord], @updated_velocity, true) {|itr_cell|
+      next if [VOID, WALL, RESPAWN].include?(symbol(itr_cell))
+      cell_center = itr_cell + Settings.player_halfrect
+      end_rect = player[:coord] + @updated_velocity
+      if polygon_include_point?(player[:coord], end_rect, cell_center) && !rect_include_point?(player[:coord], cell_center) &&
+          min_tp_dist > line_len(player[:coord], cell_center)
+         if("0".."9").include?(symbol(itr_cell))
+           min_tp_dist = line_len(player[:coord], cell_center)
+           tp_cell = itr_cell
+         end
+      end
+    }
+    return make_tp(tp_cell) if !tp_cell.eq?(0, 0)
   end
 
   def make_tp(coord)
     tps = game.items["teleports"][symbol(coord)]
-    tp = tps[0] == coord ? tps[1] : tps[0]
-    set_position(tp + 0.5)
-    @last_tp.set(tp.x, tp.y)
+    set_position((tps[0] == coord ? tps[1] : tps[0]) + 0.5)
+    "teleport"
   end
 
   def set_position(new_pos)
