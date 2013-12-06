@@ -51,6 +51,10 @@ module Requests
         send_ws_request(request, "move", {sid: sid, dx: 0, dy: 0, tick: 0})
       }
 
+      request.disconnect{
+        EM.stop
+      }
+
       request.errback {
         puts "websocket connection problem"
       }
