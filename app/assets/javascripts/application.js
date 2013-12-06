@@ -1,8 +1,9 @@
 //= require jquery
 
-const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81,
-      SCALE = 30, PLAYER_HALFRECT = 0.5;
+const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
+    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", SPRITE_SCALE = 0.9, SPRITE_SHIFT_X = 0.45, SPRITE_SHIFT_Y = 0.8;
 var keys_to_params = {
+        "m": {"action": "fire", params: {}},
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
         40: {"action": "move", "params": {"dx": 0, "dy": 1}},
         37: {"action": "move", "params": {"dx": -1, "dy": 0}},
@@ -11,8 +12,8 @@ var keys_to_params = {
     },
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     sid = "", web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
-    maps = "", stage, curr_shape, web_socket,
-    users_list = ["user_a", "user_b"];
+    maps = "", stage, container, web_socket, player_x = 0, player_y = 0,
+    mouse_x, mouse_y, sprites = {}, users_list = ["user_a", "user_b"];
 
 function send_request(action, params, call_back_func)
 {
@@ -64,7 +65,7 @@ function init()
         send_request("signup", {login: "user_a", password: "password"}, a_signup_callback);
         send_request("signup", {login: "user_b", password: "password"}, b_signup_callback);
     }
-    send_request("startTesting", {"websocketMode": "async"}, st_callback);
+    send_request("startTesting", {"websocketMode": "sync"}, st_callback);
 }
 
 function signin()
@@ -90,6 +91,7 @@ function start_websocket()
 {
     if (web_socket)
         web_socket.close();
+    login = $("select, #users").val()
     web_socket = new WebSocket(web_socket_url);
 
     web_socket.onopen = function(event) {
@@ -100,14 +102,14 @@ function start_websocket()
     web_socket.onmessage = function(event) {
         tick = JSON.parse(event.data)['tick'];
         players = JSON.parse(event.data)['players'];
-        stage.removeChild(curr_shape);
-        curr_shape = new createjs.Shape();
-        curr_shape.graphics.beginStroke("red");
+        stage.removeChild(container);
+        container = new createjs.Shape();
+        container.graphics.beginStroke("red");
         for (var i = 0; i < players.length; ++i)
-            curr_shape.graphics.drawRect(players[i]["x"] * SCALE - PLAYER_HALFRECT * SCALE,
+            container.graphics.drawRect(players[i]["x"] * SCALE - PLAYER_HALFRECT * SCALE,
                                          players[i]["y"] * SCALE - PLAYER_HALFRECT * SCALE,
                                          SCALE * PLAYER_HALFRECT * 2, SCALE * PLAYER_HALFRECT * 2);
-        stage.addChild(curr_shape);
+        stage.addChild(container);
         stage.update();
         console.log('onmessage, ' + event.data);
     };
@@ -120,6 +122,8 @@ function start_websocket()
 function draw_map()
 {
     map = maps[0]['map'];
+    $("#main_canvas").attr("width", map[0].length * SCALE);
+    $("#main_canvas").attr("height", map.length * SCALE);
     stage = new createjs.Stage($("#main_canvas")[0]);
     rect = new createjs.Shape();
     rect.graphics.beginStroke("black").drawRect(0, 0, map[0].length * SCALE, map.length * SCALE).endStroke();
@@ -150,10 +154,15 @@ function key_hold()
             var arr = keys_to_params[i];
             arr["params"]["sid"] = sid;
             arr["params"]["tick"] = tick;
+            if (i == KEY_MOUSE)
+            {
+                arr["params"]["dx"] = mouse_x - player_x * SCALE,
+                    arr["params"]["dy"] = mouse_y - player_y * SCALE;
+            }
             web_socket.send(JSON.stringify(arr));
         }
     if (pressed)
-        setTimeout('key_hold()', 50);
+        setTimeout("key_hold()", 150);
 }
 
 $(document).ready( function () {
@@ -161,18 +170,38 @@ $(document).ready( function () {
         $("select, #users").append(
             $("<\option>", {"text": users_list[i], "name": users_list[i]})
         );
-    document.onkeydown = function(event) {
-        if (!(event.keyCode in pressed_keys))
-            return
-        pressed_keys[event.keyCode] = true
+    var onbuttondown = function(e) {
+        var key = e.type == "keydown" ? e.keyCode : KEY_MOUSE,
+            offset = $(this).offset();
+        var x = key == KEY_MOUSE ? e.clientX - offset.left : 0,
+            y = key == KEY_MOUSE ? e.clientY - offset.top : 0;
+        if (!(key in pressed_keys))
+            return;
+        pressed_keys[key] = true;
         if (!pressed)
-            key_hold()
-    }
-    document.onkeyup = function(event) {
-        if (!(event.keyCode in pressed_keys))
-            return
-        pressed = pressed_keys[event.keyCode] = false
+            key_hold(x, y);
+    };
+    var onbuttonup = function(e) {
+        var key = e.type == "keyup" ? e.keyCode : KEY_MOUSE;
+        if (!(key in pressed_keys))
+            return;
+        pressed = pressed_keys[key] = false;
         for (i in pressed_keys)
-            pressed = pressed || pressed_keys[i]
+            pressed = pressed || pressed_keys[i];
+    };
+    document.onkeydown = onbuttondown
+    document.onkeyup = onbuttonup
+    $('#main_canvas').mousemove(function (e)
+    {
+        var offset = $(this).offset();
+
+        mouse_x = e.pageX - offset.left,
+        mouse_y = e.pageY - offset.top;
+    });
+    $('#main_canvas').mousedown(onbuttondown);
+    $(document).mouseup(onbuttonup);
+    window.onbeforeunload = function() {
+        if (web_socket)
+            web_socket.close();
     }
 })
