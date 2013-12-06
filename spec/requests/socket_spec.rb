@@ -4,7 +4,7 @@ describe 'Socket server' do
 
   sid_a = sid_b = ""
   map_id = game_id = 0
-  def_params = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100}
+  def_params = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100, 'respawn' => 0, 'status' => "alive"}
   game_consts = {accel: 0.05, max_velocity: 0.5, gravity: 0.05, friction: 0.05}
 
   before(:all) do
@@ -33,6 +33,7 @@ describe 'Socket server' do
   def def_request (params, &checking)
     params_list = [:dx_rule, :dy_rule, :index, :x, :y, :vx, :vy, :check_limit, :send_limit, :name]
     params_list.each {|i| params[i] ||= 0 }
+    params[:action] ||= "move"
     request = web_socket_request(params[:sid])
     p_tick = 0
     checking ||= lambda{ |player|
@@ -41,19 +42,19 @@ describe 'Socket server' do
       should_eql(player['vx'], params[:vx])
       should_eql(player['vy'], params[:vy])
     }
-    #puts "\n\n #{params[:name]}:\n\n"
     request.stream { |message, type|
       tick = json_decode(message)['tick']
       player = json_decode(message)['players'][params[:index]]
-      #puts "Sid = #{params[:sid][0..2]}, Cnt = #{p_tick}, params = #{player}, Tick = #{tick}"
+      puts "Sid = #{params[:sid][0..2]}, Cnt = #{p_tick}, params = #{player}, Tick = #{tick}" if params.include?(:log)
       if p_tick == params[:check_limit]
         checking.call(player)
         close_socket(request, params[:sid])
       end
       dx = params[:dx_rule].kind_of?(Proc) ? params[:dx_rule].call(p_tick, player) : params[:dx_rule]
       dy = params[:dy_rule].kind_of?(Proc) ? params[:dy_rule].call(p_tick, player) : params[:dy_rule]
+      action = params[:action].kind_of?(Proc) ? params[:action].call(p_tick, player) : params[:action]
       send_ws_request(request, "empty", {sid: params[:sid], tick: tick}) if p_tick >= params[:send_limit]
-      send_ws_request(request, "move", {sid: params[:sid], dx: dx, dy: dy, tick: tick}) if p_tick < params[:send_limit]
+      send_ws_request(request, action, {sid: params[:sid], dx: dx, dy: dy, tick: tick}) if p_tick < params[:send_limit]
       p_tick += 1
     }
   end
@@ -65,12 +66,12 @@ describe 'Socket server' do
         request_a = web_socket_request(sid_a)
         request_b = web_socket_request(sid_b)
         request_a.stream { |message, type|
-          json_decode(message)['players'][0].should == def_params
+          json_decode(message)['players'][0].should == def_params.merge({"login" => "user_a"})
           send_ws_request(request_a, "empty", {sid: sid_a, tick: json_decode(message)['tick']})
           close_socket(request_a, sid_a)
         }
         request_b.stream { |message, type|
-          json_decode(message)['players'].should == [def_params, def_params]
+          json_decode(message)['players'].should == [def_params.merge({"login" => "user_a"}), def_params.merge({"login" => "user_b"})]
           close_socket(request_b, sid_b)
         }
       end
@@ -110,14 +111,14 @@ describe 'Socket server' do
       EM.run do
         request = web_socket_request(sid_a)
         is_moving = true
-        curr_player_params = def_params
+        curr_player = def_params
         request.stream { |message, type|
           arr = json_decode(message)
           player = arr['players'][0]
-          should_eql(curr_player_params['x'], player['x'])
-          should_eql(curr_player_params['vx'], player['vx'])
-          curr_player_params['vx'] += is_moving ? game_consts[:accel] : -game_consts[:friction]
-          curr_player_params['x'] += curr_player_params['vx']
+          should_eql(player['x'], curr_player['x'])
+          should_eql(player['vx'], curr_player['vx'])
+          curr_player['vx'] += is_moving ? game_consts[:accel] : -game_consts[:friction]
+          curr_player['x'] += curr_player['vx']
           if is_moving
             send_ws_request(request, "move", {sid: sid_a, dx: 1, dy: 0, tick: arr['tick']})
             is_moving = player['vx'] <= 0.1
@@ -157,7 +158,7 @@ describe 'Socket server' do
 
     it "to left wall" do
       EM.run {
-        def_request( {sid: sid_a, check_limit: 15, send_limit: 15, x: 1.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 5 ? -1 : 1}} )
+        def_request( {log: 1,sid: sid_a, check_limit: 15, send_limit: 15, x: 1.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 5 ? -1 : 1}} )
       }
     end
 
@@ -202,10 +203,10 @@ describe 'Socket server' do
                                                        '#......#',
                                                        '###.....']})
       send_request(action: "getMaps", params: {sid: sid_a})
-      map_id = json_decode(response.body)["maps"][0]["id"]
+      map_id = json_decode(response.body)["maps"][1]["id"]
       send_request(action: "createGame", params: {sid: sid_a, name: "New game 2", map: map_id, maxPlayers: 10})
       send_request(action: "getGames", params: {sid: sid_a})
-      game_id = json_decode(response.body)["games"][0]["id"]
+      game_id = json_decode(response.body)["games"][1]["id"]
       send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
     end
 
