@@ -1,3 +1,5 @@
+require 'geometry'
+
 RESPAWN = "$"
 VOID = "."
 WALL = "#"
