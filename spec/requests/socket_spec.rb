@@ -37,10 +37,10 @@ describe 'Socket server' do
     request = web_socket_request(params[:sid])
     p_tick = 0
     checking ||= lambda{ |player|
-      should_eql(player['x'], params[:x])
-      should_eql(player['y'], params[:y])
-      should_eql(player['vx'], params[:vx])
-      should_eql(player['vy'], params[:vy])
+      should_eql(player['x'], params[:x], "coord.x")
+      should_eql(player['y'], params[:y], "coord.y")
+      should_eql(player['vx'], params[:vx], "velocity.x")
+      should_eql(player['vy'], params[:vy], "velocity.y")
     }
     request.stream { |message, type|
       tick = json_decode(message)['tick']
@@ -90,11 +90,11 @@ describe 'Socket server' do
                 send_ws_request(request, "move", {sid: sid_a, dx: 1, dy: 0, tick: arr['tick']})
               when 1
                 player['x'].should > def_params['x']
-                should_eql(player['y'], def_params['y'])
+                should_eql(player['y'], def_params['y'], "coord.x")
                 send_ws_request(request, "move", {sid: sid_a, dx: -1, dy: 0, tick: arr['tick']})
               when 2
-                should_eql(player['x'], def_params['x'])
-                should_eql(player['y'], def_params['y'])
+                should_eql(player['x'], def_params['x'], "coord.x")
+                should_eql(player['y'], def_params['y'], "coord.y")
                 send_ws_request(request, "empty", {sid: sid_a, tick: arr['tick']})
               when 3
                 close_socket(request, sid_a)
@@ -115,8 +115,8 @@ describe 'Socket server' do
         request.stream { |message, type|
           arr = json_decode(message)
           player = arr['players'][0]
-          should_eql(player['x'], curr_player['x'])
-          should_eql(player['vx'], curr_player['vx'])
+          should_eql(player['x'], curr_player['x'], "coord.x")
+          should_eql(player['vx'], curr_player['vx'], "velocity.x")
           curr_player['vx'] += is_moving ? game_consts[:accel] : -game_consts[:friction]
           curr_player['x'] += curr_player['vx']
           if is_moving
@@ -158,7 +158,7 @@ describe 'Socket server' do
 
     it "to left wall" do
       EM.run {
-        def_request( {log: 1,sid: sid_a, check_limit: 15, send_limit: 15, x: 1.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 5 ? -1 : 1}} )
+        def_request( {sid: sid_a, check_limit: 15, send_limit: 15, x: 1.5, y: 6.5, dx_rule: Proc.new{|p_tick| p_tick > 5 ? -1 : 1}} )
       }
     end
 
