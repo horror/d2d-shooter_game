@@ -253,7 +253,7 @@ class Client
   def move_position
     @updated_velocity.set(player[:velocity])
     check_collisions
-    return if check_items == "teleport"
+    return if pick_up_items_and_try_tp == "teleport"
 
     set_position(player[:coord] + @updated_velocity)
   end
@@ -367,7 +367,7 @@ class Client
     Math::sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
   end
 
-  def check_items
+  def pick_up_items_and_try_tp
     tp_cell = Point(0, 0)
     min_tp_dist = 2
     walk_cells_around_coord(player[:coord], @updated_velocity, true) {|itr_cell|
