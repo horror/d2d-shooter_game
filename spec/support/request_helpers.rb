@@ -27,9 +27,9 @@ module Requests
     end
 
     def check_response(expect, code)
-      resp = json_decode(response.body)
-      resp.delete("message")
-      response.code.to_s.should == code && json_encode(resp).should == json_encode(expect)
+      resp = json_decode(response.body).inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo} #string keys to symbol
+      resp.delete(:message)
+      response.code.to_s.should == code && resp.should == expect
     end
 
     def request_and_checking(action, params, body = {result: "ok"}, code = "200")
