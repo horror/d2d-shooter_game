@@ -7,7 +7,7 @@ module GameHelper
 
     raise BadParamsError.new(alreadyInGame) unless !Player.find_by_user_id(user.id)
 
-    def_consts = Settings.def_game_consts
+    def_consts = Settings.def_game.consts
     valid_consts = Proc.new{|consts|
       result = true
       def_consts.each{|name, val|
@@ -36,9 +36,9 @@ module GameHelper
         :order => 'g.id, p.created_at'
     )
     games = games.group_by(&:id).map do
-      |id, rows|
+    |id, rows|
       {id: id, name: rows[0]["name"], map: rows[0]["map"], maxPlayers: rows[0]["maxplayers"].to_i,
-          status: get_game_status(rows[0]["status"]), players: rows[0]["player"] == nil ? [] : rows.map{|r| r["player"]}}
+       status: get_game_status(rows[0]["status"]), players: rows[0]["player"] == nil ? [] : rows.map{|r| r["player"]}}
     end
     ok({games: games})
   end
