@@ -62,5 +62,10 @@ module GameHelper
     ok
   end
 
-
+  def getGameConsts(params)
+    user = find_by_sid(params["sid"])
+    check_error((not (player = Player.find_by_user_id(user.id))), "notInGame")
+    ok({tickSize: Settings.tick_size, accuracy: Settings.accuracy, accel: player.game.accel,
+        maxVelocity: player.game.max_velocity, gravity: player.game.gravity, friction: player.game.friction})
+  end
 end

@@ -390,6 +390,36 @@ describe "Application page" do
     end
   end
 
+  describe "get game consts" do
+    it "with valid info" do
+      result = {result: "ok", tickSize: Settings.tick_size, accuracy: Settings.accuracy, accel: Settings.def_game.consts.accel,
+                maxVelocity: Settings.def_game.consts.maxVelocity, gravity: Settings.def_game.consts.gravity,
+                friction: Settings.def_game.consts.friction}
+      request_and_checking("getGameConsts", {sid: sid_a}, result)
+    end
+
+    it "with invalid sid(not sended)" do
+      request_and_checking("getGameConsts", {}, {result: "badRequest"})
+    end
+
+    it "with invalid sid" do
+      request_and_checking("getGameConsts", {sid: "11"}, {result: "badSid"})
+    end
+
+    it "with not in game user" do
+      request_and_checking("getGameConsts", {sid: sid_b}, {result: "notInGame"})
+    end
+
+    it "with valid info (specific consts)" do
+      send_request(action: "createGame", params: {sid: sid_b, name: "Tmp Game", map: map_id, maxPlayers: 3,
+                                                  consts: {accel: 0.01, maxVelocity: 0.1, gravity: 0.01, friction: 0.01}})
+      result = {result: "ok", tickSize: Settings.tick_size, accuracy: Settings.accuracy,
+                maxVelocity: 0.1, gravity: 0.01, friction: 0.01, accel: 0.01}
+      request_and_checking("getGameConsts", {sid: sid_b}, result)
+      send_request(action: "leaveGame", params: {sid: sid_b})
+    end
+  end
+
   describe "send message" do
     it "with invalid sid(not sended)" do
       request_and_checking("sendMessage", {game: "", text: "message #1"}, {result: "badRequest"})
