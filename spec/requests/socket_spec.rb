@@ -30,26 +30,26 @@ describe 'Socket server' do
     @ws_requests = Array.new
   end
 
-  def def_request (params, &checking)
+  def check_player(got_player, expected_player)
+    expected_player.map{|key, val| should_eql(got_player[key.to_s], val, key.to_s)}
+  end
+
+  def def_request (params)
     params_list = [:dx_rule, :dy_rule, :index, :x, :y, :vx, :vy, :check_limit, :send_limit, :name]
     params_list.each {|i| params[i] ||= 0 }
     params[:action] ||= "move"
     request = web_socket_request(params[:sid])
     p_tick = 0
-    checking ||= lambda{ |player|
-      should_eql(player['x'], params[:x], "coord.x")
-      should_eql(player['y'], params[:y], "coord.y")
-      should_eql(player['vx'], params[:vx], "velocity.x")
-      should_eql(player['vy'], params[:vy], "velocity.y")
+    params[:checking_proc] ||= Proc.new{ |player, p_tick, params|
+      next false if p_tick != params[:check_limit]
+      check_player(player, {x: params[:x], y: params[:y], vx: params[:vx], vy: params[:vy]})
+      true
     }
     request.stream { |message, type|
       tick = json_decode(message)['tick']
       player = json_decode(message)['players'][params[:index]]
       puts "Sid = #{params[:sid][0..2]}, Cnt = #{p_tick}, params = #{player}, Tick = #{tick}" if params.include?(:log)
-      if p_tick == params[:check_limit]
-        checking.call(player)
-        close_socket(request, params[:sid])
-      end
+      close_socket(request, params[:sid]) if params[:checking_proc].call(player, p_tick, params)
       dx = params[:dx_rule].kind_of?(Proc) ? params[:dx_rule].call(p_tick, player) : params[:dx_rule]
       dy = params[:dy_rule].kind_of?(Proc) ? params[:dy_rule].call(p_tick, player) : params[:dy_rule]
       action = params[:action].kind_of?(Proc) ? params[:action].call(p_tick, player) : params[:action]
@@ -226,9 +226,14 @@ describe 'Socket server' do
     end
 
     it "jump along the wall and go to left corner" do
-      EM.run{
-        def_request( {sid: sid_a, check_limit: 15, send_limit: 1, x: spawns[1][:coord].x, y: spawns[1][:coord].y, dy_rule: -1} )
+      checking_proc = Proc.new{ |player, p_tick, params|
+        next true if p_tick == 10
+        check_player(player, {x: 0.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 3 #ударились головой
+        check_player(player, {x: 0.5, y: 3.5, vx: 0, vy: 0}) if p_tick == 9 #упали
+        false
       }
+      dy_rule = Proc.new{|p_tick| p_tick == 0 ? -1 : 0}
+      EM.run{ def_request( {sid: sid_a, send_limit: 10, dx_rule: -1, dy_rule: dy_rule, checking_proc: checking_proc} ) }
     end
 
     it "jump and fall" do
@@ -255,56 +260,100 @@ describe 'Socket server' do
     end
 
     it "go out the floor" do
-      EM.run{
-        def_request( {sid: sid_a, check_limit: 10, send_limit: 10, x: 7.5, y: 1, vy: 0.2, dx_rule: 1} )
-      }
+      EM.run{ def_request( {sid: sid_a, check_limit: 10, send_limit: 10, x: 7.5, y: 1, vy: 0.2, dx_rule: 1} ) }
     end
 
     it "fall to narrow" do
-      EM.run{
-        def_request( {sid: sid_a, check_limit: 45, send_limit: 45, x: 1.5, y: 4.5,
-                      action: Proc.new{|p_tick| p_tick % 2 == 0 ? "move" : "empty"}, dx_rule: 1} )
-      }
+      action = Proc.new{|p_tick| p_tick % 2 == 0 ? "move" : "empty"}
+      EM.run{ def_request( {sid: sid_a, check_limit: 45, send_limit: 45, x: 1.5, y: 4.5, action: action, dx_rule: 1} ) }
     end
 
     it "jump to left corner" do
-      EM.run{
-        def_request( {sid: sid_a, check_limit: 7, send_limit: 6, x: 6.5, y: 2.5, vx: 0, vy: 0,
-                      dx_rule: Proc.new{|p_tick| p_tick < 4 ? -1 : 0}, dy_rule: Proc.new{|p_tick| p_tick == 4 ? -1 : 0}} )
-      }
+      dx_rule = Proc.new{|p_tick| p_tick < 4 ? -1 : 0}
+      dy_rule = Proc.new{|p_tick| p_tick == 4 ? -1 : 0}
+      EM.run{ def_request( {sid: sid_a, check_limit: 7, send_limit: 6, x: 6.5, y: 2.5, dx_rule: dx_rule, dy_rule: dy_rule} ) }
     end
 
     it "exception collison by left bottom corner" do
-      action = Proc.new{|p_tick, player|
+      action = Proc.new{ |p_tick, player|
         next p_tick % 2 == 0 ? "move" : "empty" if player["x"] > 4.5
         "move"
       }
-      EM.run{
-        def_request( {sid: sid_a, check_limit: 40, send_limit: 40, vx: -0.1, x: 4.4, y: 0.5, action: action, dx_rule: -1} )
-      }
+      EM.run{ def_request( {sid: sid_a, check_limit: 40, send_limit: 40, vx: -0.1, x: 4.4, y: 0.5, action: action, dx_rule: -1} ) }
     end
 
     it "exception collison by right bottom corner" do
-      action = Proc.new{|p_tick, player|
+      action = Proc.new{ |p_tick, player|
         next p_tick % 2 == 0 ? "move" : "empty" if player["x"] < 1.5
         "move"
       }
+      EM.run{ def_request( {sid: sid_a, check_limit: 40, send_limit: 40, vx: 0.1, x: 1.6, y: 3.5, action: action, dx_rule: 1} ) }
+    end
+
+    it "collision with right portion of the bottom edge of wall and then with top partion of the right edge of other wall" do
+      dx_rule = Proc.new{ |p_tick| p_tick > 8 && p_tick < 17 ? 1 : -1}
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0}
+      checking_proc = Proc.new{ |player, p_tick, params|
+        next true if p_tick == 21
+        if p_tick == 12 #ударились головой, пролетели влево
+          player['x'].should < 4.5
+          player['vx'].should < -0.2
+          check_player(player, {y: 2.55, vy: 0.05})
+        end
+        check_player(player, {x: 3.5, y: 4.5, vx: 0, vy: 0}) if p_tick == 20  #ударились левым нижним углом, упали
+        false
+      }
+      EM.run{ def_request( {sid: sid_a, send_limit: 21, dx_rule: dx_rule, dy_rule: dy_rule, checking_proc: checking_proc} ) }
+    end
+
+    it "try jump then run to right wall and fall" do
+      dy_rule = Proc.new{ |p_tick| p_tick < 3 ? -1 : 0}
+      checking_proc = Proc.new{ |player, p_tick, params|
+        next true if p_tick == 22
+        check_player(player, {y: 0.5, vy: 0}) if p_tick < 3 #бъемся в потолок
+        check_player(player, {x: 7.5, y: 3.5, vx: 0, vy: 0}) if p_tick == 22  #ударились левым нижним углом, упали
+        false
+      }
+      EM.run{ def_request( {sid: sid_a, send_limit: 22, dx_rule: 1, dy_rule: dy_rule, checking_proc: checking_proc} ) }
+    end
+
+    it "collision with a left top partion of wall's edge" do
+      EM.run{ def_request( {sid: sid_a, send_limit: 20, check_limit: 20, x: 4.5, y: 4.5, dx_rule: 1} ) }
+    end
+
+    it "collision with a right top partion of wall's edge" do
+      EM.run{ def_request( {sid: sid_a, send_limit: 20, check_limit: 20, x: 3.5, y: 4.5, dx_rule: -1} ) }
+    end
+
+    it "fall to narrow, right step, jump on tip of corner, left step" do
+      action = Proc.new{ |p_tick| p_tick % 2 == 0 ? "move" : "empty" }
+      dx_rule = Proc.new{ |p_tick| p_tick < 42 || p_tick == 56 ? -1 : p_tick == 48 ? 1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 50 ? -1 : 0}
+      checking_proc = Proc.new{ |player, p_tick, params|
+        next true if p_tick == 66
+        check_player(player, {x: 4.55, y: 3.5, vy: 0, vx: 0}) if p_tick == 50 #стоим на уголке
+        check_player(player, {x: 4.55, y: 2.5, vx: 0, vy: 0}) if p_tick == 53 #ударились в верхний уголок
+        check_player(player, {x: 4.5, y: 4.5, vy: 0, vx: 0}) if p_tick == 65 #упали на пол
+        false
+      }
       EM.run{
-        def_request( {sid: sid_a, check_limit: 40, send_limit: 40, vx: 0.1, x: 1.6, y: 3.5, action: action, dx_rule: 1} )
+        def_request( {sid: sid_a, send_limit: 66, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking_proc: checking_proc} )
       }
     end
 
-    it "collision with a small left portion of the bottom edge of wall" do
-      dx_rule = Proc.new{|p_tick| p_tick < 10 ? -1 : 1}
-      dy_rule = Proc.new{|p_tick| p_tick == 9 ? -1 : 0}
+    it "collision with a left portion of the bottom edge of wall" do
+      dx_rule = Proc.new{ |p_tick| p_tick == 9 ? 0 : 1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 9 ? -1 : 0}
+      checking_proc = Proc.new{ |player, p_tick, params|
+        next true if p_tick == 21
+        check_player(player, {x: 4.2, y: 2.5, vy: 0, vx: 0.5}) if p_tick == 12 #ударились головой
+        check_player(player, {x: 7.5, y: 3.5, vx: 0, vy: 0}) if p_tick == 20
+        false
+      }
       EM.run{
-        def_request( {log: 1, sid: sid_a, check_limit: 13, send_limit: 13, dx_rule: dx_rule, dy_rule: dy_rule} ){ |player|
-          player['x'].should < 4.5 #ударились головой, пролетели влево
-          player['vx'].should < -0.2
-          should_eql(player['y'], 2.55, "coord.y")
-          should_eql(player['vy'], 0.05, "velocity.y")
-        }
+        def_request( {sid: sid_a, send_limit: 21, dx_rule: dx_rule, dy_rule: dy_rule, checking_proc: checking_proc} )
       }
     end
+
   end
 end
