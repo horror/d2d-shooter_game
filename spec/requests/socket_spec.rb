@@ -187,14 +187,15 @@ describe 'Socket server' do
     end
   end
 
-  def recreate_game(map, sid_a, sid_b, map_id, game_id, index)
+  def recreate_game(map, sid_a, sid_b, map_id, game_id, game_consts, index)
     send_request(action: "leaveGame", params: {sid: sid_a})
     send_request(action: "leaveGame", params: {sid: sid_b})
     send_request(action: "uploadMap", params: {sid: sid_a, name: "New map #{index}", maxPlayers: 10, map: map})
     send_request(action: "getMaps", params: {sid: sid_a})
     map_id = json_decode(response.body)["maps"]
     map_id = map_id[map_id.size - 1]["id"]
-    send_request(action: "createGame", params: {sid: sid_a, name: "New game #{index}", map: map_id, maxPlayers: 10})
+    consts = {accel: game_consts[:accel], maxVelocity: game_consts[:max_velocity], gravity: game_consts[:gravity], friction: game_consts[:friction]}
+    send_request(action: "createGame", params: {sid: sid_a, name: "New game #{index}", map: map_id, maxPlayers: 10, consts: consts})
     send_request(action: "getGames", params: {sid: sid_a})
     game_id = json_decode(response.body)["games"]
     game_id = game_id[game_id.size - 1]["id"]
@@ -212,7 +213,7 @@ describe 'Socket server' do
              '........',
              '$......$',
              '#.#..###']
-      recreate_game(map, sid_a, sid_b, map_id, game_id, 2)
+      recreate_game(map, sid_a, sid_b, map_id, game_id, game_consts, 2)
     end
 
     it "respawns order" do
