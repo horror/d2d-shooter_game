@@ -1,6 +1,6 @@
 //= require jquery
 
-const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
+const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m", KEY_T = 84,
     SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", SPRITE_SCALE = 0.9, SPRITE_SHIFT_X = 0.45, SPRITE_SHIFT_Y = 0.8;
 var keys_to_params = {
         "m": {"action": "fire", params: {}},
@@ -87,7 +87,7 @@ function get_map()
     send_request("getMaps", {"sid": sid}, f)
 }
 
-function start_websocket()
+function start_websocket(spawn_coord_should)
 {
     if (web_socket)
         web_socket.close();
@@ -106,9 +106,19 @@ function start_websocket()
         container = new createjs.Shape();
         container.graphics.beginStroke("red");
         for (var i = 0; i < players.length; ++i)
+        {
             container.graphics.drawRect(players[i]["x"] * SCALE - PLAYER_HALFRECT * SCALE,
                                          players[i]["y"] * SCALE - PLAYER_HALFRECT * SCALE,
                                          SCALE * PLAYER_HALFRECT * 2, SCALE * PLAYER_HALFRECT * 2);
+            if (spawn_coord_should == undefined || players[i]["login"] != login)
+                continue
+            if (Math.abs(players[i]["x"] * 1 - spawn_coord_should["x"] * 1) > 1e-7 || Math.abs(players[i]["y"] * 1 - spawn_coord_should["y"] * 1) > 1e-7)
+            {
+                start_websocket(spawn_coord_should)
+                return
+            }
+            spawn_coord_should = undefined
+        }
         stage.addChild(container);
         stage.update();
         console.log('onmessage, ' + event.data);
@@ -121,13 +131,12 @@ function start_websocket()
 
 function draw_map()
 {
-    map = maps[0]['map'];
+    map = maps[maps.length - 1]['map'];
     $("#main_canvas").attr("width", map[0].length * SCALE);
     $("#main_canvas").attr("height", map.length * SCALE);
     stage = new createjs.Stage($("#main_canvas")[0]);
     rect = new createjs.Shape();
     rect.graphics.beginStroke("black").drawRect(0, 0, map[0].length * SCALE, map.length * SCALE).endStroke();
-    stage.addChild(rect);
     for (var j = 0; j < map.length; ++j)
         for (var i = 0; i < map[0].length; ++i)
         {
@@ -142,7 +151,7 @@ function draw_map()
     stage.update();
 }
 
-var pressed_keys = {38: false, 37: false, 39: false, 40: false, 81: false}
+var pressed_keys = {38: false, 37: false, 39: false, 40: false, 81: false, 84: false}
 var pressed = false;
 
 function key_hold()
@@ -152,17 +161,40 @@ function key_hold()
         {
             pressed = true;
             var arr = keys_to_params[i];
+            if (i == KEY_T && file_requests.length > 1)
+            {
+                arr = JSON.parse(file_requests[0]);
+                file_requests.splice(0, 1);
+            }
+            if (arr == undefined)
+                return
             arr["params"]["sid"] = sid;
             arr["params"]["tick"] = tick;
             if (i == KEY_MOUSE)
             {
-                arr["params"]["dx"] = mouse_x - player_x * SCALE,
-                    arr["params"]["dy"] = mouse_y - player_y * SCALE;
+                arr["params"]["dx"] = mouse_x - player_x * SCALE;
+                arr["params"]["dy"] = mouse_y - player_y * SCALE;
             }
             web_socket.send(JSON.stringify(arr));
         }
     if (pressed)
         setTimeout("key_hold()", 150);
+}
+
+function load_from_file()
+{
+    var reader = new FileReader();
+    reader.onload = function(event) {
+        file_requests = event.target.result.split("\n");
+        start_websocket(JSON.parse(file_requests[1]));
+        file_requests.splice(0, 2);
+        console.log("ok")
+    };
+
+    reader.onerror = function(event) {
+        console.log("Bad")
+    };
+    reader.readAsText(document.getElementById("requests_file").files[0]);
 }
 
 $(document).ready( function () {
@@ -195,7 +227,7 @@ $(document).ready( function () {
     {
         var offset = $(this).offset();
 
-        mouse_x = e.pageX - offset.left,
+        mouse_x = e.pageX - offset.left;
         mouse_y = e.pageY - offset.top;
     });
     $('#main_canvas').mousedown(onbuttondown);

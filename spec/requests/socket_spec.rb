@@ -34,6 +34,14 @@ describe 'Socket server' do
     expected_player.map{|key, val| should_eql(got_player[key.to_s], val, key.to_s)}
   end
 
+  @requests_file
+
+  def load_requests_file(name, spawn, mode = "a")
+    @requests_file = File.open("requests.txt", mode)
+    @requests_file.puts(name)
+    @requests_file.puts("{\"x\": #{spawn[:coord].x}, \"y\": #{spawn[:coord].y}}")
+  end
+
   def def_request (params)
     params_list = [:dx_rule, :dy_rule, :index, :x, :y, :vx, :vy, :check_limit, :send_limit, :name]
     params_list.each {|i| params[i] ||= 0 }
@@ -53,8 +61,9 @@ describe 'Socket server' do
       dx = params[:dx_rule].kind_of?(Proc) ? params[:dx_rule].call(p_tick, player) : params[:dx_rule]
       dy = params[:dy_rule].kind_of?(Proc) ? params[:dy_rule].call(p_tick, player) : params[:dy_rule]
       action = params[:action].kind_of?(Proc) ? params[:action].call(p_tick, player) : params[:action]
-      send_ws_request(request, "empty", {sid: params[:sid], tick: tick}) if p_tick >= params[:send_limit]
-      send_ws_request(request, action, {sid: params[:sid], dx: dx, dy: dy, tick: tick}) if p_tick < params[:send_limit]
+      action = "empty" if p_tick >= params[:send_limit]
+      send_ws_request(request, action, arr = {sid: params[:sid], dx: dx, dy: dy, tick: tick})
+      @requests_file.puts(json_encode({action: action, params: arr})) if params.include?(:make_file)
       p_tick += 1
     }
   end
