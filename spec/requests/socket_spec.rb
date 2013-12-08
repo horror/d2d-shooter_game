@@ -4,7 +4,6 @@ describe 'Socket server' do
 
   sid_a = sid_b = ""
   map_id = game_id = 0
-  def_params = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100, 'respawn' => 0, 'status' => "alive"}
   game_consts = {accel: 0.05, max_velocity: 0.5, gravity: 0.05, friction: 0.05}
 
   before(:all) do
@@ -43,7 +42,7 @@ describe 'Socket server' do
     @requests_file.puts("{\"x\": #{spawn[:coord].x}, \"y\": #{spawn[:coord].y}}")
   end
 
-  def def_request (params)
+  def send_and_check (params)
     params_list = [:dx_rule, :dy_rule, :index, :x, :y, :vx, :vy, :check_limit, :send_limit, :name]
     params_list.each {|i| params[i] ||= 0 }
     params[:action] ||= "move"
@@ -55,14 +54,15 @@ describe 'Socket server' do
       true
     }
     request.stream { |message, type|
-      tick = json_decode(message)['tick']
-      player = json_decode(message)['players'][params[:index]]
+      full_response = json_decode(message)
+      tick = full_response['tick']
+      player = full_response['players'][params[:index]]
       puts "Sid = #{params[:sid][0..2]}, Cnt = #{p_tick}, params = #{player}, Tick = #{tick}" if params.include?(:log)
-      close_socket(request, params[:sid]) if params[:checking].call(player, p_tick, params)
+      close_socket(request, params[:sid]) if params[:checking].call(player, p_tick, params, full_response)
       dx = params[:dx_rule].kind_of?(Proc) ? params[:dx_rule].call(p_tick, player) : params[:dx_rule]
       dy = params[:dy_rule].kind_of?(Proc) ? params[:dy_rule].call(p_tick, player) : params[:dy_rule]
       action = params[:action].kind_of?(Proc) ? params[:action].call(p_tick, player) : params[:action]
-      action = "empty" if p_tick >= params[:send_limit]
+      action = "empty" if p_tick >= params[:send_limit] && params[:send_limit] != 0
       send_ws_request(request, action, arr = {sid: params[:sid], dx: dx, dy: dy, tick: tick})
       @requests_file.puts(json_encode({action: action, params: arr})) if params.include?(:make_file)
       p_tick += 1
@@ -70,6 +70,8 @@ describe 'Socket server' do
   end
 
   describe "simple movings, spawn, collisions: " do
+
+    spawns = [Point(2.5, 0.5)]
 
     it "players spawn" do
       def_params = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100, 'respawn' => 0, 'status' => "alive"}
@@ -80,8 +82,8 @@ describe 'Socket server' do
         p_tick == 2
       }
       EM.run{
-        def_request( {sid: sid_a, checking: checking_a} )
-        def_request( {index: 1, sid: sid_b, checking: Proc.new{ true }} )
+        send_and_check( {sid: sid_a, checking: checking_a} )
+        send_and_check( {index: 1, sid: sid_b, checking: Proc.new{ true }} )
       }
     end
 
@@ -93,7 +95,7 @@ describe 'Socket server' do
         check_player(player, {x: 2.5, y: 0.5, vx: -0.05, vy: 0}) if p_tick == 3
         p_tick == 4 ? true : false
       }
-      EM.run{ def_request( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
     end
 
     it "inc/dec velocity" do
@@ -105,7 +107,7 @@ describe 'Socket server' do
         curr_player[:coord].x += curr_player[:velocity].x += p_tick > 4 ? -game_consts[:friction] : game_consts[:accel]
         false
       }
-      EM.run{ def_request( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
     end
 
     it "tick" do
@@ -115,44 +117,44 @@ describe 'Socket server' do
         check_tick = request['tick']
         p_tick == 10 ? true : false
       }
-      EM.run {def_request( {sid: sid_a, checking: checking} ) }
+      EM.run {send_and_check( {sid: sid_a, checking: checking} ) }
     end
 
     it "stay at tp" do
-      EM.run { def_request( {sid: sid_a, check_limit: 15, send_limit: 6, x: 1.65, y: 6.5, dx_rule: 1} ) }
+      EM.run { send_and_check( {sid: sid_a, check_limit: 15, send_limit: 6, x: 1.65, y: 6.5, dx_rule: 1} ) }
     end
 
     it "to right wall" do
-      EM.run { def_request( {sid: sid_a, check_limit: 20, send_limit: 10, x: 3.5, y: 6.5, dx_rule: 1} ) }
+      EM.run { send_and_check( {sid: sid_a, check_limit: 20, x: 3.5, y: 6.5, dx_rule: 1} ) }
     end
 
     it "to left wall" do
       dx_rule = Proc.new{|p_tick| p_tick > 5 ? -1 : 1}
-      EM.run { def_request( {sid: sid_a, check_limit: 15, send_limit: 15, x: 1.5, y: 6.5, dx_rule: dx_rule } ) }
+      EM.run { send_and_check( {sid: sid_a, check_limit: 15, x: 1.5, y: 6.5, dx_rule: dx_rule } ) }
     end
 
     it "left border" do
-      EM.run { def_request( {sid: sid_a, check_limit: 20, send_limit: 10, x: 0.5, y: 4.5, dx_rule: -1} ) }
+      EM.run { send_and_check( {sid: sid_a, check_limit: 20, send_limit: 10, x: 0.5, y: 4.5, dx_rule: -1} ) }
     end
 
     it "right border" do
       dx_rule = Proc.new{|p_tick| p_tick > 5 ? 1 : -1}
-      EM.run { def_request( {sid: sid_a, check_limit: 20, send_limit: 20, x: 4.5, y: 2.5, dx_rule: dx_rule} ) }
+      EM.run { send_and_check( {sid: sid_a, check_limit: 20, x: 4.5, y: 2.5, dx_rule: dx_rule} ) }
     end
 
     it "two players run" do
       EM.run {
         dx_rule_a = Proc.new{|p_tick| p_tick > 15 ? 1 : -1}
-        def_request( {sid: sid_a, check_limit: 40, send_limit: 40, x: 3.5, y: 6.5, dx_rule: dx_rule_a} )
+        send_and_check( {sid: sid_a, check_limit: 40, x: 3.5, y: 6.5, dx_rule: dx_rule_a} )
         dx_rule_b = Proc.new{|p_tick| p_tick > 15 ? -1 : 1}
-        def_request( {index: 1, sid: sid_b, check_limit: 40, send_limit: 40, x: 0.5, y: 4.5, dx_rule: dx_rule_b} )
+        send_and_check( {index: 1, sid: sid_b, check_limit: 40, x: 0.5, y: 4.5, dx_rule: dx_rule_b} )
       }
     end
 
     it "max velocity" do
       dx_rule = Proc.new{|p_tick| p_tick > 15 ? 1 : -1}
       EM.run {
-        def_request( {sid: sid_a, check_limit: 30, send_limit: 30, x: 3.85, y: 0.5, vx: game_consts[:max_velocity], dx_rule: dx_rule} )
+        send_and_check( {sid: sid_a, check_limit: 30, x: 3.85, y: 0.5, vx: game_consts[:max_velocity], dx_rule: dx_rule} )
       }
     end
   end
@@ -174,8 +176,7 @@ describe 'Socket server' do
 
   describe "Gravity: " do
 
-    spawns = [{coord: Point(5.5, 0.5), velocity: Point(0, 0)}, {coord: Point(0.5, 3.5), velocity: Point(0, 0)},
-              {coord: Point(7.5, 3.5), velocity: Point(0, 0)}]
+    spawns = [Point(5.5, 0.5), Point(0.5, 3.5), Point(7.5, 3.5)]
 
     before(:all) do
       map = ['.....$..',
@@ -187,23 +188,23 @@ describe 'Socket server' do
     end
 
     it "respawns order" do
-      EM.run{ def_request( {sid: sid_a, x: spawns[0][:coord].x, y: spawns[0][:coord].y} ) }
-      EM.run{ def_request( {sid: sid_a, x: spawns[1][:coord].x, y: spawns[1][:coord].y} ) }
+      EM.run{ send_and_check( {sid: sid_a, x: spawns[0].x, y: spawns[0].y} ) }
+      EM.run{ send_and_check( {sid: sid_a, x: spawns[1].x, y: spawns[1].y} ) }
       EM.run{
-        def_request( {sid: sid_a, check_limit: 5, x: spawns[2][:coord].x, y: spawns[2][:coord].y} )
-        def_request( {index: 1, sid: sid_b, x: spawns[0][:coord].x, y: spawns[0][:coord].y} )
+        send_and_check( {sid: sid_a, check_limit: 5, x: spawns[2].x, y: spawns[2].y} )
+        send_and_check( {index: 1, sid: sid_b, x: spawns[0].x, y: spawns[0].y} )
       }
     end
 
     #Spawn = 1
     it "jump along the wall and go to left corner" do
-      checking = Proc.new{ |player, p_tick, params|
+      checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 0.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 3 #ударились головой
         check_player(player, {x: 0.5, y: 3.5, vx: 0, vy: 0}) if p_tick == 9 #упали
         p_tick == 10 ? true : false
       }
       dy_rule = Proc.new{|p_tick| p_tick == 0 ? -1 : 0}
-      EM.run{ def_request( {sid: sid_a, send_limit: 10, dx_rule: -1, dy_rule: dy_rule, checking: checking} ) }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: -1, dy_rule: dy_rule, checking: checking} ) }
     end
 
     #Spawn = 2
@@ -216,23 +217,23 @@ describe 'Socket server' do
         curr_player[:coord].y += (curr_player[:velocity].y += game_consts[:gravity]) if p_tick > 0
         p_tick == 20 ? true : false
       }
-      EM.run{ def_request( {sid: sid_a, dy_rule: dy_rule, checking: checking} ) }
+      EM.run{ send_and_check( {sid: sid_a, dy_rule: dy_rule, checking: checking} ) }
     end
 
     #Spawn = 0
     it "go out the floor" do
-      EM.run{ def_request( {sid: sid_a, check_limit: 10, send_limit: 10, x: 7.5, y: 1, vy: 0.2, dx_rule: 1} ) }
+      EM.run{ send_and_check( {sid: sid_a, check_limit: 10, x: 7.5, y: 1, vy: 0.2, dx_rule: 1} ) }
     end
     #Spawn = 1
     it "fall to narrow" do
       action = Proc.new{|p_tick| p_tick % 2 == 0 ? "move" : "empty"}
-      EM.run{ def_request( {sid: sid_a, check_limit: 45, send_limit: 45, x: 1.5, y: 4.5, action: action, dx_rule: 1} ) }
+      EM.run{ send_and_check( {sid: sid_a, check_limit: 45, x: 1.5, y: 4.5, action: action, dx_rule: 1} ) }
     end
     #Spawn = 2
     it "jump to left corner" do
-      dx_rule = Proc.new{|p_tick| p_tick < 4 ? -1 : 0}
+      dx_rule = Proc.new{|p_tick| p_tick < 5 ? -1 : 0}
       dy_rule = Proc.new{|p_tick| p_tick == 4 ? -1 : 0}
-      EM.run{ def_request( {sid: sid_a, check_limit: 7, send_limit: 6, x: 6.5, y: 2.5, dx_rule: dx_rule, dy_rule: dy_rule} ) }
+      EM.run{ send_and_check( {sid: sid_a, check_limit: 7, x: 6.5, y: 2.5, dx_rule: dx_rule, dy_rule: dy_rule} ) }
     end
     #Spawn = 0
     it "exception collison by left bottom corner" do
@@ -240,7 +241,7 @@ describe 'Socket server' do
         next p_tick % 2 == 0 ? "move" : "empty" if player["x"] > 4.5
         "move"
       }
-      EM.run{ def_request( {sid: sid_a, check_limit: 40, send_limit: 40, vx: -0.1, x: 4.4, y: 0.5, action: action, dx_rule: -1} ) }
+      EM.run{ send_and_check( {sid: sid_a, check_limit: 40, vx: -0.1, x: 4.4, y: 0.5, action: action, dx_rule: -1} ) }
     end
     #Spawn = 1
     it "exception collison by right bottom corner" do
@@ -248,13 +249,13 @@ describe 'Socket server' do
         next p_tick % 2 == 0 ? "move" : "empty" if player["x"] < 1.5
         "move"
       }
-      EM.run{ def_request( {sid: sid_a, check_limit: 40, send_limit: 40, vx: 0.1, x: 1.6, y: 3.5, action: action, dx_rule: 1} ) }
+      EM.run{ send_and_check( {sid: sid_a, check_limit: 40, vx: 0.1, x: 1.6, y: 3.5, action: action, dx_rule: 1} ) }
     end
     #Spawn = 2
     it "collision with right portion of the bottom edge of wall and then with top partion of the right edge of other wall" do
       dx_rule = Proc.new{ |p_tick| p_tick > 8 && p_tick < 17 ? 1 : -1}
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0}
-      checking = Proc.new{ |player, p_tick, params|
+      checking = Proc.new{ |player, p_tick|
         if p_tick == 12 #ударились головой, пролетели влево
           player['x'].should < 4.5
           player['vx'].should < -0.2
@@ -263,52 +264,52 @@ describe 'Socket server' do
         check_player(player, {x: 3.5, y: 4.5, vx: 0, vy: 0}) if p_tick == 20  #ударились левым нижним углом, упали
         p_tick == 21 ? true : false
       }
-      EM.run{ def_request( {sid: sid_a, send_limit: 21, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
     #Spawn = 0
     it "try jump then run to right wall and fall" do
       dy_rule = Proc.new{ |p_tick| p_tick < 3 ? -1 : 0}
-      checking = Proc.new{ |player, p_tick, params|
+      checking = Proc.new{ |player, p_tick|
         check_player(player, {y: 0.5, vy: 0}) if p_tick < 3 #бъемся в потолок
         check_player(player, {x: 7.5, y: 3.5, vx: 0, vy: 0}) if p_tick == 22  #ударились левым нижним углом, упали
         p_tick == 22 ? true : false
       }
-      EM.run{ def_request( {sid: sid_a, send_limit: 22, dx_rule: 1, dy_rule: dy_rule, checking: checking} ) }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: 1, dy_rule: dy_rule, checking: checking} ) }
     end
     #Spawn = 1
     it "collision with a left top partion of wall's edge" do
-      EM.run{ def_request( {sid: sid_a, send_limit: 20, check_limit: 20, x: 4.5, y: 4.5, dx_rule: 1} ) }
+      EM.run{ send_and_check( {sid: sid_a, check_limit: 20, x: 4.5, y: 4.5, dx_rule: 1} ) }
     end
     #Spawn = 2
     it "collision with a right top partion of wall's edge" do
-      EM.run{ def_request( {sid: sid_a, send_limit: 20, check_limit: 20, x: 3.5, y: 4.5, dx_rule: -1} ) }
+      EM.run{ send_and_check( {sid: sid_a, check_limit: 20, x: 3.5, y: 4.5, dx_rule: -1} ) }
     end
     #Spawn = 0
     it "fall to narrow, right step, jump on tip of corner, left step" do
       action = Proc.new{ |p_tick| p_tick % 2 == 0 ? "move" : "empty" }
       dx_rule = Proc.new{ |p_tick| p_tick < 42 || p_tick == 56 ? -1 : p_tick == 48 ? 1 : 0 }
       dy_rule = Proc.new{ |p_tick| p_tick == 50 ? -1 : 0}
-      checking = Proc.new{ |player, p_tick, params|
+      checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 4.55, y: 3.5, vy: 0, vx: 0}) if p_tick == 50 #стоим на уголке
         check_player(player, {x: 4.55, y: 2.5, vy: 0, vx: 0}) if p_tick == 53 #ударились в верхний уголок
         check_player(player, {x: 4.5, y: 4.5, vy: 0, vx: 0}) if p_tick == 65 #упали на пол
         p_tick == 66 ? true : false
       }
       EM.run{
-        def_request( {sid: sid_a, send_limit: 66, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
+        send_and_check( {sid: sid_a, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
       }
     end
     #Spawn = 1
     it "collision with a left portion of the bottom edge of wall" do
       dx_rule = Proc.new{ |p_tick| p_tick == 9 ? 0 : 1 }
       dy_rule = Proc.new{ |p_tick| p_tick == 9 ? -1 : 0}
-      checking = Proc.new{ |player, p_tick, params|
+      checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 4.2, y: 2.5, vy: 0, vx: 0.5}) if p_tick == 12 #ударились головой
         check_player(player, {x: 7.5, y: 3.5, vy: 0, vx: 0}) if p_tick == 20
         p_tick == 21 ? true : false
       }
       EM.run{
-        def_request( {sid: sid_a, send_limit: 21, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
+        send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
       }
     end
     #Spawn = 2
@@ -316,41 +317,39 @@ describe 'Socket server' do
       action = Proc.new{ |p_tick| p_tick > 22 && p_tick < 25 ? "empty" : "move"}
       dx_rule = Proc.new{ |p_tick| p_tick == 3 || p_tick > 22 ? 0 : -1 }
       dy_rule = Proc.new{ |p_tick| p_tick == 3 || p_tick == 25 ? -1 : 0}
-      checking = Proc.new{ |player, p_tick, params|
+      checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 6.5, y: 1.5, vx: 0, vy: -0.3}) if p_tick == 8 #ударились об правое ребро стены
         check_player(player, {x: 6.45, y: 2.5, vx: 0, vy: 0}) if p_tick == 28  #ударились головой
         p_tick == 29 ? true : false
       }
       EM.run{
-        def_request( {sid: sid_a, action: action, send_limit: 29, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
+        send_and_check( {sid: sid_a, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
       }
     end
   end
 
   describe "TP, items with gravity: " do
 
-    spawns = [{coord: Point(2.5, 4.5), velocity: Point(0, 0)}]
+    spawns = [Point(2.5, 4.5)]
 
     before(:all) do
-      map = ['12......',
+      map = ['12.4....',
              '.......3',
              '....12..',
-             '........',
+             '.......4',
              '3.$.....']
       recreate_game(map, sid_a, sid_b, map_id, game_id, game_consts, 3)
     end
 
     it "Multy tp" do
-      checking = Proc.new{ |player, p_tick, params|
+      checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 7.5, y: 1.5, vx: -0.4, vy: 0}) if p_tick == 8
         check_player(player, {x: 1.5, y: 0.5, vx: -0.5, vy: 0.25}) if p_tick == 13
         check_player(player, {x: 4.5, y: 2.5, vx: -0.5, vy: 0.35}) if p_tick == 15
         check_player(player, {x: 2.0, y: 4.5, vx: -0.5, vy: 0}) if p_tick == 20 #Облетели все тп
         p_tick == 21 ? true : false
       }
-      EM.run{
-        def_request( {sid: sid_a, send_limit: 21, dx_rule: -1, checking: checking} )
-      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: -1, checking: checking} ) }
     end
 
     it "No tp by border intersect" do
@@ -358,11 +357,11 @@ describe 'Socket server' do
         next p_tick % 2 == 0 ? "move" : "empty" if p_tick < 60
         "empty"
       }
-      checking = Proc.new{ |player, p_tick, params|
+      checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 1.0, y: 4.5, vx: 0, vy: 0}) if p_tick == 65 #касаемся границы телепорта
         p_tick == 66 ? true : false
       }
-      EM.run{ def_request( {sid: sid_a, action: action, send_limit: 66, dx_rule: -1, checking: checking} ) }
+      EM.run{ send_and_check( {sid: sid_a, action: action, dx_rule: -1, checking: checking} ) }
     end
 
     it "Jump and fall to tp" do
@@ -370,13 +369,13 @@ describe 'Socket server' do
         next p_tick < 6 || p_tick == 12  ? "move" : "empty"
       }
       dy_rule = Proc.new{ |p_tick| p_tick == 12 ? -1 : 0}
-      checking = Proc.new{ |player, p_tick, params|
+      checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 0.5, y: 0.5, vx: 0, vy: -0.35}) if p_tick == 16
         check_player(player, {x: 7.5, y: 1.5, vx: 0, vy: 0.5}) if p_tick == 29
         p_tick == 30 ? true : false
       }
-      EM.run{
-        def_request( {sid: sid_a, action: action, send_limit: 30, dx_rule: 1, dy_rule: dy_rule, checking: checking} )
+      EM.run{ send_and_check( {sid: sid_a, action: action, dx_rule: 1, dy_rule: dy_rule, checking: checking} ) }
+    end
       }
     end
   end
