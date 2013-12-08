@@ -376,7 +376,47 @@ describe 'Socket server' do
       }
       EM.run{ send_and_check( {sid: sid_a, action: action, dx_rule: 1, dy_rule: dy_rule, checking: checking} ) }
     end
+
+    it "Use left near tp during jump" do
+      dx_rule = Proc.new{ |p_tick|
+        next 0 if p_tick == 7
+        p_tick < 7 || p_tick == 10 ? 1 : -1
       }
+      dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 0.5, y: 0.5, vx: 0.3, vy: -0.35}) if p_tick == 11
+        p_tick == 12 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+
+    it "Use right near tp during jump" do
+      dx_rule = Proc.new{ |p_tick|
+        next 1 if p_tick < 20
+        next 0 if p_tick == 27
+        p_tick < 27 || p_tick == 30 ? -1 : 1
+      }
+      dy_rule = Proc.new{ |p_tick| p_tick == 27 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 1.5, y: 0.5, vx: -0.3, vy: -0.35}) if p_tick == 31
+        p_tick == 32 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+
+    it "Flying close" do
+      action = Proc.new{ |p_tick, player|
+        next p_tick % 2 == 0 ? "move" : "empty" if p_tick < 40
+        "move"
+      }
+      dx_rule = Proc.new{ |p_tick| p_tick == 48 ? 0 : 1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 48 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 6.65, y: 3.15, vx: 0.5, vy: -0.4}) if p_tick == 51
+        p_tick == 52 ? true : false
+      }
+      #load_requests_file("#{self.class.description} #{example.description}", spawns[2], "w")
+      EM.run{ send_and_check( {sid: sid_a, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
   end
 end
