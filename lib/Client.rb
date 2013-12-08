@@ -225,7 +225,7 @@ class Client
     end
 
     return if player[:status] == DEAD
-
+    return if f_eq(params["dx"], 0) && f_eq(params["dy"], 0)
     if data["action"] == MOVE
       summed_move_params.x += params["dx"].to_f
       summed_move_params.y += params["dy"].to_f
