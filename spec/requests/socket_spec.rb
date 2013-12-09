@@ -36,10 +36,9 @@ describe 'Socket server' do
 
   @requests_file
 
-  def load_requests_file(name, spawn, mode = "a")
-    @requests_file = File.open("requests.txt", mode)
-    @requests_file.puts(name)
-    @requests_file.puts("{\"x\": #{spawn[:coord].x}, \"y\": #{spawn[:coord].y}}")
+  def load_requests_file(name, spawn, mode = "w")
+    @requests_file = File.open("spec/requests_files/#{name}.txt", mode)
+    @requests_file.puts("{\"x\": #{spawn.x}, \"y\": #{spawn.y}}")
   end
 
   def send_and_check (params)
@@ -78,8 +77,8 @@ describe 'Socket server' do
       checking_a = Proc.new{ |player, p_tick, params, request|
         request["players"].should == [def_params.merge({"login" => "user_a"})] if p_tick == 0
         request["players"].should == [def_params.merge({"login" => "user_a"}),
-                                      def_params.merge({"login" => "user_b"})] if p_tick == 1
-        p_tick == 2
+                                      def_params.merge({"login" => "user_b"})] if p_tick == 9
+        p_tick == 10
       }
       EM.run{
         send_and_check( {sid: sid_a, checking: checking_a} )
@@ -415,7 +414,7 @@ describe 'Socket server' do
         check_player(player, {x: 6.65, y: 3.15, vx: 0.5, vy: -0.4}) if p_tick == 51
         p_tick == 52 ? true : false
       }
-      #load_requests_file("#{self.class.description} #{example.description}", spawns[2], "w")
+      #load_requests_file(example.description, spawns[0])
       EM.run{ send_and_check( {sid: sid_a, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
   end

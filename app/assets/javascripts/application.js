@@ -87,7 +87,7 @@ function get_map()
     send_request("getMaps", {"sid": sid}, f)
 }
 
-function start_websocket(spawn_coord_should)
+function start_websocket(start_spawn)
 {
     if (web_socket)
         web_socket.close();
@@ -110,14 +110,15 @@ function start_websocket(spawn_coord_should)
             container.graphics.drawRect(players[i]["x"] * SCALE - PLAYER_HALFRECT * SCALE,
                                          players[i]["y"] * SCALE - PLAYER_HALFRECT * SCALE,
                                          SCALE * PLAYER_HALFRECT * 2, SCALE * PLAYER_HALFRECT * 2);
-            if (spawn_coord_should == undefined || players[i]["login"] != login)
+            if (start_spawn == undefined || players[i]["login"] != login)
                 continue
-            if (Math.abs(players[i]["x"] * 1 - spawn_coord_should["x"] * 1) > 1e-7 || Math.abs(players[i]["y"] * 1 - spawn_coord_should["y"] * 1) > 1e-7)
+            if (Math.abs(players[i]["x"] * 1 - start_spawn["x"] * 1) > 1e-7 ||
+                Math.abs(players[i]["y"] * 1 - start_spawn["y"] * 1) > 1e-7)
             {
-                start_websocket(spawn_coord_should)
+                start_websocket(start_spawn)
                 return
             }
-            spawn_coord_should = undefined
+            start_spawn = undefined
         }
         stage.addChild(container);
         stage.update();
@@ -186,13 +187,12 @@ function load_from_file()
     var reader = new FileReader();
     reader.onload = function(event) {
         file_requests = event.target.result.split("\n");
-        start_websocket(JSON.parse(file_requests[1]));
-        file_requests.splice(0, 2);
-        console.log("ok")
+        start_websocket(JSON.parse(file_requests[0]));
+        file_requests.splice(0, 1);
     };
 
     reader.onerror = function(event) {
-        console.log("Bad")
+        console.log("Error during file connection")
     };
     reader.readAsText(document.getElementById("requests_file").files[0]);
 }
