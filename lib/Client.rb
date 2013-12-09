@@ -125,7 +125,7 @@ class ActiveGame
       proj = client.projectiles
       result += proj.map do |projectile|
         {x: projectile[:coord].x - 1, y: projectile[:coord].y - 1,
-         vx: Settings.def_game.items[:gunVelocity], vy: Settings.def_game.items[:gunVelocity],
+         vx: Settings.def_game.items.gunVelocity, vy: Settings.def_game.items.gunVelocity,
          owner: client.login}
       end
     end
@@ -426,7 +426,7 @@ class Client
     projectiles.delete_if do |projectile|
       intersected = false
       old_coord = projectile[:coord]
-      projectile[:coord] += velocity = projectile[:der] * Settings.def_game.items[:gunVelocity]
+      projectile[:coord] += velocity = projectile[:der] * Settings.def_game.items.gunVelocity
       der = Line(old_coord, projectile[:coord])
       walk_cells_around_coord(old_coord, velocity, false) {|itr_cell|
         intersected = true if symbol(itr_cell) == WALL && check_intersect(itr_cell, [der])
@@ -435,7 +435,7 @@ class Client
       game.clients.each do |c_sid, client|
         c_player = client.player
         if c_player[:status] == ALIVE && check_intersect(c_player[:coord] - Point(0.5, 0.5), [der]) && c_sid != sid
-          c_player[:hp] =  [c_player[:hp] - Settings.items.def_game[:gunDamage], 0].max
+          c_player[:hp] =  [c_player[:hp] - Settings.def_game.items.gunDamage, 0].max
           if c_player[:hp] == 0
             c_player[:status] = DEAD
             c_player[:respawn] = Settings.respawn_ticks
