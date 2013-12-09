@@ -169,10 +169,10 @@ function draw_map(map)
     };
 
     $("#main_canvas").attr("width", map[0].length * SCALE);
-    $("#main_canvas").attr("height", map.length * SCALE);
+    $("#main_canvas").attr("height", (map.length + 1) * SCALE);
     stage = new createjs.Stage($("#main_canvas")[0]);
     rect = new createjs.Shape();
-    rect.graphics.beginStroke("black").drawRect(0, 0, map[0].length * SCALE, map.length * SCALE).endStroke();
+    rect.graphics.beginStroke("black").drawRect(0, 0, map[0].length * SCALE, (map.length + 1) * SCALE).endStroke();
     for (var j = 0; j < map.length; ++j)
         for (var i = 0; i < map[0].length; ++i)
         {
@@ -191,6 +191,9 @@ function draw_map(map)
                 rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
 
         }
+    for (var i = 0; i < map[0].length; ++i) {
+        stage.addChild(get_map_piece(16)).set({x: i * SCALE , y: map.length * SCALE});
+    }
     stage.addChild(rect);
     stage.update();
 }
