@@ -42,10 +42,15 @@ body {
 
 .badge {
     background-color: #424242;
+    background: url("./images/mountains.png") repeat-x;
 }
 
 canvas:hover {
     cursor: url("./images/gun_cursor.png") 26 26, auto;
+}
+
+canvas {
+    background: #96b4d4 url("./images/mountains.png") repeat-x bottom left;
 }
 
 #send_message {
