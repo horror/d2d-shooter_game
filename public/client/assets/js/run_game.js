@@ -1,6 +1,8 @@
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
-    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", SPRITE_SCALE = 0.9, SPRITE_SHIFT_X = 0.45, SPRITE_SHIFT_Y = 0.8;
+    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead",
+    PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8, SPRITE_SHIFT_X = 0.45, SPRITE_SHIFT_Y = 0.45,
+    MAP_PIECE_SCALE = 0.5;
 var keys_to_params = {
         "m": {"action": "fire", params: {}},
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
@@ -14,19 +16,71 @@ var keys_to_params = {
     stage, container, web_socket, player_x = 0, player_y = 0,
     mouse_x, mouse_y, sprites = {};
 
-var ss = new createjs.SpriteSheet({
+var ss_player = new createjs.SpriteSheet({
     animations: {
         run_left: [0, 4],
         run_right: [5, 9],
         jump_left: [12],
         jump_right: [10],
     },
-    images:["assets/img/walkcyclex.png"],
-    frames:{
+    images: ["assets/img/walkcyclex.png"],
+    frames: {
         height: 64,
         width: 64,
     },
 });
+
+var ss_map = new createjs.SpriteSheet({
+    images: ["assets/img/grass_main.png"],
+    frames: {
+        height: 64,
+        width: 64,
+    }
+});
+
+var map_pieces_consitions = {
+    //top
+    "00011xxx" : 16,
+    "00001xxx" : 4,
+    "00010xxx" : 5,
+    "10011xxx" : 39,
+    "00111xxx" : 29,
+    //bottom
+    "xxx11x0x" : 52,
+    "xxx01x0x" : 36,
+    "xxx10x0x" : 37,
+    //sides
+    "x1011x1x" : 55,
+    "01x11x1x" : 56,
+};
+
+function get_map_piece (piece_id) {
+    var piece = new createjs.Sprite(ss_map);
+    piece.scaleY = piece.scaleX = MAP_PIECE_SCALE;
+    piece.gotoAndStop(piece_id);
+    return piece;
+}
+
+function compere_mask_with_condition(mask, condition) {
+    var intersects = true;
+    for (var i = 0; i < mask.length; ++i) {
+        if (mask[i] != condition[i] && mask[i] != 'x')
+            intersects = false;
+    }
+
+    return intersects;
+}
+
+function get_map_wall_piece(condition) {
+    var condition = $.map(condition, function(item) { return item == "#"});
+    var piece_id_need = 1;
+    $.each(map_pieces_consitions, function (mask, piece_id) {
+        if (compere_mask_with_condition(mask, condition))
+            piece_id_need = piece_id;
+    });
+
+    return get_map_piece(piece_id_need);
+}
 
 function start_websocket(sid, login)
 {
@@ -65,6 +119,7 @@ function start_websocket(sid, login)
             login_text.x = (player["x"] - PLAYER_HALFRECT) * SCALE;
             login_text.y = (player["y"] - PLAYER_HALFRECT - 0.2) * SCALE;
             container.addChild(login_text);
+
             //ХП
             moving_objects.graphics.beginFill("#FFFFFF").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
                 player["y"] * SCALE - PLAYER_HALFRECT * SCALE * 2,
@@ -72,10 +127,12 @@ function start_websocket(sid, login)
             moving_objects.graphics.beginFill("red").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
                 player["y"] * SCALE - PLAYER_HALFRECT * SCALE * 2,
                 SCALE * PLAYER_HALFRECT * 2 * player["hp"] / 100, 0.3 * SCALE);
+
             //ИГРОК
             if (sprites[player["login"]] == undefined) {
-                sprites[player["login"]] = new createjs.Sprite(ss);
-                sprites[player["login"]].scaleY = sprites[player["login"]].scaleX = SPRITE_SCALE;
+                sprites[player["login"]] = new createjs.Sprite(ss_player);
+                sprites[player["login"]].scaleX = PLAYER_SCALE_X;
+                sprites[player["login"]].scaleY = PLAYER_SCALE_Y;
             }
 
             var sprite = sprites[player["login"]];
@@ -85,7 +142,7 @@ function start_websocket(sid, login)
             else if (curr_animation != sprite.currentAnimation || sprite.paused)
                 sprite.gotoAndPlay(curr_animation);
             container.addChild(sprite)
-                .set({graphics: moving_objects, x: (player["x"] - SPRITE_SHIFT_X) * SCALE - PLAYER_HALFRECT * SCALE , y: (player["y"] - SPRITE_SHIFT_Y) * SCALE - PLAYER_HALFRECT * SCALE});
+                .set({x: (player["x"] - SPRITE_SHIFT_X) * SCALE - PLAYER_HALFRECT * SCALE , y: (player["y"] - SPRITE_SHIFT_Y) * SCALE - PLAYER_HALFRECT * SCALE});
         }
 
         for (var i = 0; i < projectiles.length; ++i) {
@@ -111,13 +168,18 @@ function draw_map(map)
     stage = new createjs.Stage($("#main_canvas")[0]);
     rect = new createjs.Shape();
     rect.graphics.beginStroke("black").drawRect(0, 0, map[0].length * SCALE, map.length * SCALE).endStroke();
-    stage.addChild(rect);
     for (var j = 0; j < map.length; ++j)
         for (var i = 0; i < map[0].length; ++i)
         {
+            if (map[j][i] == "#") {
+                var wall_piece = get_map_wall_piece([
+                    map[j - 1][i - 1], map[j - 1][i], map[j - 1][i + 1], //top
+                    map[j][i - 1], map[j][i + 1], //left/right
+                    map[j + 1][i - 1], map[j + 1][i], map[j + 1][i + 1], //bottom
+                ]);
 
-            if (map[j][i] == "#")
-                rect.graphics.beginFill("blue").drawRect(i * SCALE, j * SCALE, SCALE, SCALE);
+                stage.addChild(wall_piece).set({x: i * SCALE , y: j * SCALE});
+            }
             if (map[j][i] == "$")
                 rect.graphics.beginFill("blue").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
             if (!isNaN(parseInt(map[j][i], 10)))
