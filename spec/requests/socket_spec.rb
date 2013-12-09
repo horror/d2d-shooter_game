@@ -418,4 +418,91 @@ describe 'Socket server' do
       EM.run{ send_and_check( {sid: sid_a, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
   end
+
+  describe "Inside unusual block: " do
+
+    spawns = [Point(1.5, 2.5), Point(7.5, 2.5), Point(11.5, 3.5)]
+
+    before(:all) do
+      map = ['.#######......',
+             '#.......#..#..',
+             '#$.....$#.....',
+             '.#######..#$#.']
+      recreate_game(map, sid_a, sid_b, map_id, game_id, game_consts, 4)
+    end
+    #Spawn 0
+    it "jump, fall, run to right corner" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 9 ? -1 : 1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 0 || p_tick == 24 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 1.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 9 #упали на место, после прыжка
+        check_player(player, {x: 7.5, y: 1.5, vx: 0, vy: 0}) if p_tick == 27 #врезались в правый верхний угол блока
+        check_player(player, {x: 7.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 33 #упали вниз
+        p_tick == 34 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #Spawn 1
+    it "jump, fall, run to left corner" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 9 ? 1 : -1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 0 || p_tick == 24 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 7.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 9 #упали на место, после прыжка
+        check_player(player, {x: 1.5, y: 1.5, vx: 0, vy: 0}) if p_tick == 27 #врезались в левый верхний угол блока
+        check_player(player, {x: 1.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 33 #упали вниз
+        p_tick == 34 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #Spawn 2
+    it "run from trap to the left and go right" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 6 ? -1 : 1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 0 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 11.2, y: 2.5, vx: -0.15, vy: 0}) if p_tick == 6 #залезли на стену
+        check_player(player, {x: 11.8, y: 2.5, vx: 0.25, vy: 0}) if p_tick == 14 #пробежали яму вправо
+        p_tick == 15 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #Spawn 0
+    it "jump at the junction between walls from the left" do
+      dx_rule = Proc.new{ |p_tick|
+        next 0 if p_tick == 6
+        next -1 if p_tick == 8
+        1
+      }
+      dy_rule = Proc.new{ |p_tick| p_tick == 6 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 3.85, y: 1.55, vx: 0.35, vy: 0.05}) if p_tick == 10 #не зацепились за левый стык
+        p_tick == 11 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #Spawn 1
+    it "jump at the junction between walls from the right" do
+      dx_rule = Proc.new{ |p_tick|
+        next 0 if p_tick == 6
+        next 1 if p_tick == 8
+        -1
+      }
+      dy_rule = Proc.new{ |p_tick| p_tick == 6 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 5.15, y: 1.55, vx: -0.35, vy: 0.05}) if p_tick == 10 #не зацепились за правый стык
+        p_tick == 11 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #Spawn 2
+    it "run from trap to the right and go left" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 6 ? 1 : -1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 0 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 11.8, y: 2.5, vx: 0.15, vy: 0}) if p_tick == 6 #залезли на стену
+        check_player(player, {x: 11.2, y: 2.5, vx: -0.25, vy: 0}) if p_tick == 14 #пробежали яму влево
+        p_tick == 15 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+  end
 end
