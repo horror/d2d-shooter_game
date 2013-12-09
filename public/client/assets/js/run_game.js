@@ -39,16 +39,16 @@ var ss_map = new createjs.SpriteSheet({
 });
 
 var map_pieces_consitions = {
+    //bottom
+    "xxx11x0x" : 52,
+    "xxx01x0x" : 36,
+    "xxx10x0x" : 37,
     //top
     "00011xxx" : 16,
     "00001xxx" : 4,
     "00010xxx" : 5,
     "10011xxx" : 39,
     "00111xxx" : 29,
-    //bottom
-    "xxx11x0x" : 52,
-    "xxx01x0x" : 36,
-    "xxx10x0x" : 37,
     //sides
     "x1011x1x" : 55,
     "01x11x1x" : 56,
