@@ -161,8 +161,13 @@ function start_websocket(sid, login)
     };
 };
 
+
 function draw_map(map)
 {
+    var Symbol = function(j, i) {
+        return (i < 0 || j < 0 || i >= map[0].length || j >= map.length) ? "#" : map[j][i];
+    };
+
     $("#main_canvas").attr("width", map[0].length * SCALE);
     $("#main_canvas").attr("height", map.length * SCALE);
     stage = new createjs.Stage($("#main_canvas")[0]);
@@ -173,9 +178,9 @@ function draw_map(map)
         {
             if (map[j][i] == "#") {
                 var wall_piece = get_map_wall_piece([
-                    map[j - 1][i - 1], map[j - 1][i], map[j - 1][i + 1], //top
-                    map[j][i - 1], map[j][i + 1], //left/right
-                    map[j + 1][i - 1], map[j + 1][i], map[j + 1][i + 1], //bottom
+                    Symbol(j - 1, i - 1), Symbol(j - 1, i), Symbol(j - 1, i + 1), //top
+                    Symbol(j, i - 1), Symbol(j, i + 1), //left/right
+                    Symbol(j + 1, i - 1), Symbol(j + 1, i), Symbol(j + 1, i + 1), //bottom
                 ]);
 
                 stage.addChild(wall_piece).set({x: i * SCALE , y: j * SCALE});
