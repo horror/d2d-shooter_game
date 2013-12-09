@@ -1,8 +1,8 @@
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
     SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead",
-    PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8, SPRITE_SHIFT_X = 0.45, SPRITE_SHIFT_Y = 0.45,
-    MAP_PIECE_SCALE = 0.5;
+    PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8, PLAYER_SHIFT_X = 0.45, PLAYER_SHIFT_Y = 0.45,
+    MAP_PIECE_SCALE = 0.5, TELEPORT_SCALE_X = 0.2, TELEPORT_SCALE_Y = 0.2, TELEPORT_SHIFT_Y = 0.8, TELEPORT_SHIFT_X = 0.8;
 var keys_to_params = {
         "m": {"action": "fire", params: {}},
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
@@ -14,7 +14,21 @@ var keys_to_params = {
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
     stage, container, web_socket, player_x = 0, player_y = 0,
-    mouse_x, mouse_y, sprites = {};
+    mouse_x, mouse_y, p_sprites = {};
+
+var ss_telepot = new createjs.SpriteSheet({
+    animations: {
+        show: {
+            frames: [0, 1, 2, 3, 4, 5],
+            speed: 0.8,
+        }
+    },
+    images: ["assets/img/teleport.png"],
+    frames: {
+        height: 512,
+        width: 512,
+    },
+});
 
 var ss_player = new createjs.SpriteSheet({
     animations: {
@@ -129,20 +143,20 @@ function start_websocket(sid, login)
                 SCALE * PLAYER_HALFRECT * 2 * player["hp"] / 100, 0.3 * SCALE);
 
             //ИГРОК
-            if (sprites[player["login"]] == undefined) {
-                sprites[player["login"]] = new createjs.Sprite(ss_player);
-                sprites[player["login"]].scaleX = PLAYER_SCALE_X;
-                sprites[player["login"]].scaleY = PLAYER_SCALE_Y;
+            if (p_sprites[player["login"]] == undefined) {
+                p_sprites[player["login"]] = new createjs.Sprite(ss_player);
+                p_sprites[player["login"]].scaleX = PLAYER_SCALE_X;
+                p_sprites[player["login"]].scaleY = PLAYER_SCALE_Y;
             }
 
-            var sprite = sprites[player["login"]];
+            var sprite = p_sprites[player["login"]];
             var curr_animation = ((player["vy"] != 0) ? "jump_" : "run_") + ((player["vx"] > 0) ? "right" : "left");
             if (player["vx"] == 0)
                 sprite.stop();
             else if (curr_animation != sprite.currentAnimation || sprite.paused)
                 sprite.gotoAndPlay(curr_animation);
             container.addChild(sprite)
-                .set({x: (player["x"] - SPRITE_SHIFT_X) * SCALE - PLAYER_HALFRECT * SCALE , y: (player["y"] - SPRITE_SHIFT_Y) * SCALE - PLAYER_HALFRECT * SCALE});
+                .set({x: (player["x"] - PLAYER_SHIFT_X) * SCALE - PLAYER_HALFRECT * SCALE , y: (player["y"] - PLAYER_SHIFT_Y) * SCALE - PLAYER_HALFRECT * SCALE});
         }
 
         for (var i = 0; i < projectiles.length; ++i) {
@@ -185,8 +199,13 @@ function draw_map(map)
 
                 stage.addChild(wall_piece).set({x: i * SCALE , y: j * SCALE});
             }
-            if (!isNaN(parseInt(map[j][i], 10)))
-                rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
+            if (!isNaN(parseInt(map[j][i], 10))) {
+                var teleport = new createjs.Sprite(ss_telepot, "show");
+                teleport.scaleY = TELEPORT_SCALE_Y;
+                teleport.scaleX = TELEPORT_SCALE_X;
+                stage.addChild(teleport).set({x: (i - PLAYER_HALFRECT - TELEPORT_SHIFT_X) * SCALE, y: (j - PLAYER_HALFRECT - TELEPORT_SHIFT_Y) * SCALE});
+                //rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
+            }
 
         }
     for (var i = 0; i < map[0].length; ++i) {
