@@ -185,8 +185,6 @@ function draw_map(map)
 
                 stage.addChild(wall_piece).set({x: i * SCALE , y: j * SCALE});
             }
-            if (map[j][i] == "$")
-                rect.graphics.beginFill("blue").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
             if (!isNaN(parseInt(map[j][i], 10)))
                 rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
 
