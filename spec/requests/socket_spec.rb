@@ -3,7 +3,7 @@ require "spec_helper"
 describe 'Socket server' do
 
   sid_a = sid_b = ""
-  map_id = game_id = 0
+  map = ""
   game_consts = {accel: 0.05, max_velocity: 0.5, gravity: 0.05, friction: 0.05}
 
   before(:all) do
@@ -14,20 +14,33 @@ describe 'Socket server' do
     sid_a = json_decode(response.body)["sid"]
     send_request(action: "signin", params: {login: "user_b", password: "password"})
     sid_b = json_decode(response.body)["sid"]
-    send_request(action: "uploadMap", params: {sid: sid_a, name: "New map", maxPlayers: 10,
-                                               map: ['1.$.2', '#####', '..31.', '#####', '.3.#.', '#####', '#2..#']})
-    send_request(action: "getMaps", params: {sid: sid_a})
-    map_id = json_decode(response.body)["maps"][0]["id"]
-    consts = {accel: game_consts[:accel], maxVelocity: game_consts[:max_velocity], gravity: game_consts[:gravity], friction: game_consts[:friction]}
-    send_request(action: "createGame", params: {sid: sid_a, name: "New game", map: map_id, maxPlayers: 10, consts: consts})
-    send_request(action: "getGames", params: {sid: sid_a})
-    game_id = json_decode(response.body)["games"][0]["id"]
-    send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
-
+    map = ['1.$.2',
+           '#####',
+           '..31.',
+           '#####',
+           '.3.#.',
+           '#####',
+           '#2..#']
+    recreate_game(map, sid_a, sid_b, game_consts, 0)
   end
 
   before do
     @ws_requests = Array.new
+  end
+
+  def recreate_game(map, sid_a, sid_b, game_consts, index)
+    send_request(action: "leaveGame", params: {sid: sid_a})
+    send_request(action: "leaveGame", params: {sid: sid_b})
+    send_request(action: "uploadMap", params: {sid: sid_a, name: "New map #{index}", maxPlayers: 10, map: map})
+    send_request(action: "getMaps", params: {sid: sid_a})
+    map_id = json_decode(response.body)["maps"]
+    map_id = map_id[map_id.size - 1]["id"]
+    consts = {accel: game_consts[:accel], maxVelocity: game_consts[:max_velocity], gravity: game_consts[:gravity], friction: game_consts[:friction]}
+    send_request(action: "createGame", params: {sid: sid_a, name: "New game #{index}", map: map_id, maxPlayers: 10, consts: consts})
+    send_request(action: "getGames", params: {sid: sid_a})
+    game_id = json_decode(response.body)["games"]
+    game_id = game_id[game_id.size - 1]["id"]
+    send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
   end
 
   def check_player(got_player, expected_player)
@@ -158,21 +171,6 @@ describe 'Socket server' do
     end
   end
 
-  def recreate_game(map, sid_a, sid_b, map_id, game_id, game_consts, index)
-    send_request(action: "leaveGame", params: {sid: sid_a})
-    send_request(action: "leaveGame", params: {sid: sid_b})
-    send_request(action: "uploadMap", params: {sid: sid_a, name: "New map #{index}", maxPlayers: 10, map: map})
-    send_request(action: "getMaps", params: {sid: sid_a})
-    map_id = json_decode(response.body)["maps"]
-    map_id = map_id[map_id.size - 1]["id"]
-    consts = {accel: game_consts[:accel], maxVelocity: game_consts[:max_velocity], gravity: game_consts[:gravity], friction: game_consts[:friction]}
-    send_request(action: "createGame", params: {sid: sid_a, name: "New game #{index}", map: map_id, maxPlayers: 10, consts: consts})
-    send_request(action: "getGames", params: {sid: sid_a})
-    game_id = json_decode(response.body)["games"]
-    game_id = game_id[game_id.size - 1]["id"]
-    send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
-  end
-
   describe "Gravity: " do
 
     spawns = [Point(5.5, 0.5), Point(0.5, 3.5), Point(7.5, 3.5)]
@@ -183,7 +181,7 @@ describe 'Socket server' do
              '........',
              '$......$',
              '#.#..###']
-      recreate_game(map, sid_a, sid_b, map_id, game_id, game_consts, 2)
+      recreate_game(map, sid_a, sid_b, game_consts, 2)
     end
 
     it "respawns order" do
@@ -337,7 +335,7 @@ describe 'Socket server' do
              '....12..',
              '.......4',
              '3.$.....']
-      recreate_game(map, sid_a, sid_b, map_id, game_id, game_consts, 3)
+      recreate_game(map, sid_a, sid_b, game_consts, 3)
     end
 
     it "Multy tp" do
@@ -428,7 +426,7 @@ describe 'Socket server' do
              '#.......#..#..',
              '#$.....$#.....',
              '.#######..#$#.']
-      recreate_game(map, sid_a, sid_b, map_id, game_id, game_consts, 4)
+      recreate_game(map, sid_a, sid_b, game_consts, 4)
     end
     #Spawn 0
     it "jump, fall, run to right corner" do
