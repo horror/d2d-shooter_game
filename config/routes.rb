@@ -3,6 +3,7 @@ D2d::Application.routes.draw do
 
   #match '/handtest', to: redirect('/hand_test.html')
   match '/', :controller => 'application', :action => 'options', :constrains => {:method => 'OPTIONS'}
+  match '/demo', :controller => 'application', :action => 'demo'
 
   get '/views/:name.:format', to: redirect {|params, req| "/client/views/#{params[:name]}.#{params[:format]}" }
 

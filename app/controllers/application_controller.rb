@@ -7,7 +7,7 @@ class ApplicationController < ActionController::Base
   include MapHelper
   include ValidationHelper
 
-  def index
+  def index(index_file = 'public/client/index.html')
     response.headers["Access-Control-Allow-Origin"] = '*'
     response.headers["Access-Control-Allow-Headers"] = 'Content-Type, X-Requested_with'
     req = params['application']
@@ -25,7 +25,11 @@ class ApplicationController < ActionController::Base
           puts "Response = #{@response_obj}\n"
       end
     else
-      render :file => 'public/client/index.html' and return
+      render :file => index_file and return
     end
+  end
+
+  def demo
+    index("app/views/application/index.html.erb")
   end
 end

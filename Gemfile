@@ -41,6 +41,7 @@ gem 'em-websocket'
 gem 'em-http-request'
 gem 'em-websocket-request'
 gem 'rails_config'
+gem 'ruby-geometry'
 
 # To use ActiveModel has_secure_password
 # gem 'bcrypt-ruby', '~> 3.0.0'

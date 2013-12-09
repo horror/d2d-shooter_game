@@ -27,9 +27,9 @@ module Requests
     end
 
     def check_response(expect, code)
-      resp = json_decode(response.body)
-      resp.delete("message")
-      response.code.to_s.should == code && json_encode(resp).should == json_encode(expect)
+      resp = json_decode(response.body).inject({}){|memo,(k,v)| memo[k.to_sym] = v; memo} #string keys to symbol
+      resp.delete(:message)
+      response.code.to_s.should == code && resp.should == expect
     end
 
     def request_and_checking(action, params, body = {result: "ok"}, code = "200")
@@ -51,6 +51,10 @@ module Requests
         send_ws_request(request, "move", {sid: sid, dx: 0, dy: 0, tick: 0})
       }
 
+      request.disconnect{
+        EM.stop
+      }
+
       request.errback {
         puts "websocket connection problem"
       }
@@ -70,16 +74,9 @@ module Requests
       request.send(json_encode({action: action, params: params}))
     end
 
-    def new_params(dx, dy, params, is_inc, consts)
-      params['vx'], params['vy'] = is_inc ? Client::new_velocity(dx, dy, params['vx'], params['vy'], consts) :
-          Client::new_velocity(-params['vx'], params['vy'], params['vx'], params['vy'], consts)
-      params['x'] = (params['x'] + params['vx']).round(Settings.accuracy)
-      params['y'] = (params['y'] + params['vy']).round(Settings.accuracy)
-      return params
-    end
-
-    def should_eql(a,b)
-      (a - b).abs.should < Settings.eps
+    def should_eql(got, exp, info = "")
+      info = info == "" ? "" : info + "\n"
+      ((got - exp).abs < Settings.eps).should be_true, "#{info}expected: #{exp}\n\tgot: #{got}"
     end
   end
 end

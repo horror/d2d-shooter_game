@@ -11,12 +11,14 @@
           <div id="connect_buttons">
             <div id="connect_params">
               <select id="users"></select>
+              <input type="file" id="requests_file">
               <br>
               <textarea id="init_map"></textarea>
             </div>
             <button onclick='start_websocket()'>start</button>
             <button onclick='signin()'>signin</button>
             <button onclick='init()'>init</button>
+            <button onclick='load_from_file()'>load_file</button>
           </div>
           <div><%= debug(params) if Rails.env.development? %></div>
         </div>

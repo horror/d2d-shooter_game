@@ -64,5 +64,9 @@
         });
         $('#main_canvas').mousedown(onbuttondown);
         $(document).mouseup(onbuttonup);
+        window.onbeforeunload = function() {
+            if (web_socket)
+                web_socket.close();
+        }
     })
 </script>
