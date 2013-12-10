@@ -251,7 +251,8 @@ function key_hold(sid)
 }
 
 function scrollCanvas(){
-    $("#canvas_wrapper").scrollLeft( Math.min(Math.max(player_x * SCALE - $("#canvas_wrapper").width() / 2, 0), $("canvas").width() - $("#canvas_wrapper").width()) );
+    var offset_x = 0;
+    $("#canvas_wrapper").scrollLeft( offset_x = Math.min(Math.max(player_x * SCALE - $("#canvas_wrapper").width() / 2, 0), $("canvas").width() - $("#canvas_wrapper").width()) );
     $("#canvas_wrapper").scrollTop( Math.min(Math.max(player_y * SCALE - $("#canvas_wrapper").height() / 2, 0), $("canvas").height() - $("#canvas_wrapper").height()) );
-
+    $('#canvas_wrapper').css('background-position-x', -1 * offset_x / 2);
 }

@@ -50,12 +50,13 @@ canvas:hover {
 }
 
 canvas {
-    background: #96b4d4 url("./images/mountains.png") repeat-x bottom left;
+
 }
 
 #canvas_wrapper {
     height: 600px;
     overflow: hidden;
+    background: #96b4d4 url("./images/mountains.png") repeat-x bottom left;
 }
 
 #send_message {
