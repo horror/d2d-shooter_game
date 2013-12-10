@@ -170,6 +170,7 @@ function start_websocket(sid, login)
                 projectile["y"] * SCALE, SCALE / 10);
         }
         stage.addChild(container);
+        scrollCanvas();
         stage.update();
        // console.log('onmessage, ' + event.data);
     };
@@ -236,8 +237,16 @@ function key_hold(sid)
                 arr["params"]["dx"] = mouse_x - player_x * SCALE,
                     arr["params"]["dy"] = mouse_y - player_y * SCALE;
             }
+
             web_socket.send(JSON.stringify(arr));
+
         }
     if (pressed)
         setTimeout("key_hold('" + sid + "')", 50);
+}
+
+function scrollCanvas(){
+    $("#canvas_wrapper").scrollLeft( Math.min(Math.max(player_x * SCALE - $("#canvas_wrapper").width() / 2, 0), $("canvas").width() - $("#canvas_wrapper").width()) );
+    $("#canvas_wrapper").scrollTop( Math.min(Math.max(player_y * SCALE - $("#canvas_wrapper").height() / 2, 0), $("canvas").height() - $("#canvas_wrapper").height()) );
+
 }
