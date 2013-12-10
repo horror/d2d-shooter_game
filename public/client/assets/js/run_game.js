@@ -159,6 +159,11 @@ function start_websocket(sid, login)
                 sprite.stop();
             else if (curr_animation != sprite.currentAnimation || sprite.paused)
                 sprite.gotoAndPlay(curr_animation);
+
+            if (player["vy"] == 0 && player["vx"] == 0 && sprite.paused && sprite.currentAnimation.indexOf('jump') >= 0) {
+                sprite.gotoAndStop(sprite.currentAnimation.indexOf('left') >= 0 ? "run_left" : "run_right");
+            }
+
             container.addChild(sprite)
                 .set({x: (player["x"] - PLAYER_SHIFT_X) * SCALE - PLAYER_HALFRECT * SCALE , y: (player["y"] - PLAYER_SHIFT_Y) * SCALE - PLAYER_HALFRECT * SCALE});
         }
