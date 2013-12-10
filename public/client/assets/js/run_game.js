@@ -63,10 +63,13 @@ var map_pieces_consitions = {
     "00001xxx" : 4,
     "00010xxx" : 5,
     "10011xxx" : 39,
-    "00111xxx" : 29,
-    //sides
+    "00111xxx" : 23,
+    //inner corners
     "x1011x1x" : 55,
     "01x11x1x" : 56,
+    //sides
+    "x1x01x1x" : 20,
+    "x1x10x1x" : 21,
 };
 
 function get_map_piece (piece_id) {
