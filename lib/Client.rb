@@ -1,5 +1,3 @@
-require 'geometry'
-
 RESPAWN = "$"
 VOID = "."
 WALL = "#"
@@ -345,22 +343,42 @@ class Client
                           wall_offset.y != 1 ? wall_offset.y : player[:velocity].y)
   end
 
+  def scalar_prod(p1, p2)
+    p1.x * p2.x + p1.y * p2.y
+  end
+
   def polygon_include_point?(start_rect_point, end_rect_point, point)
     p1, p2 = start_rect_point, end_rect_point
     return false if p1 == p2
     offset = Settings.player_halfrect - Settings.eps
-    #вектор движения игрока, с длинной 0.5 - eps (чтобы не включать границу в полигон)
-    der_a = (p2 - p1).map{|i| v_sign(i)} * offset
-    #аналогичный вектор для куска полигона, включающего границу.
-    #используется для исключения начального квадрата игрока из полигона.
-    der_b = (p2 - p1).map{|i| v_sign(i)} * (Settings.player_halfrect)
-    points = [Point(p1.x - der_a.x, p1.y + der_a.y), p1 + der_b, Point(p1.x + der_a.x, p1.y - der_a.y),
-              Point(p2.x + der_a.x, p2.y - der_a.y), p2 + der_a, Point(p2.x - der_a.x, p2.y + der_a.y)]
-    points = [Point(p1.x - offset, p1.y + der_b.y), Point(p1.x + offset, p1.y + der_b.y),
-              Point(p2.x + offset, p2.y + der_a.y), Point(p2.x - offset, p2.y + der_a.y)] if f_eq(p1.x, p2.x)
-    points = [Point(p1.x + der_b.x, p1.y - offset), Point(p1.x + der_b.x, p1.y + offset),
-              Point(p2.x + der_a.x, p2.y + offset), Point(p2.x + der_a.x, p2.y - offset)] if f_eq(p1.y, p2.y)
-    Geometry::Polygon.new(points).contains?(point)
+    der = (p2 - p1).map{|i| f_eq(i.to_f, 0) || i.to_f > 0.0 ? 1 : -1} * offset
+    poly = [Point(p1.x - der.x, p1.y + der.y), p1 - der, Point(p1.x + der.x, p1.y - der.y),
+            Point(p2.x + der.x, p2.y - der.y), p2 + der, Point(p2.x - der.x, p2.y + der.y)]
+    prj_x = [poly[0].x, poly[0].x]
+    prj_y = [poly[0].y, poly[0].y]
+    poly.each{ |i|
+      prj_x = [[prj_x[0], i.x].min, [prj_x[1], i.x].max]
+      prj_y = [[prj_y[0], i.y].min, [prj_y[1], i.y].max]
+    }
+    diag_prj_intersect = true
+    if !f_eq(p1.x, p2.x) && !f_eq(p1.y, p2.y)
+      #Нормаль к диагональной грани полигона
+      normal = Line(Point(-poly[1].y, poly[1].x), Point(-poly[2].y, poly[2].x))
+      normal_p = normal.p2 - normal.p1
+      #Проекция полигона на нормаль
+      prj_normal = [scalar_prod(normal_p, poly[1]), scalar_prod(normal_p, poly[1])]
+      poly.each{ |i|
+        prj_normal = [[prj_normal[0], scalar_prod(normal_p, i)].min, [prj_normal[1], scalar_prod(normal_p, i)].max]
+      }
+      #Проверка пересечения проекций точки и полигона на нормаль
+      diag_prj_intersect = scalar_prod(normal_p, point) > prj_normal[0] && scalar_prod(normal_p, point) < prj_normal[1]
+    end
+    return diag_prj_intersect && point.x > prj_x[0] && point.x < prj_x[1] && point.y > prj_y[0] && point.y < prj_y[1]
+  end
+
+  def rect_include_point?(center, point)
+    offset = Settings.player_halfrect
+    center.x - offset < point.x && center.x + offset > point.x && center.y - offset < point.y && center.y + offset > point.y
   end
 
   def line_len(p1, p2)
@@ -374,7 +392,8 @@ class Client
       next if [VOID, WALL, RESPAWN].include?(symbol(itr_cell))
       cell_center = itr_cell + Settings.player_halfrect
       end_rect = player[:coord] + @updated_velocity
-      if polygon_include_point?(player[:coord], end_rect, cell_center) && min_tp_dist > line_len(player[:coord], cell_center)
+      if polygon_include_point?(player[:coord], end_rect, cell_center) && !rect_include_point?(player[:coord], cell_center) &&
+          min_tp_dist > line_len(player[:coord], cell_center)
          if("0".."9").include?(symbol(itr_cell))
            min_tp_dist = line_len(player[:coord], cell_center)
            tp_cell = itr_cell
