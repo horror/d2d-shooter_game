@@ -23,8 +23,8 @@ var ss_items = new createjs.SpriteSheet({
     },
     images: ["assets/img/gameXYZqsbhd.png"],
     frames: [
-        [325, 72, 54, 48, 0, 26, 0],
-        [73, 128, 108, 66, 0, 50, 0],
+        [325, 72, 54, 48],
+        [73, 128, 108, 66],
     ],
 });
 
