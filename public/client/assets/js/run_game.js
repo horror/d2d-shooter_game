@@ -212,7 +212,7 @@ function draw_map(map)
     var Symbol = function(j, i) {
         return (i < 0 || j < 0 || i >= map[0].length || j >= map.length) ? "#" : map[j][i];
     };
-
+    $("#canvas_wrapper").css("height", screen.height * 0.6)
     $("#main_canvas").attr("width", map[0].length * SCALE);
     $("#main_canvas").attr("height", (map.length + 1) * SCALE);
     stage = new createjs.Stage($("#main_canvas")[0]);
