@@ -9,7 +9,7 @@ EM.next_tick do
   def send_clients_response(ws)
     synch = !ValidationHelper.synchron_websocket?
     @clients.each { |ws_handler, client| client.apply_player_changes if synch || client.game_id == @clients[ws].game_id }
-    @clients.each { |ws_handler, client| client.apply_projectiles_changes if synch || client.game_id == @clients[ws].game_id }
+    @games.each { |ws_handler, game| game.move_projectiles if synch || game.id == @clients[ws].game_id }
     @clients.each { |ws_handler, client| client.on_message(@tick) if synch || client.game_id == @clients[ws].game_id }
   end
 
