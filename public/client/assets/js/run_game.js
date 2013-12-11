@@ -17,6 +17,26 @@ var keys_to_params = {
     stage, container, web_socket, player_x = 0, player_y = 0,
     mouse_x, mouse_y, p_sprites = {};
 
+var ss_items = new createjs.SpriteSheet({
+    animations: {
+        h: 0,
+    },
+    images: ["assets/img/gameXYZqsbhd.png"],
+    frames: [
+        [325, 72, 54, 48, 0, 26, 0],
+        [73, 128, 108, 66, 0, 50, 0],
+    ],
+});
+
+function get_item (name) {
+    var item = new createjs.Sprite(ss_items);
+    item.scaleY = item.scaleX = MAP_PIECE_SCALE;
+    item.gotoAndStop(name);
+    return item;
+}
+
+
+
 var ss_telepot = new createjs.SpriteSheet({
     animations: {
         show: {
@@ -142,13 +162,14 @@ function start_websocket(sid, login)
             moving_objects.graphics.beginStroke("black").beginFill("silver").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
                 (player["y"] - PLAYER_HALFRECT - HP_BAR_SHIFT_Y) * SCALE,
                 SCALE * PLAYER_HALFRECT * 2, 0.3 * SCALE).endStroke();
-            moving_objects.graphics.beginFill("red").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
+            moving_objects.graphics.beginFill("#ed2123").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
                 (player["y"] - PLAYER_HALFRECT - HP_BAR_SHIFT_Y) * SCALE,
                 SCALE * PLAYER_HALFRECT * 2 * player["hp"] / 100, 0.3 * SCALE);
 
             //ИГРОК
             if (p_sprites[player["login"]] == undefined) {
                 p_sprites[player["login"]] = new createjs.Sprite(ss_player);
+                p_sprites[player["login"]].gotoAndStop("run_right");
                 p_sprites[player["login"]].scaleX = PLAYER_SCALE_X;
                 p_sprites[player["login"]].scaleY = PLAYER_SCALE_Y;
             }
@@ -209,14 +230,16 @@ function draw_map(map)
 
                 stage.addChild(wall_piece).set({x: i * SCALE , y: j * SCALE});
             }
-            if (!isNaN(parseInt(map[j][i], 10))) {
+            else if (!isNaN(parseInt(map[j][i], 10))) {
                 var teleport = new createjs.Sprite(ss_telepot, "show");
                 teleport.scaleY = TELEPORT_SCALE_Y;
                 teleport.scaleX = TELEPORT_SCALE_X;
                 stage.addChild(teleport).set({x: (i - PLAYER_HALFRECT - TELEPORT_SHIFT_X) * SCALE, y: (j - PLAYER_HALFRECT - TELEPORT_SHIFT_Y) * SCALE});
                 //rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
             }
-
+            else if (/^[\w]*$/i.test(map[j][i])) {
+                stage.addChild(get_item(map[j][i])).set({x: i * SCALE , y: j * SCALE});
+            }
         }
     for (var i = 0; i < map[0].length; ++i) {
         stage.addChild(get_map_piece(16)).set({x: i * SCALE , y: map.length * SCALE});
