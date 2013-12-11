@@ -1,6 +1,7 @@
 RESPAWN = "$"
 VOID = "."
 WALL = "#"
+HEAL = "h"
 MOVE = "move"
 ALIVE = "alive"
 DEAD = "dead"
@@ -153,7 +154,7 @@ class Client
   attr_accessor :ws, :sid, :login, :game_id, :games, :player, :projectiles, :summed_move_params, :position_changed, :answered
 
   def initialize(ws, games)
-    @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: 100, status: ALIVE, respawn: 0}
+    @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0}
     @projectiles = Array.new
     @summed_move_params = Point(0.0, 0.0)
     @position_changed = false
@@ -394,9 +395,11 @@ class Client
       end_rect = player[:coord] + @updated_velocity
       if polygon_include_point?(player[:coord], end_rect, cell_center) && !rect_include_point?(player[:coord], cell_center) &&
           min_tp_dist > line_len(player[:coord], cell_center)
-         if("0".."9").include?(symbol(itr_cell))
+         if ("0".."9").include?(symbol(itr_cell))
            min_tp_dist = line_len(player[:coord], cell_center)
            tp_cell = itr_cell
+         elsif symbol(itr_cell) == HEAL
+           player[:hp] = Settings.def_game.maxHP
          end
       end
     }
