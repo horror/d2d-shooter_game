@@ -199,14 +199,16 @@ class ActiveGame
   end
 
   def get_projectiles
-    projectiles
+    projectiles.map { |p|
+      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy)}
+    }
   end
 
   def move_projectiles
     projectiles.delete_if do |projectile|
       intersected = false
-      old_coord = Point.new(projectile[:x], projectile[:y])
-      v_der = Point.new(projectile[:vx], projectile[:vy])
+      old_coord = projectile[:coord]
+      v_der = projectile[:v]
       new_coord = old_coord + v_der
       der = Line(old_coord, new_coord)
       Geometry::walk_cells_around_coord(old_coord, v_der, false) {|itr_cell|
@@ -226,8 +228,7 @@ class ActiveGame
         end
       end
 
-      projectile[:x] = new_coord.x
-      projectile[:y] = new_coord.y
+      projectile[:coord] = new_coord
       intersected
     end
   end
@@ -467,6 +468,6 @@ class Client
 
   def fire(data)
     v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.items.gunVelocity
-    game.projectiles << {x: player[:coord].x, y: player[:coord].y, vx: v.x, vy: v.y, owner: login}
+    game.projectiles << {coord: player[:coord], v: v, owner: login}
   end
 end
