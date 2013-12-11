@@ -168,7 +168,7 @@ def Line(p1, p2)
 end
 
 class ActiveGame
-  attr_accessor :clients, :items, :projectiles, :map, :id, :map_bottom_bound, :map_right_bound
+  attr_accessor :clients, :items, :projectiles, :map, :id
 
   def initialize(id, json_map)
     @clients = Hash.new
@@ -184,14 +184,14 @@ class ActiveGame
   end
 
   def symbol(*args)
-    return args.size == 2 ? map[args[1]][args[0]] : map[args[0].y][args[0].x]
+    return args.size == 2 ? map[args[1] + 1][args[0] + 1] : map[args[0].y + 1][args[0].x + 1]
   end
 
   def get_players
     clients.map do |sid, client|
       player = client.player
 
-      {x: (player[:coord].x - 1).round(Settings.accuracy), y: (player[:coord].y - 1).round(Settings.accuracy),
+      {x: (player[:coord].x).round(Settings.accuracy), y: (player[:coord].y).round(Settings.accuracy),
        vx: player[:velocity].x, vy: player[:velocity].y,
        hp: player[:hp], status: player[:status], respawn: player[:respawn], login: player[:login]
       }
@@ -233,9 +233,6 @@ class ActiveGame
   end
 
   def init_items
-    @map_bottom_bound = map.size.to_i
-    @map_right_bound = map[0].length.to_i
-    @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
     for i in 0..map.size.to_i - 1
       for j in 0..map[0].length.to_i - 1
         items["respawns"] << Point(j, i) if map[i][j] == RESPAWN
@@ -245,6 +242,7 @@ class ActiveGame
         end
       end
     end
+    @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
     items['last_respawn'] = 0
   end
 end
@@ -409,7 +407,7 @@ class Client
   end
 
   def pick_up_items_and_try_tp
-    tp_cell = Point(0, 0)
+    tp_cell = Point(-1, -1)
     min_tp_dist = 2
     Geometry::walk_cells_around_coord(player[:coord], @updated_velocity, true) { |itr_cell|
       next if [VOID, WALL, RESPAWN].include?(game.symbol(itr_cell))
@@ -417,15 +415,15 @@ class Client
       end_rect = player[:coord] + @updated_velocity
       if Geometry::polygon_include_point?(player[:coord], end_rect, cell_center) && !Geometry::rect_include_point?(player[:coord], cell_center) &&
           min_tp_dist > Geometry::line_len(player[:coord], cell_center)
-         if ("0".."9").include?(game.symbol(itr_cell))
-           min_tp_dist = Geometry::line_len(player[:coord], cell_center)
-           tp_cell = itr_cell
-         elsif game.symbol(itr_cell) == HEAL
-           player[:hp] = Settings.def_game.maxHP
-         end
+        if ("0".."9").include?(game.symbol(itr_cell))
+          min_tp_dist = Geometry::line_len(player[:coord], cell_center)
+          tp_cell = itr_cell
+        elsif game.symbol(itr_cell) == HEAL
+          player[:hp] = Settings.def_game.maxHP
+        end
       end
     }
-    return make_tp(tp_cell) if !tp_cell.eq?(0, 0)
+    return make_tp(tp_cell) if !tp_cell.eq?(-1, -1)
   end
 
   def make_tp(coord)
