@@ -54,16 +54,29 @@
             for (i in pressed_keys)
                 pressed = pressed || pressed_keys[i];
         };
-        document.onkeydown = onbuttondown
-        document.onkeyup = onbuttonup
-        $('#main_canvas').mousemove(function (e)
+
+        var change_by_scroll = function ()
+        {
+            mouse_x += $("#canvas_wrapper").scrollLeft() - wrapper_scroll_x
+            mouse_y += $("#canvas_wrapper").scrollTop() - wrapper_scroll_y
+
+            wrapper_scroll_x = $("#canvas_wrapper").scrollLeft();
+            wrapper_scroll_y = $("#canvas_wrapper").scrollTop();
+        };
+
+        var change_mouse_coords = function (e)
         {
             var offset = $(this).offset();
-
             mouse_x = e.pageX - offset.left,
             mouse_y = e.pageY - offset.top;
-        });
+        };
+
+        $(document).keydown(onbuttondown)
+        $(document).keyup(onbuttonup)
+        $("#canvas_wrapper").scroll(change_by_scroll);
+        $('#main_canvas').mousemove(change_mouse_coords);
         $('#main_canvas').mousedown(onbuttondown);
+
         $(document).mouseup(onbuttonup);
         window.onbeforeunload = function() {
             if (web_socket)

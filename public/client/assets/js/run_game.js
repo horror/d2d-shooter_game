@@ -15,7 +15,7 @@ var keys_to_params = {
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
     stage, container, web_socket, player_x = 0, player_y = 0,
-    mouse_x, mouse_y, p_sprites = {};
+    mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0;
 
 var ss_items = new createjs.SpriteSheet({
     animations: {
@@ -191,7 +191,7 @@ function start_websocket(sid, login)
 
         for (var i = 0; i < projectiles.length; ++i) {
             var projectile = projectiles[i];
-            console.log(projectile);
+            //console.log(projectile);
             moving_objects.graphics.beginStroke("black").beginFill("silver").drawCircle(projectile["x"] * SCALE ,
                 projectile["y"] * SCALE, SCALE / 10);
         }
@@ -212,7 +212,7 @@ function draw_map(map)
     var Symbol = function(j, i) {
         return (i < 0 || j < 0 || i >= map[0].length || j >= map.length) ? "#" : map[j][i];
     };
-
+    $("#canvas_wrapper").css("height", screen.height * 0.6)
     $("#main_canvas").attr("width", map[0].length * SCALE);
     $("#main_canvas").attr("height", (map.length + 1) * SCALE);
     stage = new createjs.Stage($("#main_canvas")[0]);
@@ -263,7 +263,7 @@ function key_hold(sid)
             if (i == KEY_MOUSE)
             {
                 arr["params"]["dx"] = mouse_x - player_x * SCALE,
-                    arr["params"]["dy"] = mouse_y - player_y * SCALE;
+                arr["params"]["dy"] = mouse_y - player_y * SCALE;
             }
 
             web_socket.send(JSON.stringify(arr));
