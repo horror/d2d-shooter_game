@@ -216,7 +216,8 @@ class ActiveGame
 
   def get_projectiles
     projectiles.map { |p|
-      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy), vx: p[:v].x, vy: p[:v].y, owner: p[:owner], weapon: p[:weapon]}
+      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy),
+       vx: p[:v].x.round(Settings.accuracy), vy: p[:v].y.round(Settings.accuracy), owner: p[:owner], weapon: p[:weapon]}
     }
   end
 
