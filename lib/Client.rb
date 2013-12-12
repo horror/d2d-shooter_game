@@ -257,7 +257,7 @@ class ActiveGame
           teleports[map[i][j].to_s] << Point(j, i)
         end
         if map[i][j] =~ /[a-z]/i
-          item_pos_to_idx[Point.new(i, j).to_s] = items.size
+          item_pos_to_idx[Point.new(j, i).to_s] = items.size
           items << 0
         end
       end

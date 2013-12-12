@@ -21,6 +21,7 @@ var ss_items = new createjs.SpriteSheet({
     animations: {
         empty: 0,
         h: 1,
+        G: 2,
     },
     images: ["assets/img/gameXYZqsbhd.png"],
     frames: [
