@@ -135,6 +135,10 @@ class Point
     new_y = proc.call(@y)
     return Point(new_x, new_y)
   end
+
+  def to_s
+    x.to_s + " - " + y.to_s
+  end
 end
 
 class Line
@@ -168,16 +172,17 @@ def Line(p1, p2)
 end
 
 class ActiveGame
-  attr_accessor :clients, :items, :projectiles, :map, :id
+  attr_accessor :clients, :items, :spawns, :last_spawn, :teleports, :projectiles, :map, :id, :item_pos_to_idx
 
   def initialize(id, json_map)
     @clients = Hash.new
     @map = Array.new
-    @items = Hash.new
+    @items = Array.new
+    @spawns = Array.new
+    @teleports = Hash.new
     @projectiles = Array.new
+    @item_pos_to_idx = Hash.new
 
-    items["respawns"] = Array.new
-    items["teleports"] = Hash.new
     @id = id
     @map = ActiveSupport::JSON.decode(json_map)
     init_items
@@ -185,6 +190,10 @@ class ActiveGame
 
   def symbol(*args)
     return args.size == 2 ? map[args[1] + 1][args[0] + 1] : map[args[0].y + 1][args[0].x + 1]
+  end
+
+  def get_items
+    items
   end
 
   def get_players
@@ -233,18 +242,28 @@ class ActiveGame
     end
   end
 
+  def apply_changes
+    move_projectiles
+
+    @items = items.map { |item| [item - 1, 0].max }
+  end
+
   def init_items
     for i in 0..map.size.to_i - 1
       for j in 0..map[0].length.to_i - 1
-        items["respawns"] << Point(j, i) if map[i][j] == RESPAWN
+        spawns << Point(j, i) if map[i][j] == RESPAWN
         if ("0".."9").include?(map[i][j])
-          items["teleports"][map[i][j].to_s] ||= Array.new
-          items["teleports"][map[i][j].to_s] << Point(j, i)
+          teleports[map[i][j].to_s] ||= Array.new
+          teleports[map[i][j].to_s] << Point(j, i)
+        end
+        if map[i][j] =~ /[a-z]/i
+          item_pos_to_idx[Point.new(i, j).to_s] = items.size
+          items << 0
         end
       end
     end
     @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
-    items['last_respawn'] = 0
+    @last_spawn = 0
   end
 end
 
@@ -272,7 +291,7 @@ class Client
     game_id ? games[game_id] : nil
   end
 
-  def apply_player_changes
+  def apply_changes
     return if !@initialized
 
     position_changed ? move(summed_move_params) : deceleration
@@ -291,7 +310,7 @@ class Client
   def on_message(tick)
     return if !@initialized
 
-    ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.get_players, projectiles: game.get_projectiles})) if game
+    ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.get_players, projectiles: game.get_projectiles, items: game.get_items})) if game
   end
 
   def process(data, tick)
@@ -331,16 +350,15 @@ class Client
   end
 
   def next_respawn
-    items = game.items
-    result = items["respawns"][items["last_respawn"]]
-    items["last_respawn"] = items["last_respawn"] + 1 == items["respawns"].size ? 0 : items["last_respawn"] + 1
+    result = game.spawns[game.last_spawn]
+    game.last_spawn = game.last_spawn + 1 == game.spawns.size ? 0 : game.last_spawn + 1
     return result
   end
 
   def move_position
     @updated_velocity.set(player[:velocity])
     check_collisions
-    return if pick_up_items_and_try_tp == "teleport"
+    return if withdraw_items_and_try_tp == "teleport"
 
     set_position(player[:coord] + @updated_velocity)
   end
@@ -407,10 +425,10 @@ class Client
                           wall_offset.y != 1 ? wall_offset.y : player[:velocity].y)
   end
 
-  def pick_up_items_and_try_tp
+  def withdraw_items_and_try_tp
     tp_cell = Point(-1, -1)
     min_tp_dist = 2
-    Geometry::walk_cells_around_coord(player[:coord], @updated_velocity, true) { |itr_cell|
+    Geometry::walk_cells_around_coord(player[:coord], @updated_velocity, true) do |itr_cell|
       next if [VOID, WALL, RESPAWN].include?(game.symbol(itr_cell))
       cell_center = itr_cell + Settings.player_halfrect
       end_rect = player[:coord] + @updated_velocity
@@ -419,16 +437,19 @@ class Client
         if ("0".."9").include?(game.symbol(itr_cell))
           min_tp_dist = Geometry::line_len(player[:coord], cell_center)
           tp_cell = itr_cell
-        elsif game.symbol(itr_cell) == HEAL
-          player[:hp] = Settings.def_game.maxHP
+        elsif game.symbol(itr_cell) =~ /[a-z]/i && game.items[game.item_pos_to_idx[itr_cell.to_s]] == 0
+          if game.symbol(itr_cell) == HEAL
+            game.items[game.item_pos_to_idx[itr_cell.to_s]] = Settings.def_game.items.hp_respawn
+            player[:hp] = Settings.def_game.maxHP
+          end
         end
       end
-    }
+    end
     return make_tp(tp_cell) if !tp_cell.eq?(-1, -1)
   end
 
   def make_tp(coord)
-    tps = game.items["teleports"][game.symbol(coord)]
+    tps = game.teleports[game.symbol(coord)]
     set_position((tps[0] == coord ? tps[1] : tps[0]) + 0.5)
     "teleport"
   end

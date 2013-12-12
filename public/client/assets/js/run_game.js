@@ -15,14 +15,16 @@ var keys_to_params = {
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
     stage, container, web_socket, player_x = 0, player_y = 0,
-    mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0;
+    mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0, map_items = [];
 
 var ss_items = new createjs.SpriteSheet({
     animations: {
-        h: 0,
+        empty: 0,
+        h: 1,
     },
     images: ["assets/img/gameXYZqsbhd.png"],
     frames: [
+        [0, 0, 0, 0],
         [325, 72, 54, 48],
         [73, 128, 108, 66],
     ],
@@ -132,9 +134,11 @@ function start_websocket(sid, login)
     };
 
     web_socket.onmessage = function(event) {
-        tick = JSON.parse(event.data)['tick'];
-        var players = JSON.parse(event.data)['players'];
-        var projectiles = JSON.parse(event.data)['projectiles'];
+        var data = JSON.parse(event.data);
+        tick = data['tick'];
+        var players = data['players'];
+        var projectiles = data['projectiles'];
+        var items = data['items'];
         stage.removeChild(container);
         var moving_objects = new createjs.Shape();
         container = new createjs.Container();
@@ -195,6 +199,10 @@ function start_websocket(sid, login)
             moving_objects.graphics.beginStroke("black").beginFill("silver").drawCircle(projectile["x"] * SCALE ,
                 projectile["y"] * SCALE, SCALE / 10);
         }
+
+        for (var i = 0; i < items.length; ++i)
+            map_items[i]["sprite"].gotoAndStop(items[i] == 0 ? map_items[i]["type"] : "empty")
+
         stage.addChild(container);
         scrollCanvas();
         stage.update();
@@ -237,8 +245,9 @@ function draw_map(map)
                 stage.addChild(teleport).set({x: (i - PLAYER_HALFRECT - TELEPORT_SHIFT_X) * SCALE, y: (j - PLAYER_HALFRECT - TELEPORT_SHIFT_Y) * SCALE});
                 //rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
             }
-            else if (/^[\w]*$/i.test(map[j][i])) {
-                stage.addChild(get_item(map[j][i])).set({x: i * SCALE , y: j * SCALE});
+            else if (/[a-z]/i.test(map[j][i])) {
+                map_items.push({sprite: get_item(map[j][i]), type: map[j][i]});
+                stage.addChild(map_items[map_items.length-1]["sprite"]).set({x: i * SCALE , y: j * SCALE});
             }
         }
     for (var i = 0; i < map[0].length; ++i) {
