@@ -17,6 +17,30 @@ var keys_to_params = {
     stage, container, web_socket, player_x = 0, player_y = 0,
     mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0, map_items = [];
 
+function get_sprite (sprite_sheet, param, scale) {
+    var item = new createjs.Sprite(sprite_sheet);
+    item.scaleY = item.scaleX = scale;
+    item.gotoAndStop(param);
+    return item;
+}
+
+var ss_projectiles = new createjs.SpriteSheet({
+    animations: {
+        G: 0,
+    },
+    images: ["assets/img/gameXYZqsbhd.png"],
+    frames: [
+        [200, 145, 55, 28, 0, 27, 14],
+        [338, 210, 28, 28, 0, 14, 14],
+    ],
+});
+
+function get_projectile (name, rotation) {
+    var p = get_sprite(ss_projectiles, name, MAP_PIECE_SCALE);
+    p.rotation = rotation;
+    return p;
+}
+
 var ss_items = new createjs.SpriteSheet({
     animations: {
         empty: 0,
@@ -32,13 +56,8 @@ var ss_items = new createjs.SpriteSheet({
 });
 
 function get_item (name) {
-    var item = new createjs.Sprite(ss_items);
-    item.scaleY = item.scaleX = MAP_PIECE_SCALE;
-    item.gotoAndStop(name);
-    return item;
+    return get_sprite(ss_items, name, MAP_PIECE_SCALE);
 }
-
-
 
 var ss_telepot = new createjs.SpriteSheet({
     animations: {
@@ -96,10 +115,7 @@ var map_pieces_consitions = {
 };
 
 function get_map_piece (piece_id) {
-    var piece = new createjs.Sprite(ss_map);
-    piece.scaleY = piece.scaleX = MAP_PIECE_SCALE;
-    piece.gotoAndStop(piece_id);
-    return piece;
+    return get_sprite(ss_map, piece_id, MAP_PIECE_SCALE);
 }
 
 function compere_mask_with_condition(mask, condition) {
@@ -197,8 +213,12 @@ function start_websocket(sid, login)
         for (var i = 0; i < projectiles.length; ++i) {
             var projectile = projectiles[i];
             //console.log(projectile);
-            moving_objects.graphics.beginStroke("black").beginFill("silver").drawCircle(projectile["x"] * SCALE ,
-                projectile["y"] * SCALE, SCALE / 10);
+            var x = -projectile["vx"];
+            var y = projectile["vy"];
+            var phi = Math.acos(x / Math.sqrt(x * x + y * y)) * 180 / Math.PI + 180;
+            console.log(phi);
+            container.addChild(get_projectile(projectile["weapon"], phi))
+                .set({x: projectile["x"] * SCALE , y: projectile["y"] * SCALE});
         }
 
         for (var i = 0; i < items.length; ++i)
