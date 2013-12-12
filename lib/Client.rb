@@ -211,7 +211,7 @@ class ActiveGame
 
   def get_projectiles
     projectiles.map { |p|
-      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy), vx: p[:v].x, vy: p[:v].y, weapon: p[:weapon]}
+      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy), vx: p[:v].x, vy: p[:v].y, owner: p[:owner], weapon: p[:weapon]}
     }
   end
 
@@ -495,6 +495,6 @@ class Client
   def fire(data)
     return if player[:weapon] == KNIFE
     v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[player[:weapon]].velocity
-    game.projectiles << {coord: player[:coord], v: v, owner: login, weapon: player[:weapon]}
+    game.projectiles << {coord: player[:coord] + v, v: v, owner: login, weapon: player[:weapon]}
   end
 end
