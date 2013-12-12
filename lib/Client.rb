@@ -228,7 +228,7 @@ class ActiveGame
       clients.each do |c_sid, client|
         c_player = client.player
         if client.login != projectile[:owner] && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
-          c_player[:hp] =  [c_player[:hp] - Settings.def_game.items.gunDamage, 0].max
+          c_player[:hp] =  [c_player[:hp] - Settings.def_game.weapons[projectile[:type]].damage, 0].max
           if c_player[:hp] == 0
             c_player[:status] = DEAD
             c_player[:respawn] = Settings.respawn_ticks
@@ -493,7 +493,7 @@ class Client
 
   def fire(data)
     return if !curr_weapon
-    v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.items.gunVelocity
-    game.projectiles << {coord: player[:coord], v: v, owner: login}
+    v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[curr_weapon].velocity
+    game.projectiles << {coord: player[:coord], v: v, owner: login, type: curr_weapon}
   end
 end
