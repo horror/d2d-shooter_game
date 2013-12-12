@@ -257,7 +257,7 @@ class Client
     @summed_move_params = Point(0.0, 0.0)
     @position_changed = false
     @initialized = false
-    @updated_velocity = Point(0.0, 0.0)
+    @wall_offset = Point(-1, -1)
     @ws = ws
     @games = games
     @answered = true
@@ -324,7 +324,7 @@ class Client
 
   def init_player
     resp = next_respawn
-    set_position(resp + 0.5)
+    player[:coord].set(resp + 0.5)
     player[:login] = login
     player[:hp] = 100
     @initialized = true
@@ -338,14 +338,15 @@ class Client
   end
 
   def move_position
-    @updated_velocity.set(player[:velocity])
+    @wall_offset = Point(-1, -1)
     check_collisions
     return if pick_up_items_and_try_tp == "teleport"
-
-    set_position(player[:coord] + @updated_velocity)
+    player[:velocity].set(@wall_offset.x != -1 ? 0 : player[:velocity].x, @wall_offset.y != -1 ? 0 : player[:velocity].y)
+    player[:coord].set(player[:coord].x + (@wall_offset.x != -1 ? @wall_offset.x : player[:velocity].x),
+                       player[:coord].y + (@wall_offset.y != -1 ? @wall_offset.y : player[:velocity].y))
   end
 
-  def calc_wall_offset(wall_cell, player_new_floor_cell, player_cell, der_vectors, der, wall_offset)
+  def calc_wall_offset(wall_cell, player_new_floor_cell, player_cell, der_vectors, der)
     return if !Geometry::check_intersect(wall_cell, der_vectors)
 
     cell_pos = wall_cell - player_new_floor_cell
@@ -360,16 +361,16 @@ class Client
     #сохранить смещение по Х до стенки, если она не находится над или под ячекой игрока, и если слева/справа от текущей стенки нету другой стенки,
     #и если нету пересечения проекций текущей стенки и ячейки игрока на ось Y
     if cell_pos.x != 0 && game.symbol(wall_cell.x - cell_pos.x, wall_cell.y) != WALL && !player_h_edge.prj_intersect(cell_h_edge, :x)
-      wall_offset.x = (cell_pos.x == 1 ? wall_cell.x : wall_cell.x + 1) - (player[:coord].x + offset * cell_pos.x)
+      @wall_offset.x = (cell_pos.x == 1 ? wall_cell.x : wall_cell.x + 1) - (player[:coord].x + offset * cell_pos.x)
     end
     if cell_pos.y != 0 && game.symbol(wall_cell.x, wall_cell.y - cell_pos.y) != WALL && !player_v_edge.prj_intersect(cell_v_edge, :y)
-      wall_offset.y = (cell_pos.y == 1 ? wall_cell.y : wall_cell.y + 1) - (player[:coord].y + offset * cell_pos.y)
+      @wall_offset.y = (cell_pos.y == 1 ? wall_cell.y : wall_cell.y + 1) - (player[:coord].y + offset * cell_pos.y)
     end
 
     bottom_left_cell = game.symbol(player_new_floor_cell.x - 1, player_new_floor_cell.y)
     bottom_right_cell = game.symbol(player_new_floor_cell.x + 1, player_new_floor_cell.y)
     #не обнулять компаненту X, если произашло столкновение с нижней левой/правой стенкой ровно в угол и нету стенок слева/стправа
-    wall_offset.x = 1 if wall_offset.eq?(0, 0) && (der.x < 0 && bottom_left_cell != WALL || der.x > 0 && bottom_right_cell != WALL)
+    @wall_offset.x = -1 if @wall_offset.eq?(0, 0) && (der.x < 0 && bottom_left_cell != WALL || der.x > 0 && bottom_right_cell != WALL)
   end
 
   def check_collisions
@@ -380,8 +381,6 @@ class Client
     player_cell  = player[:coord] - offset
     #координаты ячейки в которой находится начало вектора движения игрока
     player_new_floor_cell = (player[:coord] + v_der * offset - v_der * Settings.eps).map{|i| i.floor}
-    #смещение до стенок по x,y
-    wall_offset = Point(1, 1)
     #массив векторов движения игрока
     der_vectors = Array.new()
     #движение вправо/влево или вверх/вниз
@@ -400,23 +399,35 @@ class Client
 
     #перебор по всем стенкам вокруг player_cell
     Geometry::walk_cells_around_coord(player[:coord], player[:velocity], true) {|itr_cell|
-      calc_wall_offset(itr_cell, player_new_floor_cell, player_cell, der_vectors, v_der, wall_offset) if game.symbol(itr_cell) == WALL
+      calc_wall_offset(itr_cell, player_new_floor_cell, player_cell, der_vectors, v_der) if game.symbol(itr_cell) == WALL
     }
-    player[:velocity].set(wall_offset.x != 1 ? 0 : player[:velocity].x, wall_offset.y != 1 ? 0 : player[:velocity].y)
-    @updated_velocity.set(wall_offset.x != 1 ? wall_offset.x : player[:velocity].x,
-                          wall_offset.y != 1 ? wall_offset.y : player[:velocity].y)
   end
 
   def pick_up_items_and_try_tp
     tp_cell = Point(-1, -1)
     min_tp_dist = 2
-    Geometry::walk_cells_around_coord(player[:coord], @updated_velocity, true) { |itr_cell|
+    updated_velocity = Point(@wall_offset.x != -1 ? @wall_offset.x : player[:velocity].x,
+                              @wall_offset.y != -1 ? @wall_offset.y : player[:velocity].y)
+    Geometry::walk_cells_around_coord(player[:coord], updated_velocity, true) { |itr_cell|
       next if [VOID, WALL, RESPAWN].include?(game.symbol(itr_cell))
       cell_center = itr_cell + Settings.player_halfrect
-      end_rect = player[:coord] + @updated_velocity
+      end_rect = player[:coord] + updated_velocity
       if Geometry::polygon_include_point?(player[:coord], end_rect, cell_center) && !Geometry::rect_include_point?(player[:coord], cell_center) &&
           min_tp_dist > Geometry::line_len(player[:coord], cell_center)
         if ("0".."9").include?(game.symbol(itr_cell))
+          v_der = player[:velocity].map{|i| v_sign(i)}
+          #смещение позициии игрока по Х - на момент вертикального столкновения игрока, и по Y - на момент горизантального
+          offset_to_collision = Point(v_der.y == 0 ? updated_velocity.x : player[:velocity].x * (updated_velocity.y / player[:velocity].y),
+                                      v_der.x == 0 ? updated_velocity.y : player[:velocity].y * (updated_velocity.x / player[:velocity].x))
+          #смещение позиции игрока на момент первого столкновения по какой-либо координате
+          min_offset = Point([(offset_to_collision).x.abs, updated_velocity.x.abs].min,
+                              [(offset_to_collision).y.abs, updated_velocity.y.abs].min) * v_der
+          end_rect = player[:coord] + min_offset
+          #если на момент первого столкновения небыло пересечения с телепортом, то занулить скорость
+          if !Geometry::polygon_include_point?(player[:coord], end_rect, cell_center)
+            player[:velocity].set(@wall_offset.x != -1 ? 0 : player[:velocity].x, @wall_offset.y != -1 ? 0 : player[:velocity].y)
+          end
+
           min_tp_dist = Geometry::line_len(player[:coord], cell_center)
           tp_cell = itr_cell
         elsif game.symbol(itr_cell) == HEAL
@@ -429,12 +440,8 @@ class Client
 
   def make_tp(coord)
     tps = game.items["teleports"][game.symbol(coord)]
-    set_position((tps[0] == coord ? tps[1] : tps[0]) + 0.5)
+    player[:coord].set((tps[0] == coord ? tps[1] : tps[0]) + 0.5)
     "teleport"
-  end
-
-  def set_position(new_pos)
-    player[:coord] = new_pos.map{|i| i.round(Settings.accuracy)}
   end
 
   def deceleration
