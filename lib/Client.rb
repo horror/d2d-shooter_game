@@ -278,7 +278,7 @@ end
 
 class Client
 
-  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered
+  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :projectile
 
   def initialize(ws, games)
     @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0, weapon: KNIFE}
@@ -314,6 +314,9 @@ class Client
         init_player
       end
     end
+
+    game.projectiles << projectile if projectile && !game.projectile_intersects?(projectile)
+    @projectile = nil
   end
 
   def on_message(tick)
@@ -509,8 +512,6 @@ class Client
   def fire(data)
     return if player[:weapon] == KNIFE
     v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[player[:weapon]].velocity
-    projectile = {coord: player[:coord] + v / 6, v: v, owner: login, weapon: player[:weapon]}
-
-    game.projectiles << projectile if !game.projectile_intersects?(projectile)
+    @projectile = {coord: player[:coord] + v / 6, v: v, owner: login, weapon: player[:weapon]}
   end
 end

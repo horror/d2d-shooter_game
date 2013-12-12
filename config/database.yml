@@ -16,13 +16,13 @@ development:
 test:
   host: localhost
   adapter: postgresql
-  database: test_d2ddb
+  database: d2ddb
   username: postgres
   password: c2h5oh
 
 production:
   host: localhost
   adapter: postgresql
-  database: dev_d2ddb
+  database: d2ddb
   username: postgres
   password: c2h5oh
