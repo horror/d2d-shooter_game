@@ -2,6 +2,7 @@ RESPAWN = "$"
 VOID = "."
 WALL = "#"
 HEAL = "h"
+GUN = "G"
 MOVE = "move"
 ALIVE = "alive"
 DEAD = "dead"
@@ -269,7 +270,7 @@ end
 
 class Client
 
-  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered
+  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :curr_weapon
 
   def initialize(ws, games)
     @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0}
@@ -439,9 +440,12 @@ class Client
           tp_cell = itr_cell
         elsif game.symbol(itr_cell) =~ /[a-z]/i && game.items[game.item_pos_to_idx[itr_cell.to_s]] == 0
           if game.symbol(itr_cell) == HEAL
-            game.items[game.item_pos_to_idx[itr_cell.to_s]] = Settings.def_game.items.hp_respawn
             player[:hp] = Settings.def_game.maxHP
+          elsif game.symbol(itr_cell) == GUN
+            @curr_weapon = GUN
           end
+
+          game.items[game.item_pos_to_idx[itr_cell.to_s]] = Settings.respawn_ticks
         end
       end
     end
@@ -488,6 +492,7 @@ class Client
   end
 
   def fire(data)
+    return if !curr_weapon
     v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.items.gunVelocity
     game.projectiles << {coord: player[:coord], v: v, owner: login}
   end

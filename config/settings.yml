@@ -5,7 +5,7 @@ accuracy: 6
 eps: 1.0e-07
 tick_size: 50
 player_halfrect: 0.5
-respawn_ticks: 20
+respawn_ticks: 50
 def_game: {consts: {accel: 0.05, friction: 0.05, maxVelocity: 0.5, gravity: 0.05},
-           items: {gunVelocity: 0.5, gunDamage: 10, hp_respawn: 40},
+           items: {gunVelocity: 0.5, gunDamage: 10},
            maxHP: 100}
