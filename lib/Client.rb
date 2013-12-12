@@ -120,6 +120,11 @@ class Point
     return Point(x * arg, y * arg) if arg.kind_of?(Numeric)
   end
 
+  def /(arg)
+    return Point(x / arg.x, y / arg.y) if arg.kind_of?(Point)
+    return Point(x / arg, y / arg) if arg.kind_of?(Numeric)
+  end
+
   def neg
     return Point(-x, -y)
   end
@@ -215,33 +220,35 @@ class ActiveGame
     }
   end
 
-  def move_projectiles
-    projectiles.delete_if do |projectile|
-      intersected = false
-      old_coord = projectile[:coord]
-      v_der = projectile[:v]
-      new_coord = old_coord + v_der
-      der = Line(old_coord, new_coord)
-      Geometry::walk_cells_around_coord(old_coord, v_der, false) {|itr_cell|
-        intersected = true if symbol(itr_cell) == WALL && Geometry::check_intersect(itr_cell, [der])
-      }
+  def projectile_intersects?(projectile)
+    intersected = false
+    old_coord = projectile[:coord]
+    v_der = projectile[:v]
+    new_coord = old_coord + v_der
+    der = Line(old_coord, new_coord)
+    Geometry::walk_cells_around_coord(old_coord, v_der, false) {|itr_cell|
+      intersected = true if symbol(itr_cell) == WALL && Geometry::check_intersect(itr_cell, [der])
+    }
 
-      clients.each do |c_sid, client|
-        c_player = client.player
-        if client.login != projectile[:owner] && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
-          c_player[:hp] =  [c_player[:hp] - Settings.def_game.weapons[projectile[:weapon]].damage, 0].max
-          if c_player[:hp] == 0
-            c_player[:status] = DEAD
-            c_player[:respawn] = Settings.respawn_ticks
-          end
-          intersected = true
-          break
+    clients.each do |c_sid, client|
+      c_player = client.player
+      if client.login != projectile[:owner] && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
+        c_player[:hp] =  [c_player[:hp] - Settings.def_game.weapons[projectile[:weapon]].damage, 0].max
+        if c_player[:hp] == 0
+          c_player[:status] = DEAD
+          c_player[:respawn] = Settings.respawn_ticks
         end
+        intersected = true
+        break
       end
-
-      projectile[:coord] = new_coord
-      intersected
     end
+
+    projectile[:coord] = new_coord
+    intersected
+  end
+
+  def move_projectiles
+    projectiles.delete_if { |projectile| projectile_intersects?(projectile) }
   end
 
   def apply_changes
@@ -495,6 +502,8 @@ class Client
   def fire(data)
     return if player[:weapon] == KNIFE
     v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[player[:weapon]].velocity
-    game.projectiles << {coord: player[:coord] + v, v: v, owner: login, weapon: player[:weapon]}
+    projectile = {coord: player[:coord] + v / 6, v: v, owner: login, weapon: player[:weapon]}
+
+    game.projectiles << projectile if !game.projectile_intersects?(projectile)
   end
 end
