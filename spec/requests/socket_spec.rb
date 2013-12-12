@@ -503,4 +503,97 @@ describe 'Socket server' do
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
   end
+
+  describe "Order of tp/cell: " do
+
+    spawns = [Point(0.5, 1.5), Point(8.5, 1.5), Point(13.5, 3.5), Point(17.5, 3.5)]
+
+    before(:all) do
+      map = ['....1.......#...........',
+             '$.......$.1.#3...2#.2..3',
+             '#############.....#.....',
+             '............#$...$#.....']
+      recreate_game(map, sid_a, sid_b, {accel: 0.08, friction: 0.08, max_velocity: 0.8, gravity: 0.08}, 5)
+    end
+    #spawn 0
+    it "run right, jump, vertical collision before tp" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 7 ? 1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 10.5, y: 1.5, vx: 0.4, vy: 0}) if p_tick == 10
+        p_tick == 11 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #spawn 1
+    it "run left, jump,vertical collision before tp" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 7 ? -1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 10.5, y: 1.5, vx: -0.4, vy: 0}) if p_tick == 10
+        p_tick == 11 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #spawn 2
+    it "run right, jump, horizontal collision before tp" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? 1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 20.5, y: 1.5, vx: 0, vy: -0.72}) if p_tick == 10
+        p_tick == 11 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #spawn 3
+    it "run left, jump, horizontal collision before tp" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? -1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 23.5, y: 1.5, vx: 0, vy: -0.72}) if p_tick == 10
+        p_tick == 11 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #spawn 0
+    it "run right, jump, tp before vertical collision" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? 1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 10.5, y: 1.5, vx: 0.64, vy: -0.8}) if p_tick == 9
+        p_tick == 10 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #spawn 1
+    it "run left, jump, tp before vertical collision" do
+      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? -1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 10.5, y: 1.5, vx: -0.64, vy: -0.8}) if p_tick == 9
+        p_tick == 10 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #spawn 2
+    it "run right, jump, tp before horizontal collision" do
+      dx_rule = Proc.new{ |p_tick| p_tick == 7 ? 0 : 1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 20.5, y: 1.5, vx: 0.72, vy: -0.64}) if p_tick == 10
+        p_tick == 11 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+    #spawn 3
+    it "run left, jump, tp before horizontal collision" do
+      dx_rule = Proc.new{ |p_tick| p_tick == 7 ? 0 : -1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick|
+        check_player(player, {x: 23.5, y: 1.5, vx: -0.72, vy: -0.64}) if p_tick == 10
+        p_tick == 11 ? true : false
+      }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
+    end
+  end
 end
