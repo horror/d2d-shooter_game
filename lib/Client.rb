@@ -3,6 +3,7 @@ VOID = "."
 WALL = "#"
 HEAL = "h"
 GUN = "G"
+KNIFE = "K"
 MOVE = "move"
 ALIVE = "alive"
 DEAD = "dead"
@@ -203,14 +204,14 @@ class ActiveGame
 
       {x: (player[:coord].x).round(Settings.accuracy), y: (player[:coord].y).round(Settings.accuracy),
        vx: player[:velocity].x, vy: player[:velocity].y,
-       hp: player[:hp], status: player[:status], respawn: player[:respawn], login: player[:login]
+       hp: player[:hp], status: player[:status], respawn: player[:respawn], login: player[:login], weapon: player[:weapon]
       }
     end
   end
 
   def get_projectiles
     projectiles.map { |p|
-      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy)}
+      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy), weapon: p[:weapon]}
     }
   end
 
@@ -228,7 +229,7 @@ class ActiveGame
       clients.each do |c_sid, client|
         c_player = client.player
         if client.login != projectile[:owner] && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
-          c_player[:hp] =  [c_player[:hp] - Settings.def_game.weapons[projectile[:type]].damage, 0].max
+          c_player[:hp] =  [c_player[:hp] - Settings.def_game.weapons[projectile[:weapon]].damage, 0].max
           if c_player[:hp] == 0
             c_player[:status] = DEAD
             c_player[:respawn] = Settings.respawn_ticks
@@ -270,10 +271,10 @@ end
 
 class Client
 
-  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :curr_weapon
+  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered
 
   def initialize(ws, games)
-    @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0}
+    @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0, weapon: KNIFE}
     @summed_move_params = Point(0.0, 0.0)
     @position_changed = false
     @initialized = false
@@ -442,7 +443,7 @@ class Client
           if game.symbol(itr_cell) == HEAL
             player[:hp] = Settings.def_game.maxHP
           elsif game.symbol(itr_cell) == GUN
-            @curr_weapon = GUN
+            player[:weapon] = GUN
           end
 
           game.items[game.item_pos_to_idx[itr_cell.to_s]] = Settings.respawn_ticks
@@ -492,8 +493,8 @@ class Client
   end
 
   def fire(data)
-    return if !curr_weapon
-    v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[curr_weapon].velocity
-    game.projectiles << {coord: player[:coord], v: v, owner: login, type: curr_weapon}
+    return if !player[:weapon]
+    v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[player[:weapon]].velocity
+    game.projectiles << {coord: player[:coord], v: v, owner: login, weapon: player[:weapon]}
   end
 end

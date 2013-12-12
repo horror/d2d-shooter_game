@@ -25,7 +25,7 @@ var ss_items = new createjs.SpriteSheet({
     },
     images: ["assets/img/gameXYZqsbhd.png"],
     frames: [
-        [0, 0, 0, 0],
+        [0, 0, 1, 1],
         [325, 72, 54, 48],
         [73, 128, 108, 66],
     ],
