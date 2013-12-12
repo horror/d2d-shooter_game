@@ -1,9 +1,11 @@
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
-    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead",
+    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", KNIFE = "K", GUN = "G",
     NICK_SHIFT_Y = 0.5, HP_BAR_SHIFT_Y = 0.34,
-    PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8, PLAYER_SHIFT_X = 0.45, PLAYER_SHIFT_Y = 0.45,
-    MAP_PIECE_SCALE = 0.5, TELEPORT_SCALE_X = 0.2, TELEPORT_SCALE_Y = 0.2, TELEPORT_SHIFT_Y = 0.8, TELEPORT_SHIFT_X = 0.8;
+    PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8,
+    WEAPON_SHIFT_X = 0.7, WEAPON_SHIFT_Y = 0.4,
+    MAP_PIECE_SCALE = 0.5, PROJECTILE_SCALE = 0.3,
+    TELEPORT_SCALE_X = 0.2, TELEPORT_SCALE_Y = 0.2, TELEPORT_SHIFT_Y = 0.8, TELEPORT_SHIFT_X = 0.8;
 var keys_to_params = {
         "m": {"action": "fire", params: {}},
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
@@ -17,6 +19,51 @@ var keys_to_params = {
     stage, container, web_socket, player_x = 0, player_y = 0,
     mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0, map_items = [];
 
+function compute_angle(x, y) {
+    return (y < 0) ? Math.acos(-x / Math.sqrt(x * x + y * y)) * 180 / Math.PI + 180 : Math.acos(x / Math.sqrt(x * x + y * y)) * 180 / Math.PI
+}
+
+function get_sprite (sprite_sheet, param, scale, rotation) {
+    var sprite = new createjs.Sprite(sprite_sheet);
+    sprite.scaleY = sprite.scaleX = scale;
+    if (rotation != undefined)
+        sprite.rotation = rotation;
+    sprite.gotoAndStop(param);
+    return sprite;
+}
+
+var ss_projectiles = new createjs.SpriteSheet({
+    animations: {
+        G: 0,
+    },
+    images: ["assets/img/gameXYZqsbhd.png"],
+    frames: [
+        [200, 145, 55, 28, 0, 27, 14],
+        [338, 210, 28, 28, 0, 14, 14],
+    ],
+});
+
+function get_projectile (name, rotation) {
+    var p = get_sprite(ss_projectiles, name, PROJECTILE_SCALE, rotation);
+    return p;
+}
+
+var ss_weapon = new createjs.SpriteSheet({
+    animations: {
+        empty: 0,
+        G: 1,
+    },
+    images: ["assets/img/gameXYZqsbhd.png"],
+    frames: [
+        [0, 0, 1, 1],
+        [66, 128, 110, 64, 0, 39, 23],
+    ],
+});
+
+function get_weapon (name, rotation) {
+    return get_sprite(ss_weapon, name, MAP_PIECE_SCALE, rotation);
+}
+
 var ss_items = new createjs.SpriteSheet({
     animations: {
         empty: 0,
@@ -27,18 +74,13 @@ var ss_items = new createjs.SpriteSheet({
     frames: [
         [0, 0, 1, 1],
         [325, 72, 54, 48],
-        [73, 128, 108, 66],
+        [66, 128, 110, 64],
     ],
 });
 
 function get_item (name) {
-    var item = new createjs.Sprite(ss_items);
-    item.scaleY = item.scaleX = MAP_PIECE_SCALE;
-    item.gotoAndStop(name);
-    return item;
+    return get_sprite(ss_items, name, MAP_PIECE_SCALE);
 }
-
-
 
 var ss_telepot = new createjs.SpriteSheet({
     animations: {
@@ -65,6 +107,8 @@ var ss_player = new createjs.SpriteSheet({
     frames: {
         height: 64,
         width: 64,
+        regX: 14,
+        regY: 20,
     },
 });
 
@@ -96,10 +140,7 @@ var map_pieces_consitions = {
 };
 
 function get_map_piece (piece_id) {
-    var piece = new createjs.Sprite(ss_map);
-    piece.scaleY = piece.scaleX = MAP_PIECE_SCALE;
-    piece.gotoAndStop(piece_id);
-    return piece;
+    return get_sprite(ss_map, piece_id, MAP_PIECE_SCALE);
 }
 
 function compere_mask_with_condition(mask, condition) {
@@ -139,12 +180,22 @@ function start_websocket(sid, login)
         tick = data['tick'];
         var players = data['players'];
         var projectiles = data['projectiles'];
+        var last_shot = {}
         var items = data['items'];
         stage.removeChild(container);
         var moving_objects = new createjs.Shape();
         container = new createjs.Container();
         container.addChild(moving_objects);
         moving_objects.graphics.beginStroke("red");
+
+        for (var i = 0; i < projectiles.length; ++i) {
+            var projectile = projectiles[i];
+            var angle = compute_angle(projectile["vx"], projectile["vy"]);
+            container.addChild(get_projectile(projectile["weapon"], angle))
+                .set({x: projectile["x"] * SCALE , y: projectile["y"] * SCALE});
+            last_shot[projectile["owner"]] = angle;
+        }
+
         for (var i = 0; i < players.length; ++i) {
             var player = players[i];
 
@@ -190,15 +241,15 @@ function start_websocket(sid, login)
                 sprite.gotoAndStop(sprite.currentAnimation.indexOf('left') >= 0 ? "run_left" : "run_right");
             }
 
-            container.addChild(sprite)
-                .set({x: (player["x"] - PLAYER_SHIFT_X) * SCALE - PLAYER_HALFRECT * SCALE , y: (player["y"] - PLAYER_SHIFT_Y) * SCALE - PLAYER_HALFRECT * SCALE});
-        }
+            var p_x = player["x"] * SCALE  - PLAYER_HALFRECT * SCALE, p_y =  player["y"] * SCALE  - PLAYER_HALFRECT * SCALE;
+            if (player["weapon"] != KNIFE)
+                container.addChild(get_weapon(player["weapon"],
+                        (player["login"] == login) ? compute_angle(mouse_x - p_x, mouse_y - p_y) :
+                            (last_shot[player["login"]] ? last_shot[player["login"]] : 0)))
+                    .set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
 
-        for (var i = 0; i < projectiles.length; ++i) {
-            var projectile = projectiles[i];
-            //console.log(projectile);
-            moving_objects.graphics.beginStroke("black").beginFill("silver").drawCircle(projectile["x"] * SCALE ,
-                projectile["y"] * SCALE, SCALE / 10);
+            container.addChild(sprite)
+                .set({x: p_x , y: p_y});
         }
 
         for (var i = 0; i < items.length; ++i)
