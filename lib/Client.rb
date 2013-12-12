@@ -2,6 +2,8 @@ RESPAWN = "$"
 VOID = "."
 WALL = "#"
 HEAL = "h"
+GUN = "G"
+KNIFE = "K"
 MOVE = "move"
 ALIVE = "alive"
 DEAD = "dead"
@@ -135,6 +137,10 @@ class Point
     new_y = proc.call(@y)
     return Point(new_x, new_y)
   end
+
+  def to_s
+    x.to_s + " - " + y.to_s
+  end
 end
 
 class Line
@@ -168,16 +174,17 @@ def Line(p1, p2)
 end
 
 class ActiveGame
-  attr_accessor :clients, :items, :projectiles, :map, :id
+  attr_accessor :clients, :items, :spawns, :last_spawn, :teleports, :projectiles, :map, :id, :item_pos_to_idx
 
   def initialize(id, json_map)
     @clients = Hash.new
     @map = Array.new
-    @items = Hash.new
+    @items = Array.new
+    @spawns = Array.new
+    @teleports = Hash.new
     @projectiles = Array.new
+    @item_pos_to_idx = Hash.new
 
-    items["respawns"] = Array.new
-    items["teleports"] = Hash.new
     @id = id
     @map = ActiveSupport::JSON.decode(json_map)
     init_items
@@ -187,20 +194,24 @@ class ActiveGame
     return args.size == 2 ? map[args[1] + 1][args[0] + 1] : map[args[0].y + 1][args[0].x + 1]
   end
 
+  def get_items
+    items
+  end
+
   def get_players
     clients.map do |sid, client|
       player = client.player
 
       {x: (player[:coord].x).round(Settings.accuracy), y: (player[:coord].y).round(Settings.accuracy),
        vx: player[:velocity].x, vy: player[:velocity].y,
-       hp: player[:hp], status: player[:status], respawn: player[:respawn], login: player[:login]
+       hp: player[:hp], status: player[:status], respawn: player[:respawn], login: player[:login], weapon: player[:weapon]
       }
     end
   end
 
   def get_projectiles
     projectiles.map { |p|
-      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy)}
+      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy), weapon: p[:weapon]}
     }
   end
 
@@ -218,7 +229,7 @@ class ActiveGame
       clients.each do |c_sid, client|
         c_player = client.player
         if client.login != projectile[:owner] && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
-          c_player[:hp] =  [c_player[:hp] - Settings.def_game.items.gunDamage, 0].max
+          c_player[:hp] =  [c_player[:hp] - Settings.def_game.weapons[projectile[:weapon]].damage, 0].max
           if c_player[:hp] == 0
             c_player[:status] = DEAD
             c_player[:respawn] = Settings.respawn_ticks
@@ -233,18 +244,28 @@ class ActiveGame
     end
   end
 
+  def apply_changes
+    move_projectiles
+
+    @items = items.map { |item| [item - 1, 0].max }
+  end
+
   def init_items
     for i in 0..map.size.to_i - 1
       for j in 0..map[0].length.to_i - 1
-        items["respawns"] << Point(j, i) if map[i][j] == RESPAWN
+        spawns << Point(j, i) if map[i][j] == RESPAWN
         if ("0".."9").include?(map[i][j])
-          items["teleports"][map[i][j].to_s] ||= Array.new
-          items["teleports"][map[i][j].to_s] << Point(j, i)
+          teleports[map[i][j].to_s] ||= Array.new
+          teleports[map[i][j].to_s] << Point(j, i)
+        end
+        if map[i][j] =~ /[a-z]/i
+          item_pos_to_idx[Point.new(j, i).to_s] = items.size
+          items << 0
         end
       end
     end
     @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
-    items['last_respawn'] = 0
+    @last_spawn = 0
   end
 end
 
@@ -253,7 +274,7 @@ class Client
   attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered
 
   def initialize(ws, games)
-    @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0}
+    @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0, weapon: KNIFE}
     @summed_move_params = Point(0.0, 0.0)
     @position_changed = false
     @initialized = false
@@ -272,7 +293,7 @@ class Client
     game_id ? games[game_id] : nil
   end
 
-  def apply_player_changes
+  def apply_changes
     return if !@initialized
 
     position_changed ? move(summed_move_params) : deceleration
@@ -291,7 +312,7 @@ class Client
   def on_message(tick)
     return if !@initialized
 
-    ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.get_players, projectiles: game.get_projectiles})) if game
+    ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.get_players, projectiles: game.get_projectiles, items: game.get_items})) if game
   end
 
   def process(data, tick)
@@ -331,9 +352,8 @@ class Client
   end
 
   def next_respawn
-    items = game.items
-    result = items["respawns"][items["last_respawn"]]
-    items["last_respawn"] = items["last_respawn"] + 1 == items["respawns"].size ? 0 : items["last_respawn"] + 1
+    result = game.spawns[game.last_spawn]
+    game.last_spawn = game.last_spawn + 1 == game.spawns.size ? 0 : game.last_spawn + 1
     return result
   end
 
@@ -341,9 +361,8 @@ class Client
     @wall_offset = Point(-1, -1)
     check_collisions
     return if pick_up_items_and_try_tp == "teleport"
-    player[:velocity].set(@wall_offset.x != -1 ? 0 : player[:velocity].x, @wall_offset.y != -1 ? 0 : player[:velocity].y)
-    player[:coord].set(player[:coord].x + (@wall_offset.x != -1 ? @wall_offset.x : player[:velocity].x),
-                       player[:coord].y + (@wall_offset.y != -1 ? @wall_offset.y : player[:velocity].y))
+
+    set_position(player[:coord] + @updated_velocity)
   end
 
   def calc_wall_offset(wall_cell, player_new_floor_cell, player_cell, der_vectors, der)
@@ -403,12 +422,10 @@ class Client
     }
   end
 
-  def pick_up_items_and_try_tp
+  def withdraw_items_and_try_tp
     tp_cell = Point(-1, -1)
     min_tp_dist = 2
-    updated_velocity = Point(@wall_offset.x != -1 ? @wall_offset.x : player[:velocity].x,
-                              @wall_offset.y != -1 ? @wall_offset.y : player[:velocity].y)
-    Geometry::walk_cells_around_coord(player[:coord], updated_velocity, true) { |itr_cell|
+    Geometry::walk_cells_around_coord(player[:coord], @updated_velocity, true) { |itr_cell|
       next if [VOID, WALL, RESPAWN].include?(game.symbol(itr_cell))
       cell_center = itr_cell + Settings.player_halfrect
       end_rect = player[:coord] + updated_velocity
@@ -430,17 +447,23 @@ class Client
 
           min_tp_dist = Geometry::line_len(player[:coord], cell_center)
           tp_cell = itr_cell
-        elsif game.symbol(itr_cell) == HEAL
-          player[:hp] = Settings.def_game.maxHP
+        elsif game.symbol(itr_cell) =~ /[a-z]/i && game.items[game.item_pos_to_idx[itr_cell.to_s]] == 0
+          if game.symbol(itr_cell) == HEAL
+            player[:hp] = Settings.def_game.maxHP
+          elsif game.symbol(itr_cell) == GUN
+            player[:weapon] = GUN
+          end
+
+          game.items[game.item_pos_to_idx[itr_cell.to_s]] = Settings.respawn_ticks
         end
       end
-    }
+    end
     return make_tp(tp_cell) if !tp_cell.eq?(-1, -1)
   end
 
   def make_tp(coord)
     tps = game.items["teleports"][game.symbol(coord)]
-    player[:coord].set((tps[0] == coord ? tps[1] : tps[0]) + 0.5)
+    set_position((tps[0] == coord ? tps[1] : tps[0]) + 0.5)
     "teleport"
   end
 
@@ -474,7 +497,8 @@ class Client
   end
 
   def fire(data)
-    v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.items.gunVelocity
-    game.projectiles << {coord: player[:coord], v: v, owner: login}
+    return if !player[:weapon]
+    v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[player[:weapon]].velocity
+    game.projectiles << {coord: player[:coord], v: v, owner: login, weapon: player[:weapon]}
   end
 end
