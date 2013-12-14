@@ -279,7 +279,7 @@ end
 
 class Client
 
-  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :projectile
+  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :projectile, :ticks_after_last_fire
 
   def initialize(ws, games)
     @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0, weapon: KNIFE}
@@ -287,6 +287,7 @@ class Client
     @position_changed = false
     @initialized = false
     @wall_offset = Point(-1, -1)
+    @ticks_after_last_fire = 0
     @ws = ws
     @games = games
     @answered = true
@@ -307,7 +308,7 @@ class Client
     position_changed ? move(summed_move_params) : deceleration
     @summed_move_params = Point(0.0, 0.0)
     @position_changed = false
-
+    @ticks_after_last_fire += 1
     if player[:status] == DEAD
       player[:respawn] -= 1
       if player[:respawn] == 0
@@ -511,8 +512,9 @@ class Client
   end
 
   def fire(data)
-    return if player[:weapon] == KNIFE
+    return if player[:weapon] == KNIFE || @ticks_after_last_fire < Settings.def_game.weapons[player[:weapon]].latency
     v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[player[:weapon]].velocity
     @projectile = {coord: player[:coord] + v / 6, v: v, owner: login, weapon: player[:weapon]}
+    @ticks_after_last_fire = 0
   end
 end
