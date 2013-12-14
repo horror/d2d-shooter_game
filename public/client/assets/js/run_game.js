@@ -106,6 +106,8 @@ var ss_player = new createjs.SpriteSheet({
         run_right: [5, 9],
         jump_left: [12],
         jump_right: [10],
+        die: [15, 19, DEAD],
+        dead: [14],
     },
     images: ["assets/img/walkcyclex.png"],
     frames: {
@@ -202,8 +204,9 @@ function start_websocket(sid, login)
 
         for (var i = 0; i < players.length; ++i) {
             var player = players[i];
+            var sprite = p_sprites[player["login"]];
 
-            if (player["status"] == DEAD)
+            if (player["status"] == DEAD && sprite.currentAnimation == DEAD)
                 continue;
 
             if (player["login"] == login) {
@@ -234,28 +237,32 @@ function start_websocket(sid, login)
                 p_sprites[player["login"]].scaleY = PLAYER_SCALE_Y;
             }
 
-            var sprite = p_sprites[player["login"]];
-            var curr_animation = ((player["vy"] != 0) ? "jump_" : "run_") + ((player["vx"] > 0) ? "right" : "left");
-            if (player["vx"] == 0)
-                sprite.stop();
-            else if (curr_animation != sprite.currentAnimation || sprite.paused)
-                sprite.gotoAndPlay(curr_animation);
+            if (player["status"] == DEAD && sprite.currentAnimation != "die")
+                sprite.gotoAndPlay("die");
 
-            if (player["vy"] == 0 && player["vx"] == 0 && sprite.paused && sprite.currentAnimation.indexOf('jump') >= 0) {
-                sprite.gotoAndStop(sprite.currentAnimation.indexOf('left') >= 0 ? "run_left" : "run_right");
+            if (player["status"] != DEAD) {
+                var curr_animation = ((player["vy"] != 0) ? "jump_" : "run_") + ((player["vx"] >= 0) ? "right" : "left");
+                if (player["vx"] == 0 && sprite.currentAnimation != DEAD)
+                    sprite.stop();
+                else if (curr_animation != sprite.currentAnimation || sprite.paused)
+                    sprite.gotoAndPlay(curr_animation);
+
+                if (player["vy"] == 0 && player["vx"] == 0 && sprite.paused && sprite.currentAnimation.indexOf('jump') >= 0) {
+                    sprite.gotoAndStop(sprite.currentAnimation.indexOf('left') >= 0 ? "run_left" : "run_right");
+                }
             }
-
             var p_x = player["x"] * SCALE  - PLAYER_HALFRECT * SCALE, p_y =  player["y"] * SCALE  - PLAYER_HALFRECT * SCALE;
 
             $('canvas:hover').css( 'cursor', 'url("assets/img/' + player["weapon"] + '_cursor.png") 30 30, auto' );
 
-            container.addChild(get_weapon(
-                    player["weapon"],
-                    (player["login"] == login ? compute_angle(mouse_x - p_x, mouse_y - p_y) :
-                        (last_shot[player["login"]] ? last_shot[player["login"]] : 0)),
-                    mouse_x - p_x
-                )
-            ).set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
+            if (player["status"] != DEAD)
+                container.addChild(get_weapon(
+                        player["weapon"],
+                        (player["login"] == login ? compute_angle(mouse_x - p_x, mouse_y - p_y) :
+                            (last_shot[player["login"]] ? last_shot[player["login"]] : 0)),
+                        player["login"] == login ? mouse_x - p_x : 1
+                    )
+                ).set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
 
 
             container.addChild(sprite)
