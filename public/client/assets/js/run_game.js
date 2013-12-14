@@ -5,7 +5,8 @@ const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32,
     PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8,
     WEAPON_SHIFT_X = 0.7, WEAPON_SHIFT_Y = 0.4,
     MAP_PIECE_SCALE = 0.5, PROJECTILE_SCALE = 0.3,
-    TELEPORT_SCALE_X = 0.2, TELEPORT_SCALE_Y = 0.2, TELEPORT_SHIFT_Y = 0.8, TELEPORT_SHIFT_X = 0.8;
+    TELEPORT_SCALE_X = 0.2, TELEPORT_SCALE_Y = 0.2, TELEPORT_SHIFT_Y = 0.8, TELEPORT_SHIFT_X = 0.8,
+    MAIN_GAME_SHEETS = "assets/img/game2v1.png";
 var keys_to_params = {
         "m": {"action": "fire", params: {}},
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
@@ -37,7 +38,7 @@ var ss_projectiles = new createjs.SpriteSheet({
     animations: {
         G: 0,
     },
-    images: ["assets/img/gameXYZqsbhd.png"],
+    images: [MAIN_GAME_SHEETS],
     frames: [
         [200, 145, 55, 28, 0, 27, 14],
         [338, 210, 28, 28, 0, 14, 14],
@@ -55,11 +56,11 @@ var ss_weapon = new createjs.SpriteSheet({
         K: 1,
         P: 2,
     },
-    images: ["assets/img/gameXYZqsbhd.png"],
+    images: [MAIN_GAME_SHEETS],
     frames: [
         [0, 0, 1, 1],
-        [114, 330, 172, 44, 0, 50, 22],
-        [66, 128, 110, 64, 0, 30, 30],
+        [114, 330, 180, 44, 0, 50, 22],
+        [66, 128, 116, 64, 0, 30, 30],
     ],
 });
 
@@ -74,11 +75,11 @@ var ss_items = new createjs.SpriteSheet({
         h: 1,
         P: 2,
     },
-    images: ["assets/img/gameXYZqsbhd.png"],
+    images: [MAIN_GAME_SHEETS],
     frames: [
         [0, 0, 1, 1],
         [325, 72, 54, 48],
-        [66, 128, 110, 64],
+        [66, 128, 116, 64],
     ],
 });
 
