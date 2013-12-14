@@ -1,6 +1,6 @@
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
-    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", KNIFE = "K", GUN = "G",
+    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", KNIFE = "K", GUN = "P",
     NICK_SHIFT_Y = 0.5, HP_BAR_SHIFT_Y = 0.34,
     PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8,
     WEAPON_SHIFT_X = 0.7, WEAPON_SHIFT_Y = 0.4,
@@ -51,12 +51,14 @@ function get_projectile (name, rotation) {
 var ss_weapon = new createjs.SpriteSheet({
     animations: {
         empty: 0,
-        G: 1,
+        K: 1,
+        P: 2,
     },
     images: ["assets/img/gameXYZqsbhd.png"],
     frames: [
         [0, 0, 1, 1],
-        [66, 128, 110, 64, 0, 39, 23],
+        [114, 330, 172, 44, 0, 50, 22],
+        [66, 128, 110, 64, 0, 20, 23],
     ],
 });
 
@@ -68,7 +70,7 @@ var ss_items = new createjs.SpriteSheet({
     animations: {
         empty: 0,
         h: 1,
-        G: 2,
+        P: 2,
     },
     images: ["assets/img/gameXYZqsbhd.png"],
     frames: [
@@ -242,11 +244,14 @@ function start_websocket(sid, login)
             }
 
             var p_x = player["x"] * SCALE  - PLAYER_HALFRECT * SCALE, p_y =  player["y"] * SCALE  - PLAYER_HALFRECT * SCALE;
-            if (player["weapon"] != KNIFE)
-                container.addChild(get_weapon(player["weapon"],
-                        (player["login"] == login) ? compute_angle(mouse_x - p_x, mouse_y - p_y) :
-                            (last_shot[player["login"]] ? last_shot[player["login"]] : 0)))
-                    .set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
+
+            $('canvas:hover').css( 'cursor', 'url("assets/img/' + player["weapon"] + '_cursor.png") 30 30, auto' );
+
+            container.addChild(get_weapon(player["weapon"],
+                    (player["login"] == login) ? compute_angle(mouse_x - p_x, mouse_y - p_y) :
+                        (last_shot[player["login"]] ? last_shot[player["login"]] : 0)))
+                .set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
+
 
             container.addChild(sprite)
                 .set({x: p_x , y: p_y});

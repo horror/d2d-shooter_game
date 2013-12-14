@@ -2,7 +2,7 @@ RESPAWN = "$"
 VOID = "."
 WALL = "#"
 HEAL = "h"
-GUN = "G"
+GUN = "P"
 KNIFE = "K"
 MOVE = "move"
 ALIVE = "alive"
@@ -235,17 +235,14 @@ class ActiveGame
       c_player = client.player
       if client.login != projectile[:owner] && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
         c_player[:hp] =  [c_player[:hp] - Settings.def_game.weapons[projectile[:weapon]].damage, 0].max
-        if c_player[:hp] == 0
-          c_player[:status] = DEAD
-          c_player[:respawn] = Settings.respawn_ticks
-        end
+        client.die if c_player[:hp] == 0
         intersected = true
         break
       end
     end
 
     projectile[:coord] = new_coord
-    intersected
+    intersected || projectile[:weapon] == KNIFE
   end
 
   def move_projectiles
@@ -476,6 +473,12 @@ class Client
     return make_tp(tp_cell) if !tp_cell.eq?(-1, -1)
   end
 
+  def die
+    player[:status] = DEAD
+    player[:weapon] = KNIFE
+    player[:respawn] = Settings.respawn_ticks
+  end
+
   def make_tp(coord)
     tps = game.teleports[game.symbol(coord)]
     player[:coord].set((tps[0] == coord ? tps[1] : tps[0]) + 0.5)
@@ -512,9 +515,9 @@ class Client
   end
 
   def fire(data)
-    return if player[:weapon] == KNIFE || @ticks_after_last_fire < Settings.def_game.weapons[player[:weapon]].latency
+    return if ticks_after_last_fire < Settings.def_game.weapons[player[:weapon]].latency
     v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[player[:weapon]].velocity
-    @projectile = {coord: player[:coord] + v / 6, v: v, owner: login, weapon: player[:weapon]}
+    @projectile = {coord: player[:coord] + v / 2, v: v, owner: login, weapon: player[:weapon]}
     @ticks_after_last_fire = 0
   end
 end

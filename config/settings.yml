@@ -3,9 +3,14 @@ web_socket_port: ":8001"
 port: ":3000"
 accuracy: 6
 eps: 1.0e-07
-tick_size: 50
+tick_size: 40
 player_halfrect: 0.5
 respawn_ticks: 50
-def_game: {consts: {accel: 0.05, friction: 0.05, maxVelocity: 0.7, gravity: 0.05},
-           weapons: {G: {velocity: 0.8, damage: 10, latency: 4}},
-           maxHP: 100}
+def_game: {
+  consts: {accel: 0.05, friction: 0.05, maxVelocity: 0.7, gravity: 0.05},
+  weapons: {
+    K: {velocity: 0.9, damage: 20, latency: 8},
+    P: {velocity: 0.9, damage: 10, latency: 4},
+  },
+  maxHP: 100
+}
