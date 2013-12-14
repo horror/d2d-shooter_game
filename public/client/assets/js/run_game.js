@@ -345,7 +345,8 @@ function key_hold(sid)
                 arr["params"]["dy"] = mouse_y - player_y * SCALE;
             }
 
-            web_socket.send(JSON.stringify(arr));
+            if (web_socket.readyState == 1)
+                web_socket.send(JSON.stringify(arr));
 
         }
     if (pressed)
