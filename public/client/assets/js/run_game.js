@@ -25,7 +25,8 @@ function compute_angle(x, y) {
 
 function get_sprite (sprite_sheet, param, scale, rotation) {
     var sprite = new createjs.Sprite(sprite_sheet);
-    sprite.scaleY = sprite.scaleX = scale;
+    sprite.scaleY = scale;
+    sprite.scaleX = Math.abs(scale);
     if (rotation != undefined)
         sprite.rotation = rotation;
     sprite.gotoAndStop(param);
@@ -58,12 +59,13 @@ var ss_weapon = new createjs.SpriteSheet({
     frames: [
         [0, 0, 1, 1],
         [114, 330, 172, 44, 0, 50, 22],
-        [66, 128, 110, 64, 0, 20, 23],
+        [66, 128, 110, 64, 0, 30, 23],
     ],
 });
 
-function get_weapon (name, rotation) {
-    return get_sprite(ss_weapon, name, MAP_PIECE_SCALE, rotation);
+
+function get_weapon (name, rotation, direction) {
+    return get_sprite(ss_weapon, name, direction > 0 ? MAP_PIECE_SCALE : -MAP_PIECE_SCALE, rotation);
 }
 
 var ss_items = new createjs.SpriteSheet({
@@ -247,10 +249,13 @@ function start_websocket(sid, login)
 
             $('canvas:hover').css( 'cursor', 'url("assets/img/' + player["weapon"] + '_cursor.png") 30 30, auto' );
 
-            container.addChild(get_weapon(player["weapon"],
-                    (player["login"] == login) ? compute_angle(mouse_x - p_x, mouse_y - p_y) :
-                        (last_shot[player["login"]] ? last_shot[player["login"]] : 0)))
-                .set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
+            container.addChild(get_weapon(
+                    player["weapon"],
+                    (player["login"] == login ? compute_angle(mouse_x - p_x, mouse_y - p_y) :
+                        (last_shot[player["login"]] ? last_shot[player["login"]] : 0)),
+                    mouse_x - p_x
+                )
+            ).set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
 
 
             container.addChild(sprite)

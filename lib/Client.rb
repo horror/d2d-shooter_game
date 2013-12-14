@@ -516,8 +516,8 @@ class Client
 
   def fire(data)
     return if ticks_after_last_fire < Settings.def_game.weapons[player[:weapon]].latency
-    v = Geometry::normalize(Point(data["dx"], data["dy"])) * Settings.def_game.weapons[player[:weapon]].velocity
-    @projectile = {coord: player[:coord] + v / 2, v: v, owner: login, weapon: player[:weapon]}
+    v = (der =Geometry::normalize(Point(data["dx"], data["dy"]))) * Settings.def_game.weapons[player[:weapon]].velocity
+    @projectile = {coord: player[:coord] + der * Settings.def_game.weapons[player[:weapon]].start_len, v: v, owner: login, weapon: player[:weapon]}
     @ticks_after_last_fire = 0
   end
 end
