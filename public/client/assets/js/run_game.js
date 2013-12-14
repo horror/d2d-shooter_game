@@ -204,6 +204,12 @@ function start_websocket(sid, login)
 
         for (var i = 0; i < players.length; ++i) {
             var player = players[i];
+            if (p_sprites[player["login"]] == undefined) {
+                p_sprites[player["login"]] = new createjs.Sprite(ss_player);
+                p_sprites[player["login"]].gotoAndStop("run_right");
+                p_sprites[player["login"]].scaleX = PLAYER_SCALE_X;
+                p_sprites[player["login"]].scaleY = PLAYER_SCALE_Y;
+            }
             var sprite = p_sprites[player["login"]];
 
             if (player["status"] == DEAD && sprite.currentAnimation == DEAD)
@@ -230,12 +236,6 @@ function start_websocket(sid, login)
                 SCALE * PLAYER_HALFRECT * 2 * player["hp"] / 100, 0.3 * SCALE);
 
             //ИГРОК
-            if (p_sprites[player["login"]] == undefined) {
-                p_sprites[player["login"]] = new createjs.Sprite(ss_player);
-                p_sprites[player["login"]].gotoAndStop("run_right");
-                p_sprites[player["login"]].scaleX = PLAYER_SCALE_X;
-                p_sprites[player["login"]].scaleY = PLAYER_SCALE_Y;
-            }
 
             if (player["status"] == DEAD && sprite.currentAnimation != "die")
                 sprite.gotoAndPlay("die");
