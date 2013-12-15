@@ -226,7 +226,7 @@ class ActiveGame
       [
         p[:coord].x.round(Settings.accuracy), p[:coord].y.round(Settings.accuracy),
         p[:velocity].x.round(Settings.accuracy), p[:velocity].y.round(Settings.accuracy),
-        p[:weapon], p[:weapon_angle].round(Settings.accuracy), p[:login], p[:hp], p[:respawn]
+        p[:weapon], p[:weapon_angle].to_i, p[:login], p[:hp], p[:respawn]
       ]
     end
   end
@@ -322,8 +322,8 @@ class Client
 
   def apply_changes
     return if !@initialized
+    move(summed_move_params)
 
-    position_changed ? move(summed_move_params) : deceleration
     @summed_move_params = Point(0.0, 0.0)
     @position_changed = false
     @ticks_after_last_fire += 1
@@ -389,7 +389,7 @@ class Client
     @wall_offset = Point(-1, -1)
     check_collisions
     return if withdraw_items_and_try_tp == "teleport"
-    player[:velocity].set(@wall_offset.x != -1 ? 0 : player[:velocity].x, @wall_offset.y != -1 ? 0 : player[:velocity].y)
+    stop_by_collision
     player[:coord].set(player[:coord].x + (@wall_offset.x != -1 ? @wall_offset.x : player[:velocity].x),
                        player[:coord].y + (@wall_offset.y != -1 ? @wall_offset.y : player[:velocity].y))
   end
@@ -473,9 +473,7 @@ class Client
                             [(offset_to_collision).y.abs, updated_velocity.y.abs].min) * v_der
         end_rect = player[:coord] + min_offset
         #если на момент первого столкновения небыло пересечения с телепортом, то занулить скорость
-        if !Geometry::polygon_include_point?(player[:coord], end_rect, cell_center)
-          player[:velocity].set(@wall_offset.x != -1 ? 0 : player[:velocity].x, @wall_offset.y != -1 ? 0 : player[:velocity].y)
-        end
+        stop_by_collision if !Geometry::polygon_include_point?(player[:coord], end_rect, cell_center)
 
         min_tp_dist = Geometry::line_len(player[:coord], cell_center)
         tp_cell = itr_cell
@@ -498,18 +496,14 @@ class Client
     player[:respawn] = Settings.respawn_ticks
   end
 
+  def stop_by_collision
+    player[:velocity].set(@wall_offset.x != -1 ? 0 : player[:velocity].x, @wall_offset.y != -1 ? 0 : player[:velocity].y)
+  end
+
   def make_tp(coord)
     tps = game.teleports[game.symbol(coord)]
     player[:coord].set((tps[0] == coord ? tps[1] : tps[0]) + 0.5)
     "teleport"
-  end
-
-  def deceleration
-    player[:velocity].y += @consts[:gravity] if !has_floor
-    player[:velocity].x = player[:velocity].x.abs <= @consts[:friction] ? 0 :
-                          player[:velocity].x - v_sign(player[:velocity].x) * @consts[:friction]
-    player[:velocity] = player[:velocity].map{|i| [i.abs, @consts[:max_velocity]].min.round(Settings.accuracy) * v_sign(i)}
-    move_position
   end
 
   def has_floor
@@ -519,17 +513,21 @@ class Client
     return game.symbol(x1, y) == WALL || game.symbol(x2, y) == WALL
   end
 
-  def new_velocity(der, velocity, has_floor, consts)
-    der = Geometry::normalize(der)
-    velocity.y += consts[:gravity] if !has_floor
-    velocity.y = -consts[:max_velocity] if has_floor && der.y < 0
-    velocity.set((velocity.x + der.x * consts[:accel]).round(Settings.accuracy), velocity.y.round(Settings.accuracy))
-    return velocity.map{|i| [i.abs, consts[:max_velocity]].min * v_sign(i)}
+  def new_velocity(der, velocity)
+    velocity.y += @consts[:gravity] if !has_floor
+    if position_changed
+      der = Geometry::normalize(der)
+      velocity.y = -@consts[:max_velocity] if has_floor && der.y < 0
+      velocity.x += der.x * @consts[:accel]
+    else
+      velocity.x = velocity.x.abs <= @consts[:friction] ? 0 : velocity.x - v_sign(velocity.x) * @consts[:friction]
+    end
+    return velocity.map{|i| [i.abs, @consts[:max_velocity]].min * v_sign(i)}
   end
 
   ###ACTIONS###
   def move(data)
-    player[:velocity] = new_velocity(data, player[:velocity], has_floor, @consts)
+    player[:velocity] = new_velocity(data, player[:velocity])
     move_position
   end
 
