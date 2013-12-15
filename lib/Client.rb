@@ -3,6 +3,8 @@ VOID = "."
 WALL = "#"
 HEAL = "h"
 GUN = "P"
+MACHINE_GUN = "M"
+ROCKET_LAUNCHER = "R"
 KNIFE = "K"
 MOVE = "move"
 ALIVE = "alive"
@@ -478,8 +480,8 @@ class Client
       elsif game.symbol(itr_cell) =~ /[a-z]/i && game.items[game.item_pos_to_idx[itr_cell.to_s]] == 0
         if game.symbol(itr_cell) == HEAL
           player[:hp] = Settings.def_game.maxHP
-        elsif game.symbol(itr_cell) == GUN
-          player[:weapon] = GUN
+        elsif [GUN, MACHINE_GUN, ROCKET_LAUNCHER].include?(game.symbol(itr_cell))
+          player[:weapon] = game.symbol(itr_cell)
         end
 
         game.items[game.item_pos_to_idx[itr_cell.to_s]] = Settings.respawn_ticks

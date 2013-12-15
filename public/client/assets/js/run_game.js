@@ -4,7 +4,7 @@ const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32,
     NICK_SHIFT_Y = 0.5, HP_BAR_SHIFT_Y = 0.34,
     PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8,
     WEAPON_SHIFT_X = 0.7, WEAPON_SHIFT_Y = 0.4,
-    MAP_PIECE_SCALE = 0.5, PROJECTILE_SCALE = 0.3,
+    MAP_PIECE_SCALE = 0.5, PROJECTILE_SCALE = 0.3, WEAPON_SCALE = 0.35,
     TELEPORT_SCALE_X = 0.2, TELEPORT_SCALE_Y = 0.2, TELEPORT_SHIFT_Y = 0.8, TELEPORT_SHIFT_X = 0.8,
     MAIN_GAME_SHEETS = "assets/img/main_game.png";
 var keys_to_params = {
@@ -38,12 +38,15 @@ var ss_projectiles = new createjs.SpriteSheet({
     animations: {
         K: 0,
         P: 1,
+        M: 2,
+        R: 3,
     },
     images: [MAIN_GAME_SHEETS],
     frames: [
         [0, 0, 1, 1],
         [200, 145, 55, 28, 0, 27, 14],
         [338, 210, 28, 28, 0, 14, 14],
+        [318, 268, 64, 38, 0, 32, 19],
     ],
 });
 
@@ -57,19 +60,22 @@ var ss_weapon = new createjs.SpriteSheet({
         empty: 0,
         K: 1,
         P: 2,
+        M: 3,
+        R: 4,
     },
     images: [MAIN_GAME_SHEETS],
     frames: [
         [0, 0, 1, 1],
         [114, 330, 180, 44, 0, 50, 22],
-        [66, 128, 116, 64, 0, 30, 30],
+        [68, 128, 116, 64, 0, 30, 30],
+        [68, 196, 226, 58, 0, 110, 22],
+        [68, 260, 212, 64, 0, 100, 22],
     ],
 });
 
 
 function get_weapon (name, rotation, direction) {
-    console.log(direction + " - " + rotation);
-    return get_sprite(ss_weapon, name, direction >= 0 ? MAP_PIECE_SCALE : -MAP_PIECE_SCALE, rotation);
+    return get_sprite(ss_weapon, name, direction >= 0 ? WEAPON_SCALE : -WEAPON_SCALE, rotation);
 }
 
 var ss_items = new createjs.SpriteSheet({
@@ -77,17 +83,21 @@ var ss_items = new createjs.SpriteSheet({
         empty: 0,
         h: 1,
         P: 2,
+        M: 3,
+        R: 4,
     },
     images: [MAIN_GAME_SHEETS],
     frames: [
         [0, 0, 1, 1],
         [325, 72, 54, 48],
-        [66, 128, 116, 64],
+        [68, 128, 116, 64],
+        [68, 196, 226, 58],
+        [68, 260, 212, 64],
     ],
 });
 
 function get_item (name) {
-    return get_sprite(ss_items, name, MAP_PIECE_SCALE);
+    return get_sprite(ss_items, name, (name == "h") ? MAP_PIECE_SCALE : WEAPON_SCALE);
 }
 
 var ss_telepot = new createjs.SpriteSheet({
@@ -255,7 +265,8 @@ function start_websocket(sid, login)
             }
             var p_x = player["x"] * SCALE  - PLAYER_HALFRECT * SCALE, p_y =  player["y"] * SCALE  - PLAYER_HALFRECT * SCALE;
 
-            $('canvas:hover').css( 'cursor', 'url("assets/img/' + player["weapon"] + '_cursor.png") 30 30, auto' );
+            if (player["login"] == login)
+                $('canvas:hover').css( 'cursor', 'url("assets/img/' + player["weapon"] + '_cursor.png") 15 15, auto' );
 
             if (player["status"] != DEAD)
                 container.addChild(get_weapon(
