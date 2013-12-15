@@ -364,7 +364,7 @@ function key_hold(sid)
 
         }
     if (pressed)
-        setTimeout("key_hold('" + sid + "')", 50);
+        setTimeout("key_hold('" + sid + "')", 20);
 }
 
 function scrollCanvas(){
