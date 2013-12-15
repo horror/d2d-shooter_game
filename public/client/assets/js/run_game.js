@@ -1,6 +1,7 @@
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
     SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", KNIFE = "K", GUN = "P",
+    X = 0, Y = 1, VX = 2, VY = 3, WEAPON = 4, WEAPON_ANGLE = 5, LOGIN = 6, HP = 7, RESPAWN = 8,
     NICK_SHIFT_Y = 0.5, HP_BAR_SHIFT_Y = 0.34,
     PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8,
     WEAPON_SHIFT_X = 0.7, WEAPON_SHIFT_Y = 0.4,
@@ -209,72 +210,72 @@ function start_websocket(sid, login)
 
         for (var i = 0; i < projectiles.length; ++i) {
             var projectile = projectiles[i];
-            var angle = compute_angle(projectile["vx"], projectile["vy"]);
-            container.addChild(get_projectile(projectile["weapon"], angle))
-                .set({x: projectile["x"] * SCALE , y: projectile["y"] * SCALE});
+            var angle = compute_angle(projectile[VX], projectile[VY]);
+            container.addChild(get_projectile(projectile[WEAPON], angle))
+                .set({x: projectile[X] * SCALE , y: projectile[Y] * SCALE});
         }
 
         for (var i = 0; i < players.length; ++i) {
             var player = players[i];
-            if (p_sprites[player["login"]] == undefined) {
-                p_sprites[player["login"]] = new createjs.Sprite(ss_player);
-                p_sprites[player["login"]].gotoAndStop("run_right");
-                p_sprites[player["login"]].scaleX = PLAYER_SCALE_X;
-                p_sprites[player["login"]].scaleY = PLAYER_SCALE_Y;
+            if (p_sprites[player[LOGIN]] == undefined) {
+                p_sprites[player[LOGIN]] = new createjs.Sprite(ss_player);
+                p_sprites[player[LOGIN]].gotoAndStop("run_right");
+                p_sprites[player[LOGIN]].scaleX = PLAYER_SCALE_X;
+                p_sprites[player[LOGIN]].scaleY = PLAYER_SCALE_Y;
             }
-            var sprite = p_sprites[player["login"]];
+            var sprite = p_sprites[player[LOGIN]];
 
-            if (player["status"] == DEAD && sprite.currentAnimation == DEAD)
+            if (player[RESPAWN] > 0 && sprite.currentAnimation == DEAD)
                 continue;
 
-            if (player["login"] == login) {
-                player_x = player["x"];
-                player_y = player["y"];
+            if (player[LOGIN] == login) {
+                player_x = player[X];
+                player_y = player[Y];
             }
 
             //НИК
-            var login_text = new createjs.Text(player["login"], "12px Arial", "black");
+            var login_text = new createjs.Text(player[LOGIN], "12px Arial", "black");
             login_text.textBaseline = "alphabetic";
-            login_text.x = (player["x"] - PLAYER_HALFRECT) * SCALE;
-            login_text.y = (player["y"] - PLAYER_HALFRECT - NICK_SHIFT_Y) * SCALE;
+            login_text.x = (player[X] - PLAYER_HALFRECT) * SCALE;
+            login_text.y = (player[Y] - PLAYER_HALFRECT - NICK_SHIFT_Y) * SCALE;
             container.addChild(login_text);
 
             //ХП
-            moving_objects.graphics.beginStroke("black").beginFill("silver").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
-                (player["y"] - PLAYER_HALFRECT - HP_BAR_SHIFT_Y) * SCALE,
+            moving_objects.graphics.beginStroke("black").beginFill("silver").drawRect(player[X] * SCALE - PLAYER_HALFRECT * SCALE,
+                (player[Y] - PLAYER_HALFRECT - HP_BAR_SHIFT_Y) * SCALE,
                 SCALE * PLAYER_HALFRECT * 2, 0.3 * SCALE).endStroke();
-            moving_objects.graphics.beginFill("#ed2123").drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
-                (player["y"] - PLAYER_HALFRECT - HP_BAR_SHIFT_Y) * SCALE,
-                SCALE * PLAYER_HALFRECT * 2 * player["hp"] / 100, 0.3 * SCALE);
+            moving_objects.graphics.beginFill("#ed2123").drawRect(player[X] * SCALE - PLAYER_HALFRECT * SCALE,
+                (player[Y] - PLAYER_HALFRECT - HP_BAR_SHIFT_Y) * SCALE,
+                SCALE * PLAYER_HALFRECT * 2 * player[HP] / 100, 0.3 * SCALE);
 
             //ИГРОК
 
-            if (player["status"] == DEAD && sprite.currentAnimation != "die")
+            if (player[RESPAWN] > 0 && sprite.currentAnimation != "die")
                 sprite.gotoAndPlay("die");
 
-            if (player["status"] != DEAD) {
-                var curr_animation = ((player["vy"] != 0) ? "jump_" : "run_") + ((player["vx"] >= 0) ? "right" : "left");
-                if (player["vx"] == 0 && sprite.currentAnimation != DEAD)
+            if (player[RESPAWN] == 0) {
+                var curr_animation = ((player[VY] != 0) ? "jump_" : "run_") + ((player[VX] >= 0) ? "right" : "left");
+                if (player[VX] == 0 && sprite.currentAnimation != DEAD)
                     sprite.stop();
                 else if (curr_animation != sprite.currentAnimation || sprite.paused)
                     sprite.gotoAndPlay(curr_animation);
 
-                if (player["vy"] == 0 && player["vx"] == 0 && sprite.paused && sprite.currentAnimation.indexOf('jump') >= 0) {
+                if (player[VY] == 0 && player[VX] == 0 && sprite.paused && sprite.currentAnimation.indexOf('jump') >= 0) {
                     sprite.gotoAndStop(sprite.currentAnimation.indexOf('left') >= 0 ? "run_left" : "run_right");
                 }
             }
-            var p_x = player["x"] * SCALE  - PLAYER_HALFRECT * SCALE, p_y =  player["y"] * SCALE  - PLAYER_HALFRECT * SCALE;
+            var p_x = player[X] * SCALE  - PLAYER_HALFRECT * SCALE, p_y =  player[Y] * SCALE  - PLAYER_HALFRECT * SCALE;
 
-            if (player["login"] == login)
-                $('canvas:hover').css( 'cursor', 'url("assets/img/' + player["weapon"] + '_cursor.png") 15 15, auto' );
+            if (player[LOGIN] == login)
+                $('canvas:hover').css( 'cursor', 'url("assets/img/' + player[WEAPON] + '_cursor.png") 15 15, auto' );
 
-            if (player["status"] != DEAD)
+            if (player[RESPAWN] == 0)
                 container.addChild(get_weapon(
-                        player["weapon"],
-                        (player["login"] == login ?
-                            compute_angle(mouse_x - p_x, mouse_y - p_y) : player["weapon_angle"]),
-                        player["login"] == login ?
-                            mouse_x - p_x : -1 * (player["weapon_angle"] < 270 && player["weapon_angle"] > 90)
+                        player[WEAPON],
+                        (player[LOGIN] == login ?
+                            compute_angle(mouse_x - p_x, mouse_y - p_y) : player[WEAPON_ANGLE]),
+                        player[LOGIN] == login ?
+                            mouse_x - p_x : -1 * (player[WEAPON_ANGLE] < 270 && player[WEAPON_ANGLE] > 90)
                     )
                 ).set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
 
@@ -289,7 +290,7 @@ function start_websocket(sid, login)
         stage.addChild(container);
         scrollCanvas();
         stage.update();
-        //console.log('onmessage, ' + event.data);
+        console.log('onmessage, ' + event.data);
     };
 
     web_socket.onclose = function(event) {

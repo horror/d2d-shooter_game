@@ -221,27 +221,28 @@ class ActiveGame
 
   def get_players
     clients.map do |sid, client|
-      player = client.player
-
-      {x: (player[:coord].x).round(Settings.accuracy), y: (player[:coord].y).round(Settings.accuracy),
-       vx: player[:velocity].x, vy: player[:velocity].y,
-       hp: player[:hp], status: player[:status], respawn: player[:respawn], login: player[:login],
-       weapon: player[:weapon], weapon_angle: player[:weapon_angle]
-      }
+      p = client.player
+      [
+        p[:coord].x.round(Settings.accuracy), p[:coord].y.round(Settings.accuracy),
+        p[:velocity].x.round(Settings.accuracy), p[:velocity].y.round(Settings.accuracy),
+        p[:weapon], p[:weapon_angle], p[:login], p[:hp], p[:respawn]
+      ]
     end
   end
 
   def get_projectiles
     projectiles.map { |p|
-      {x: p[:coord].x.round(Settings.accuracy), y: p[:coord].y.round(Settings.accuracy),
-       vx: p[:v].x.round(Settings.accuracy), vy: p[:v].y.round(Settings.accuracy), owner: p[:owner], weapon: p[:weapon]}
+      [
+          p[:coord].x.round(Settings.accuracy), p[:coord].y.round(Settings.accuracy),
+          p[:velocity].x.round(Settings.accuracy), p[:velocity].y.round(Settings.accuracy), p[:weapon]
+      ]
     }
   end
 
   def projectile_intersects?(projectile)
     intersected = false
     old_coord = projectile[:coord]
-    v_der = projectile[:v]
+    v_der = projectile[:velocity]
     new_coord = old_coord + v_der
     der = Line(old_coord, new_coord)
 
@@ -535,8 +536,8 @@ class Client
     return if ticks_after_last_fire < Settings.def_game.weapons[player[:weapon]].latency
     v = (der =Geometry::normalize(Point(data["dx"], data["dy"]))) * Settings.def_game.weapons[player[:weapon]].velocity
     start_pos = der * Settings.def_game.weapons[player[:weapon]].start_len
-    projectile = {coord: player[:coord] + der * Settings.def_game.weapons[player[:weapon]].start_len, v: v, owner: login, weapon: player[:weapon]}
-    game.projectiles << projectile if !game.projectile_intersects?({coord: player[:coord], v: start_pos, owner: login, weapon: player[:weapon]})
+    projectile = {coord: player[:coord] + der * Settings.def_game.weapons[player[:weapon]].start_len, velocity: v, owner: login, weapon: player[:weapon]}
+    game.projectiles << projectile if !game.projectile_intersects?({coord: player[:coord], velocity: start_pos, owner: login, weapon: player[:weapon]})
     player[:weapon_angle] = Geometry::compute_angle(der)
     @ticks_after_last_fire = 0
   end
