@@ -79,8 +79,9 @@ class Geometry
   end
 
   def self.rect_include_point?(center, point)
-    offset = Settings.player_halfrect
-    center.x - offset < point.x && center.x + offset > point.x && center.y - offset < point.y && center.y + offset > point.y
+    top_right = (center + Settings.player_halfrect).map{|i| i.round(Settings.accuracy)}
+    bottom_left = (center - Settings.player_halfrect).map{|i| i.round(Settings.accuracy)}
+    point.x > bottom_left.x && point.x < top_right.x && point.y > bottom_left.y && point.y < top_right.y
   end
 
   def self.line_len(p1, p2)

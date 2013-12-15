@@ -138,6 +138,16 @@ describe 'Socket server' do
       EM.run { send_and_check( {sid: sid_a, check_limit: 15, send_limit: 6, x: 1.65, y: 6.5, dx_rule: 1} ) }
     end
 
+    it "one step to right tp" do
+      action = Proc.new{ |p_tick| p_tick % 2 == 1 ? "empty" : "move"}
+      EM.run { send_and_check( {sid: sid_a, action: action, check_limit: 62, x: 1.5, y: 6.5, dx_rule: 1} ) }
+    end
+
+    it "one step to left tp" do
+      action = Proc.new{ |p_tick| p_tick % 2 == 1 ? "empty" : "move"}
+      EM.run { send_and_check( {sid: sid_a, action: action, check_limit: 62, x: 3.5, y: 2.5, dx_rule: -1} ) }
+    end
+
     it "to right wall" do
       EM.run { send_and_check( {sid: sid_a, check_limit: 20, x: 3.5, y: 6.5, dx_rule: 1} ) }
     end
