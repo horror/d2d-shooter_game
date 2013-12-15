@@ -225,7 +225,7 @@ class ActiveGame
       [
         p[:coord].x.round(Settings.accuracy), p[:coord].y.round(Settings.accuracy),
         p[:velocity].x.round(Settings.accuracy), p[:velocity].y.round(Settings.accuracy),
-        p[:weapon], p[:weapon_angle], p[:login], p[:hp], p[:respawn]
+        p[:weapon], p[:weapon_angle].round(Settings.accuracy), p[:login], p[:hp], p[:respawn]
       ]
     end
   end
