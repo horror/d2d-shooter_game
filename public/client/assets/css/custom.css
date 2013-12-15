@@ -54,6 +54,16 @@ canvas {
     background: #96b4d4 url("./images/mountains.png") repeat-x bottom left;
 }
 
+#chat_messages {
+    height: 400px;
+    overflow-y: scroll;
+}
+
+#games {
+    height: 500px;
+    overflow-y: scroll;
+}
+
 #send_message {
     height: 53px;
 }
