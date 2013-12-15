@@ -2,7 +2,7 @@
     _.each(Messages, function(message,key,list){
     %>
     <li class="list-group-item">
-        <%= message.login %> спизднул: <%= message.text %>
+        <%= new Date(message.time * 1000).toLocaleString() %>, <%= message.login %>: <%= message.text %>
     </li>
     <%
     });

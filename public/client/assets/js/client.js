@@ -53,6 +53,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
 
                 messages.update(function(){
                     $("#chat_messages").html( _.template(tpl.get('chat_messages'))({Messages: messages.toJSON()}));
+                    $("#chat_messages").scrollTop(100000000);
                 });
             },3000);
 
@@ -60,6 +61,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
                 this.gameListRefrashIntervalHandler = setInterval(function(){
                     games.update(function(){
                         $("#games").html( _.template(tpl.get('game_list'))({Games: games.toJSON()}));
+                        $("#games").scrollTop(100000000);
                     });
                 },6000);
         }
@@ -207,6 +209,8 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         },
     });
 
+    var MINUTES = 60;
+
     var Messages = AddNewUpdateActionCollection.extend({
         model: Message,
 
@@ -215,7 +219,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         params: {
             sid: appState.get('sid'),
             game: "",
-            since: 0,//new Date().getTime(),
+            since: new Date().getTime() / 1000 - 10 * MINUTES,
         },
 
         curr_game_params: function () {
