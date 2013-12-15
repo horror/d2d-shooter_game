@@ -69,7 +69,9 @@ describe 'Socket server' do
       full_response = json_decode(message)
       tick = full_response['tick']
       player = full_response['players'][params[:index]]
-      puts "Sid = #{params[:sid][0..2]}, Cnt = #{p_tick}, params = #{player}, Tick = #{tick}" if params.include?(:log)
+      player = {"x" => player[0], "y" => player[1], "vx" => player[2], "vy" => player[3], "weapon" => player[4],
+                "owner" => player[6], "hp" => player[7], "respawn" => player[8]}
+      puts "Sid = #{params[:sid][0..2]}, Cnt = #{p_tick}, Player = #{player}, Tick = #{tick}" if params.include?(:log)
       close_socket(request, params[:sid]) if params[:checking].call(player, p_tick, params, full_response)
       dx = params[:dx_rule].kind_of?(Proc) ? params[:dx_rule].call(p_tick, player) : params[:dx_rule]
       dy = params[:dy_rule].kind_of?(Proc) ? params[:dy_rule].call(p_tick, player) : params[:dy_rule]
@@ -86,11 +88,11 @@ describe 'Socket server' do
     spawns = [Point(2.5, 0.5)]
 
     it "players spawn" do
-      def_params = {'vx' => 0.0, 'vy' => 0.0, 'x' => 2.5, 'y' => 0.5, 'hp' => 100, 'respawn' => 0, 'status' => "alive"}
+      def_params = [2.5, 0.5, 0.0, 0.0, "K", 0.0, 100, 0]
       checking_a = Proc.new{ |player, p_tick, params, request|
-        request["players"].should == [def_params.merge({"login" => "user_a"})] if p_tick == 0
-        request["players"].should == [def_params.merge({"login" => "user_a"}),
-                                      def_params.merge({"login" => "user_b"})] if p_tick == 9
+        request["players"].should == [def_params.dup.insert(6, "user_a")] if p_tick == 0
+        request["players"].should == [def_params.dup.insert(6, "user_a"),
+                                      def_params.dup.insert(6, "user_b")] if p_tick == 9
         p_tick == 10
       }
       EM.run{
