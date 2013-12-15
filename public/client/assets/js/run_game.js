@@ -6,7 +6,7 @@ const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32,
     WEAPON_SHIFT_X = 0.7, WEAPON_SHIFT_Y = 0.4,
     MAP_PIECE_SCALE = 0.5, PROJECTILE_SCALE = 0.3,
     TELEPORT_SCALE_X = 0.2, TELEPORT_SCALE_Y = 0.2, TELEPORT_SHIFT_Y = 0.8, TELEPORT_SHIFT_X = 0.8,
-    MAIN_GAME_SHEETS = "assets/img/game2v1.png";
+    MAIN_GAME_SHEETS = "assets/img/main_game.png";
 var keys_to_params = {
         "m": {"action": "fire", params: {}},
         38: {"action": "move", "params": {"dx": 0, "dy": -1}},
@@ -36,10 +36,12 @@ function get_sprite (sprite_sheet, param, scale, rotation) {
 
 var ss_projectiles = new createjs.SpriteSheet({
     animations: {
-        G: 0,
+        K: 0,
+        P: 1,
     },
     images: [MAIN_GAME_SHEETS],
     frames: [
+        [0, 0, 1, 1],
         [200, 145, 55, 28, 0, 27, 14],
         [338, 210, 28, 28, 0, 14, 14],
     ],
@@ -66,7 +68,8 @@ var ss_weapon = new createjs.SpriteSheet({
 
 
 function get_weapon (name, rotation, direction) {
-    return get_sprite(ss_weapon, name, direction > 0 ? MAP_PIECE_SCALE : -MAP_PIECE_SCALE, rotation);
+    console.log(direction + " - " + rotation);
+    return get_sprite(ss_weapon, name, direction >= 0 ? MAP_PIECE_SCALE : -MAP_PIECE_SCALE, rotation);
 }
 
 var ss_items = new createjs.SpriteSheet({
@@ -187,7 +190,6 @@ function start_websocket(sid, login)
         tick = data['tick'];
         var players = data['players'];
         var projectiles = data['projectiles'];
-        var last_shot = {}
         var items = data['items'];
         stage.removeChild(container);
         var moving_objects = new createjs.Shape();
@@ -200,7 +202,6 @@ function start_websocket(sid, login)
             var angle = compute_angle(projectile["vx"], projectile["vy"]);
             container.addChild(get_projectile(projectile["weapon"], angle))
                 .set({x: projectile["x"] * SCALE , y: projectile["y"] * SCALE});
-            last_shot[projectile["owner"]] = angle;
         }
 
         for (var i = 0; i < players.length; ++i) {
@@ -259,13 +260,14 @@ function start_websocket(sid, login)
             if (player["status"] != DEAD)
                 container.addChild(get_weapon(
                         player["weapon"],
-                        (player["login"] == login ? compute_angle(mouse_x - p_x, mouse_y - p_y) :
-                            (last_shot[player["login"]] ? last_shot[player["login"]] : 0)),
-                        player["login"] == login ? mouse_x - p_x : 1
+                        (player["login"] == login ?
+                            compute_angle(mouse_x - p_x, mouse_y - p_y) : player["weapon_angle"]),
+                        player["login"] == login ?
+                            mouse_x - p_x : -1 * (player["weapon_angle"] < 270 && player["weapon_angle"] > 90)
                     )
                 ).set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
 
-
+            mouse_pressed = false;
             container.addChild(sprite)
                 .set({x: p_x , y: p_y});
         }
@@ -276,7 +278,7 @@ function start_websocket(sid, login)
         stage.addChild(container);
         scrollCanvas();
         stage.update();
-       // console.log('onmessage, ' + event.data);
+        //console.log('onmessage, ' + event.data);
     };
 
     web_socket.onclose = function(event) {

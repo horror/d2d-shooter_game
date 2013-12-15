@@ -25,7 +25,7 @@ class Geometry
 
     #проверка пересечений проекций граней стенок со всеми векторами движения
     has_intersect = false
-    der_vectors.each{|i|
+    der_vectors.each {|i|
       has_intersect ||= i.prj_intersect(cell_h_edge, :x) && i.prj_intersect(cell_v_edge, :y)
     }
     has_intersect
@@ -85,8 +85,22 @@ class Geometry
     Math::sqrt((p1.x - p2.x)**2 + (p1.y - p2.y)**2)
   end
 
+  def self.dist(vector)
+    Math.sqrt(vector.x.to_f**2 + vector.y.to_f**2)
+  end
+
+  def self.to_degrees(angle)
+    angle * 180 / Math::PI
+  end
+
+  def self.compute_angle(v)
+      (v.y < 0) ?
+          Geometry::to_degrees(Math.acos(-v.x / Geometry::dist(v))) + 180 :
+          Geometry::to_degrees(Math.acos(v.x / Geometry::dist(v)))
+  end
+
   def self.normalize(der)
-    return Point(0, 0) if (norm = Math.sqrt(der.x.to_f**2 + der.y.to_f**2)) == 0.0
+    return Point(0, 0) if (norm = Geometry::dist(der)) == 0.0
     return der.map{|i| i /= norm}
   end
 end
@@ -209,7 +223,8 @@ class ActiveGame
 
       {x: (player[:coord].x).round(Settings.accuracy), y: (player[:coord].y).round(Settings.accuracy),
        vx: player[:velocity].x, vy: player[:velocity].y,
-       hp: player[:hp], status: player[:status], respawn: player[:respawn], login: player[:login], weapon: player[:weapon]
+       hp: player[:hp], status: player[:status], respawn: player[:respawn], login: player[:login],
+       weapon: player[:weapon], weapon_angle: player[:weapon_angle]
       }
     end
   end
@@ -227,6 +242,7 @@ class ActiveGame
     v_der = projectile[:v]
     new_coord = old_coord + v_der
     der = Line(old_coord, new_coord)
+
     Geometry::walk_cells_around_coord(old_coord, v_der, false) {|itr_cell|
       intersected = true if symbol(itr_cell) == WALL && Geometry::check_intersect(itr_cell, [der])
     }
@@ -242,11 +258,12 @@ class ActiveGame
     end
 
     projectile[:coord] = new_coord
-    intersected || projectile[:weapon] == KNIFE
+
+    intersected
   end
 
   def move_projectiles
-    projectiles.delete_if { |projectile| projectile_intersects?(projectile) }
+    projectiles.delete_if { |projectile| projectile_intersects?(projectile) || projectile[:weapon] == KNIFE }
   end
 
   def apply_changes
@@ -276,7 +293,7 @@ end
 
 class Client
 
-  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :projectile, :ticks_after_last_fire
+  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :ticks_after_last_fire
 
   def initialize(ws, games)
     @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0, weapon: KNIFE}
@@ -313,9 +330,6 @@ class Client
         init_player
       end
     end
-
-    game.projectiles << projectile if projectile && !game.projectile_intersects?(projectile)
-    @projectile = nil
   end
 
   def on_message(tick)
@@ -357,6 +371,7 @@ class Client
     player[:coord].set(resp + 0.5)
     player[:login] = login
     player[:hp] = 100
+    player[:weapon_angle] = 0
     @initialized = true
   end
 
@@ -517,7 +532,10 @@ class Client
   def fire(data)
     return if ticks_after_last_fire < Settings.def_game.weapons[player[:weapon]].latency
     v = (der =Geometry::normalize(Point(data["dx"], data["dy"]))) * Settings.def_game.weapons[player[:weapon]].velocity
-    @projectile = {coord: player[:coord] + der * Settings.def_game.weapons[player[:weapon]].start_len, v: v, owner: login, weapon: player[:weapon]}
+    start_pos = der * Settings.def_game.weapons[player[:weapon]].start_len
+    projectile = {coord: player[:coord] + der * Settings.def_game.weapons[player[:weapon]].start_len, v: v, owner: login, weapon: player[:weapon]}
+    game.projectiles << projectile if !game.projectile_intersects?({coord: player[:coord], v: start_pos, owner: login, weapon: player[:weapon]})
+    player[:weapon_angle] = Geometry::compute_angle(der)
     @ticks_after_last_fire = 0
   end
 end
