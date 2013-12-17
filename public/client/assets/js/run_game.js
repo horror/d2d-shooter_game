@@ -2,10 +2,9 @@
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
     SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead",
     KNIFE = "K", GUN = "P", MACHINE_GUN = "M", ROCKET_LAUNCHER = "R", RAIL_GUN = "A",
-    X = 0, Y = 1, VX = 2, VY = 3, WEAPON = 4, WEAPON_ANGLE = 5, TICKS = 5, LOGIN = 6, HP = 7, RESPAWN = 8,
+    X = 0, Y = 1, VX = 2, VY = 3, WEAPON = 4, WEAPON_ANGLE = 5, TICKS = 5, LOGIN = 6, HP = 7, RESPAWN = 8, KILLS = 9, DEATHS = 10,
     NICK_SHIFT_Y = 0.5, HP_BAR_SHIFT_Y = 0.34,
     PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8,
-    WEAPON_SHIFT_X = 0.7, WEAPON_SHIFT_Y = 0.4,
     MAP_PIECE_SCALE = 0.5, PROJECTILE_SCALE = 0.3, WEAPON_SCALE = 0.35,
     TELEPORT_SCALE = 0.2, EXPLOSION_SCALE = 0.2,
     MAIN_GAME_SHEETS = "assets/img/main_game.png";
@@ -26,7 +25,7 @@ var keys_to_params = {
     },
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
-    stage, container, web_socket, player_x = 0, player_y = 0,
+    stage, container, web_socket, player_x = 0, player_y = 0, view_port_offset_x = 0, view_port_offset_y = 0,
     mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0, map_items = [];
 
 function compute_angle(x, y) {
@@ -206,6 +205,14 @@ function get_map_wall_piece(condition) {
     return get_map_piece(piece_id_need);
 }
 
+function get_text(text, x, y) {
+    var text = new createjs.Text(text, "12px Arial", "black");
+    text.textBaseline = "alphabetic";
+    text.x = x;
+    text.y = y;
+    return text
+}
+
 function start_websocket(sid, login)
 {
     if (web_socket)
@@ -218,6 +225,7 @@ function start_websocket(sid, login)
     };
 
     web_socket.onmessage = function(event) {
+        scrollCanvas();
         var data = JSON.parse(event.data);
         tick = data['tick'];
         var players = data['players'];
@@ -256,13 +264,13 @@ function start_websocket(sid, login)
                 player_x = player[X];
                 player_y = player[Y];
             }
+            //СТАТИСТИКА
+            container.addChild(get_text(player[LOGIN] + " - kills:" + player[KILLS] + ", death:" + player[DEATHS],
+                40 + view_port_offset_x, (i + 1) * 10 + view_port_offset_y));
 
             //НИК
-            var login_text = new createjs.Text(player[LOGIN], "12px Arial", "black");
-            login_text.textBaseline = "alphabetic";
-            login_text.x = (player[X] - PLAYER_HALFRECT) * SCALE;
-            login_text.y = (player[Y] - PLAYER_HALFRECT - NICK_SHIFT_Y) * SCALE;
-            container.addChild(login_text);
+            container.addChild(get_text(player[LOGIN], (player[X] - PLAYER_HALFRECT) * SCALE,
+                (player[Y] - PLAYER_HALFRECT - NICK_SHIFT_Y) * SCALE));
 
             //ХП
             moving_objects.graphics.beginStroke("black").beginFill("silver").drawRect(player[X] * SCALE - PLAYER_HALFRECT * SCALE,
@@ -312,7 +320,6 @@ function start_websocket(sid, login)
             map_items[i]["sprite"].gotoAndStop(items[i] == 0 ? map_items[i]["type"] : "empty")
 
         stage.addChild(container);
-        scrollCanvas();
         stage.update();
         console.log('onmessage, ' + event.data);
     };
@@ -389,8 +396,7 @@ function key_hold(sid)
 }
 
 function scrollCanvas(){
-    var offset_x = 0;
-    $("#canvas_wrapper").scrollLeft( offset_x = Math.min(Math.max(player_x * SCALE - $("#canvas_wrapper").width() / 2, 0), $("canvas").width() - $("#canvas_wrapper").width()) );
-    $("#canvas_wrapper").scrollTop( Math.min(Math.max(player_y * SCALE - $("#canvas_wrapper").height() / 2, 0), $("canvas").height() - $("#canvas_wrapper").height()) );
-    $('#canvas_wrapper').css('background-position-x', -1 * offset_x / 4);
+    $("#canvas_wrapper").scrollLeft(view_port_offset_x = Math.min(Math.max(player_x * SCALE - $("#canvas_wrapper").width() / 2, 0), $("canvas").width() - $("#canvas_wrapper").width()) );
+    $("#canvas_wrapper").scrollTop(view_port_offset_y = Math.min(Math.max(player_y * SCALE - $("#canvas_wrapper").height() / 2, 0), $("canvas").height() - $("#canvas_wrapper").height()) );
+    $('#canvas_wrapper').css('background-position-x', -1 * view_port_offset_x / 4);
 }

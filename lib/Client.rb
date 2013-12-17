@@ -227,7 +227,7 @@ class ActiveGame
       [
         p[:coord].x.round(Settings.accuracy), p[:coord].y.round(Settings.accuracy),
         p[:velocity].x.round(Settings.accuracy), p[:velocity].y.round(Settings.accuracy),
-        p[:weapon], p[:weapon_angle].to_i, p[:login], p[:hp], p[:respawn]
+        p[:weapon], p[:weapon_angle].to_i, p[:login], p[:hp], p[:respawn], p[:kills], p[:deaths]
       ]
     end
   end
@@ -256,23 +256,23 @@ class ActiveGame
 
     clients.each do |c_sid, client|
       c_player = client.player
-      if client.login != projectile[:owner] && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
-        client.get_damaged(dm)
+      if client.login != projectile[:owner].login && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
+        projectile[:owner].do_damage(client, dm)
         intersected = true
         break
       end
     end
 
     projectile[:coord] = new_coord
-    damage_players_on_area(new_coord, r, dm) if projectile[:weapon] == ROCKET_LAUNCHER && intersected
+    damage_players_on_area(projectile[:owner], new_coord, r, dm) if projectile[:weapon] == ROCKET_LAUNCHER && intersected
     intersected
   end
 
-  def damage_players_on_area(center, radius, damage)
+  def damage_players_on_area(player, center, radius, damage)
     clients.each do |c_sid, client|
       c_player = client.player
       if c_player[:status] == ALIVE && Geometry::line_len(center, c_player[:coord]) <= radius
-        client.get_damaged(damage)
+        player.do_damage(client, damage)
         der = Geometry::normalize(c_player[:coord] - center)
         client.player[:velocity] = der * Settings.def_game.consts.maxVelocity
         client.move_position
@@ -400,6 +400,8 @@ class Client
     player[:login] = login
     player[:hp] = 100
     player[:weapon_angle] = -1
+    player[:kills] = 0
+    player[:deaths] = 0
     @initialized = true
   end
 
@@ -517,12 +519,18 @@ class Client
   def die
     player[:status] = DEAD
     player[:weapon] = KNIFE
+    player[:deaths] += 1
     player[:respawn] = Settings.respawn_ticks
   end
 
   def get_damaged(damage)
-    player[:hp] =  [player[:hp] - damage, 0].max
+    player[:hp] = [player[:hp] - damage, 0].max
     die if player[:hp] == 0
+    player[:hp] == 0
+  end
+
+  def do_damage(enemy, damage)
+    player[:kills] += 1 if enemy.get_damaged(damage) && enemy.login != login
   end
 
   def stop_by_collision
@@ -563,7 +571,7 @@ class Client
   def fire(data)
     return if ticks_after_last_fire < Settings.def_game.weapons[player[:weapon]].latency
     v = (der =Geometry::normalize(Point(data["dx"], data["dy"]))) * Settings.def_game.weapons[player[:weapon]].velocity
-    projectile = {coord: player[:coord], velocity: v, owner: login, weapon: player[:weapon], ticks: 0}
+    projectile = {coord: player[:coord], velocity: v, owner: self, weapon: player[:weapon], ticks: 0}
     game.projectiles << projectile
     player[:weapon_angle] = Geometry::compute_angle(der)
     @ticks_after_last_fire = 0
