@@ -9,10 +9,10 @@ respawn_ticks: 50
 def_game: {
   consts: {accel: 0.05, friction: 0.05, maxVelocity: 0.7, gravity: 0.05},
   weapons: {
-    K: {velocity: 0.9, damage: 20, latency: 8, start_len: 0.5},
-    P: {velocity: 0.9, damage: 10, latency: 3, start_len: 0.99},
-    M: {velocity: 0.99, damage: 7, latency: 1, start_len: 0.99},
-    R: {velocity: 0.5, damage: 50, latency: 10, start_len: 0.99},
+    K: {velocity: 0.99, damage: 10, latency: 1},
+    P: {velocity: 0.9, damage: 10, latency: 3},
+    M: {velocity: 0.99, damage: 7, latency: 1},
+    R: {velocity: 0.5, damage: 50, latency: 10},
   },
   maxHP: 100
 }

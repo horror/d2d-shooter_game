@@ -5,6 +5,7 @@ HEAL = "h"
 GUN = "P"
 MACHINE_GUN = "M"
 ROCKET_LAUNCHER = "R"
+RAIL_GUN = "A"
 KNIFE = "K"
 MOVE = "move"
 ALIVE = "alive"
@@ -225,18 +226,18 @@ class ActiveGame
       [
         p[:coord].x.round(Settings.accuracy), p[:coord].y.round(Settings.accuracy),
         p[:velocity].x.round(Settings.accuracy), p[:velocity].y.round(Settings.accuracy),
-        p[:weapon], p[:weapon_angle].round(Settings.accuracy), p[:login], p[:hp], p[:respawn]
+        p[:weapon], p[:weapon_angle].to_i, p[:login], p[:hp], p[:respawn]
       ]
     end
   end
 
   def get_projectiles
-    projectiles.map { |p|
+    projectiles.map do |p|
       [
           p[:coord].x.round(Settings.accuracy), p[:coord].y.round(Settings.accuracy),
-          p[:velocity].x.round(Settings.accuracy), p[:velocity].y.round(Settings.accuracy), p[:weapon]
+          p[:velocity].x.round(Settings.accuracy), p[:velocity].y.round(Settings.accuracy), p[:weapon], p[:ticks]
       ]
-    }
+    end
   end
 
   def projectile_intersects?(projectile)
@@ -255,6 +256,7 @@ class ActiveGame
       if client.login != projectile[:owner] && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
         c_player[:hp] =  [c_player[:hp] - Settings.def_game.weapons[projectile[:weapon]].damage, 0].max
         client.die if c_player[:hp] == 0
+
         intersected = true
         break
       end
@@ -265,8 +267,19 @@ class ActiveGame
     intersected
   end
 
+
+
   def move_projectiles
-    projectiles.delete_if { |projectile| projectile_intersects?(projectile) || projectile[:weapon] == KNIFE }
+    projectiles.delete_if do |projectile|
+      need_delete = projectile[:velocity] == Point.new(0, 0) || projectile_intersects?(projectile)
+      projectile[:ticks] += 1
+      projectile[:velocity] = Point.new(0, 0) if [RAIL_GUN, KNIFE].include?(projectile[:weapon])
+      if need_delete && projectile[:weapon] == ROCKET_LAUNCHER && projectile[:velocity] != Point.new(0, 0)
+        projectile[:velocity] = Point.new(0, 0)
+        need_delete = false
+      end
+      need_delete
+    end
   end
 
   def apply_changes
@@ -374,7 +387,7 @@ class Client
     player[:coord].set(resp + 0.5)
     player[:login] = login
     player[:hp] = 100
-    player[:weapon_angle] = 0
+    player[:weapon_angle] = -1
     @initialized = true
   end
 
@@ -535,9 +548,8 @@ class Client
   def fire(data)
     return if ticks_after_last_fire < Settings.def_game.weapons[player[:weapon]].latency
     v = (der =Geometry::normalize(Point(data["dx"], data["dy"]))) * Settings.def_game.weapons[player[:weapon]].velocity
-    start_pos = der * Settings.def_game.weapons[player[:weapon]].start_len
-    projectile = {coord: player[:coord] + der * Settings.def_game.weapons[player[:weapon]].start_len, velocity: v, owner: login, weapon: player[:weapon]}
-    game.projectiles << projectile if !game.projectile_intersects?({coord: player[:coord], velocity: start_pos, owner: login, weapon: player[:weapon]})
+    projectile = {coord: player[:coord], velocity: v, owner: login, weapon: player[:weapon], ticks: 0}
+    game.projectiles << projectile
     player[:weapon_angle] = Geometry::compute_angle(der)
     @ticks_after_last_fire = 0
   end

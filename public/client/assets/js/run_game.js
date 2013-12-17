@@ -1,12 +1,13 @@
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m",
-    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", KNIFE = "K", GUN = "P",
-    X = 0, Y = 1, VX = 2, VY = 3, WEAPON = 4, WEAPON_ANGLE = 5, LOGIN = 6, HP = 7, RESPAWN = 8,
+    SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead",
+    KNIFE = "K", GUN = "P", MACHINE_GUN = "M", ROCKET_LAUNCHER = "R", RAIL_GUN = "A",
+    X = 0, Y = 1, VX = 2, VY = 3, WEAPON = 4, WEAPON_ANGLE = 5, TICKS = 5, LOGIN = 6, HP = 7, RESPAWN = 8,
     NICK_SHIFT_Y = 0.5, HP_BAR_SHIFT_Y = 0.34,
     PLAYER_SCALE_X = 0.9, PLAYER_SCALE_Y = 0.8,
     WEAPON_SHIFT_X = 0.7, WEAPON_SHIFT_Y = 0.4,
     MAP_PIECE_SCALE = 0.5, PROJECTILE_SCALE = 0.3, WEAPON_SCALE = 0.35,
-    TELEPORT_SCALE_X = 0.2, TELEPORT_SCALE_Y = 0.2, TELEPORT_SHIFT_Y = 0.8, TELEPORT_SHIFT_X = 0.8,
+    TELEPORT_SCALE = 0.2, EXPLOSION_SCALE = 0.2,
     MAIN_GAME_SHEETS = "assets/img/main_game.png";
 var keys_to_params = {
         "m": {"action": "fire", params: {}},
@@ -15,6 +16,13 @@ var keys_to_params = {
         37: {"action": "move", "params": {"dx": -1, "dy": 0}},
         39: {"action": "move", "params": {"dx": 1, "dy": 0}},
         81: {"action": "empty", "params": {}}
+    },
+    ticks_want_to_draw = {
+        "K": 1000,
+        "P": 1,
+        "M": 1,
+        "R": 3,
+        "A": 0,
     },
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
@@ -33,6 +41,33 @@ function get_sprite (sprite_sheet, param, scale, rotation) {
         sprite.rotation = rotation;
     sprite.gotoAndStop(param);
     return sprite;
+}
+
+var ss_effects = new createjs.SpriteSheet({
+    animations: {
+        teleport: {
+            frames: [0, 2, 4, 6, 8, 10],
+            speed: 0.8,
+        },
+        explosion: {
+            frames: [1, 3, 5, 7, 9, 11, 13, 15, 17, 16],
+            next: false,
+            speed: 2,
+        },
+    },
+    images: ["assets/img/effects.png"],
+    frames: {
+        height: 512,
+        width: 512,
+        regX: 256,
+        regY: 256,
+    },
+});
+
+function get_effect(name, scale) {
+    var effect = new createjs.Sprite(ss_effects, name);
+    effect.scaleY = effect.scaleX = scale;
+    return effect;
 }
 
 var ss_projectiles = new createjs.SpriteSheet({
@@ -100,20 +135,6 @@ var ss_items = new createjs.SpriteSheet({
 function get_item (name) {
     return get_sprite(ss_items, name, (name == "h") ? MAP_PIECE_SCALE : WEAPON_SCALE);
 }
-
-var ss_telepot = new createjs.SpriteSheet({
-    animations: {
-        show: {
-            frames: [0, 1, 2, 3, 4, 5],
-            speed: 0.8,
-        }
-    },
-    images: ["assets/img/teleport.png"],
-    frames: {
-        height: 512,
-        width: 512,
-    },
-});
 
 var ss_player = new createjs.SpriteSheet({
     animations: {
@@ -211,8 +232,11 @@ function start_websocket(sid, login)
         for (var i = 0; i < projectiles.length; ++i) {
             var projectile = projectiles[i];
             var angle = compute_angle(projectile[VX], projectile[VY]);
-            container.addChild(get_projectile(projectile[WEAPON], angle))
-                .set({x: projectile[X] * SCALE , y: projectile[Y] * SCALE});
+            if (projectile[TICKS] > ticks_want_to_draw[projectile[WEAPON]] || projectile[VX] == 0 && projectile[VY] == 0) {
+                projectile[WEAPON] == ROCKET_LAUNCHER && projectile[VX] == 0 && projectile[VY] == 0 ?
+                    stage.addChild(get_effect("explosion", EXPLOSION_SCALE)).set({x: projectile[X] * SCALE , y: projectile[Y] * SCALE}) :
+                    container.addChild(get_projectile(projectile[WEAPON], angle)).set({x: projectile[X] * SCALE , y: projectile[Y] * SCALE});
+            }
         }
 
         for (var i = 0; i < players.length; ++i) {
@@ -323,10 +347,7 @@ function draw_map(map)
                 stage.addChild(wall_piece).set({x: i * SCALE , y: j * SCALE});
             }
             else if (!isNaN(parseInt(map[j][i], 10))) {
-                var teleport = new createjs.Sprite(ss_telepot, "show");
-                teleport.scaleY = TELEPORT_SCALE_Y;
-                teleport.scaleX = TELEPORT_SCALE_X;
-                stage.addChild(teleport).set({x: (i - PLAYER_HALFRECT - TELEPORT_SHIFT_X) * SCALE, y: (j - PLAYER_HALFRECT - TELEPORT_SHIFT_Y) * SCALE});
+                stage.addChild(get_effect("teleport", TELEPORT_SCALE)).set({x: (i + PLAYER_HALFRECT) * SCALE, y: (j + PLAYER_HALFRECT) * SCALE});
                 //rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
             }
             else if (/[a-z]/i.test(map[j][i])) {
