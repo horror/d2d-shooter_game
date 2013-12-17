@@ -245,6 +245,8 @@ class ActiveGame
     intersected = false
     old_coord = projectile[:coord]
     v_der = projectile[:velocity]
+    dm = Settings.def_game.weapons[projectile[:weapon]].damage
+    r = Settings.def_game.weapons[projectile[:weapon]].radius
     new_coord = old_coord + v_der
     der = Line(old_coord, new_coord)
 
@@ -255,19 +257,28 @@ class ActiveGame
     clients.each do |c_sid, client|
       c_player = client.player
       if client.login != projectile[:owner] && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
-        c_player[:hp] =  [c_player[:hp] - Settings.def_game.weapons[projectile[:weapon]].damage, 0].max
-        client.die if c_player[:hp] == 0
-
+        client.get_damaged(dm)
         intersected = true
         break
       end
     end
 
     projectile[:coord] = new_coord
-
+    damage_players_on_area(new_coord, r, dm) if projectile[:weapon] == ROCKET_LAUNCHER && intersected
     intersected
   end
 
+  def damage_players_on_area(center, radius, damage)
+    clients.each do |c_sid, client|
+      c_player = client.player
+      if c_player[:status] == ALIVE && Geometry::line_len(center, c_player[:coord]) <= radius
+        client.get_damaged(damage)
+        der = Geometry::normalize(c_player[:coord] - center)
+        client.player[:velocity] = der * Settings.def_game.consts.maxVelocity
+        client.move_position
+      end
+    end
+  end
 
 
   def move_projectiles
@@ -509,6 +520,11 @@ class Client
     player[:respawn] = Settings.respawn_ticks
   end
 
+  def get_damaged(damage)
+    player[:hp] =  [player[:hp] - damage, 0].max
+    die if player[:hp] == 0
+  end
+
   def stop_by_collision
     player[:velocity].set(@wall_offset.x != -1 ? 0 : player[:velocity].x, @wall_offset.y != -1 ? 0 : player[:velocity].y)
   end
@@ -539,8 +555,8 @@ class Client
   end
 
   ###ACTIONS###
-  def move(data)
-    player[:velocity] = new_velocity(data, player[:velocity])
+  def move(new_pos)
+    player[:velocity] = new_velocity(new_pos, player[:velocity])
     move_position
   end
 

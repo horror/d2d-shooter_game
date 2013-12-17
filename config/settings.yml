@@ -12,7 +12,7 @@ def_game: {
     K: {velocity: 0.99, damage: 10, latency: 1},
     P: {velocity: 0.9, damage: 10, latency: 3},
     M: {velocity: 0.99, damage: 7, latency: 1},
-    R: {velocity: 0.5, damage: 50, latency: 10},
+    R: {velocity: 0.5, damage: 50, latency: 10, radius: 3},
   },
   maxHP: 100
 }
