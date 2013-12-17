@@ -257,9 +257,6 @@ function start_websocket(sid, login)
             }
             var sprite = p_sprites[player[LOGIN]];
 
-            if (player[RESPAWN] > 0 && sprite.currentAnimation == DEAD)
-                continue;
-
             if (player[LOGIN] == login) {
                 player_x = player[X];
                 player_y = player[Y];
@@ -268,6 +265,8 @@ function start_websocket(sid, login)
             container.addChild(get_text(player[LOGIN] + " - kills:" + player[KILLS] + ", death:" + player[DEATHS],
                 40 + view_port_offset_x, (i + 1) * 10 + view_port_offset_y));
 
+            if (player[RESPAWN] > 0 && sprite.currentAnimation == DEAD)
+                continue;
             //НИК
             container.addChild(get_text(player[LOGIN], (player[X] - PLAYER_HALFRECT) * SCALE,
                 (player[Y] - PLAYER_HALFRECT - NICK_SHIFT_Y) * SCALE));
