@@ -1,4 +1,5 @@
 //= require jquery
+//= require createjs.js
 
 const KEY_UP = 38, KEY_DOWN = 40, KEY_LEFT = 37, KEY_RIGHT = 39, KEY_SPACE = 32, KEY_Q = 81, KEY_MOUSE = "m", KEY_T = 84,
     SCALE = 30, PLAYER_HALFRECT = 0.5, DEAD = "dead", SPRITE_SCALE = 0.9, SPRITE_SHIFT_X = 0.45, SPRITE_SHIFT_Y = 0.8;
@@ -107,13 +108,15 @@ function start_websocket(start_spawn)
         container.graphics.beginStroke("red");
         for (var i = 0; i < players.length; ++i)
         {
-            container.graphics.drawRect(players[i]["x"] * SCALE - PLAYER_HALFRECT * SCALE,
-                                         players[i]["y"] * SCALE - PLAYER_HALFRECT * SCALE,
+            player = {"x": players[i][0], "y": players[i][1], "vx": players[i][2], "vy":players[i][3],
+                    "weapon": players[i][4], "login": players[i][6], "hp": players[i][7], "respawn": players[i][8]}
+            container.graphics.drawRect(player["x"] * SCALE - PLAYER_HALFRECT * SCALE,
+                                         player["y"] * SCALE - PLAYER_HALFRECT * SCALE,
                                          SCALE * PLAYER_HALFRECT * 2, SCALE * PLAYER_HALFRECT * 2);
-            if (start_spawn == undefined || players[i]["login"] != login)
+            if (start_spawn == undefined || player["login"] != login)
                 continue
-            if (Math.abs(players[i]["x"] * 1 - start_spawn["x"] * 1) > 1e-7 ||
-                Math.abs(players[i]["y"] * 1 - start_spawn["y"] * 1) > 1e-7)
+            if (Math.abs(player["x"] * 1 - start_spawn["x"] * 1) > 1e-7 ||
+                Math.abs(player["y"] * 1 - start_spawn["y"] * 1) > 1e-7)
             {
                 start_websocket(start_spawn)
                 return
