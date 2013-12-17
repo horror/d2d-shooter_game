@@ -324,7 +324,7 @@ class Client
   attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :ticks_after_last_fire
 
   def initialize(ws, games)
-    @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0, weapon: KNIFE}
+    @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0, weapon: KNIFE, kills: 0, deaths: 0}
     @summed_move_params = Point(0.0, 0.0)
     @position_changed = false
     @initialized = false
@@ -400,8 +400,6 @@ class Client
     player[:login] = login
     player[:hp] = 100
     player[:weapon_angle] = -1
-    player[:kills] = 0
-    player[:deaths] = 0
     @initialized = true
   end
 
