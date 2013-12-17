@@ -412,7 +412,7 @@ class Client
   def move_position
     @wall_offset = Point(-1, -1)
     check_collisions
-    return if withdraw_items_and_try_tp == "teleport"
+    return if pick_up_items_and_try_tp == "teleport"
     stop_by_collision
     player[:coord].set(player[:coord].x + (@wall_offset.x != -1 ? @wall_offset.x : player[:velocity].x),
                        player[:coord].y + (@wall_offset.y != -1 ? @wall_offset.y : player[:velocity].y))
@@ -475,7 +475,7 @@ class Client
     }
   end
 
-  def withdraw_items_and_try_tp
+  def pick_up_items_and_try_tp
     tp_cell = Point(-1, -1)
     min_tp_dist = 2
     updated_velocity = Point(@wall_offset.x != -1 ? @wall_offset.x : player[:velocity].x,
