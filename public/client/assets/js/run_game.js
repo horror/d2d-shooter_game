@@ -266,7 +266,7 @@ function start_websocket(sid, login)
             }
             //СТАТИСТИКА
             container.addChild(get_text(player[LOGIN] + " - kills:" + player[KILLS] + ", death:" + player[DEATHS],
-                40 + view_port_offset_x, (i + 1) * 10 + view_port_offset_y));
+                40 + view_port_offset_x, (i * 10 + 1) + view_port_offset_y));
 
             //НИК
             container.addChild(get_text(player[LOGIN], (player[X] - PLAYER_HALFRECT) * SCALE,
