@@ -242,6 +242,7 @@ class ActiveGame
   end
 
   def projectile_intersects?(projectile)
+    return true if projectile[:weapon] == RAIL_GUN
     intersected = false
     old_coord = projectile[:coord]
     v_der = projectile[:velocity]
@@ -285,10 +286,11 @@ class ActiveGame
 
   def move_projectiles
     projectiles.delete_if do |projectile|
-      need_delete = projectile[:velocity] == Point.new(0, 0) || projectile_intersects?(projectile)
+      need_delete = projectile[:velocity] == Point.new(0, 0) ||
+          (projectile_intersects?(projectile) && (projectile[:weapon] != RAIL_GUN || projectile[:ticks] != 0))
       projectile[:ticks] += 1
-      projectile[:velocity] = Point.new(0, 0) if [RAIL_GUN, KNIFE].include?(projectile[:weapon])
-      if need_delete && projectile[:weapon] == ROCKET_LAUNCHER && projectile[:velocity] != Point.new(0, 0)
+      projectile[:velocity] = Point.new(0, 0) if [KNIFE].include?(projectile[:weapon])
+      if need_delete && projectile[:velocity] != Point.new(0, 0)
         projectile[:velocity] = Point.new(0, 0)
         need_delete = false
       end
@@ -507,7 +509,7 @@ class Client
       elsif game.symbol(itr_cell) =~ /[a-z]/i && game.items[game.item_pos_to_idx[itr_cell.to_s]] == 0
         if game.symbol(itr_cell) == HEAL
           player[:hp] = Settings.def_game.maxHP
-        elsif [GUN, MACHINE_GUN, ROCKET_LAUNCHER].include?(game.symbol(itr_cell))
+        elsif [GUN, MACHINE_GUN, ROCKET_LAUNCHER, RAIL_GUN].include?(game.symbol(itr_cell))
           player[:weapon] = game.symbol(itr_cell)
         end
 

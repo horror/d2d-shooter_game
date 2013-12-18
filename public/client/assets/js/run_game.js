@@ -97,6 +97,7 @@ var ss_weapon = new createjs.SpriteSheet({
         P: 2,
         M: 3,
         R: 4,
+        A: 5,
     },
     images: [MAIN_GAME_SHEETS],
     frames: [
@@ -105,6 +106,7 @@ var ss_weapon = new createjs.SpriteSheet({
         [68, 128, 116, 64, 0, 30, 30],
         [68, 196, 226, 58, 0, 110, 22],
         [68, 260, 212, 64, 0, 100, 22],
+        [74, 398, 206, 70, 0, 90, 22],
     ],
 });
 
@@ -120,6 +122,7 @@ var ss_items = new createjs.SpriteSheet({
         P: 2,
         M: 3,
         R: 4,
+        A: 5,
     },
     images: [MAIN_GAME_SHEETS],
     frames: [
@@ -128,6 +131,7 @@ var ss_items = new createjs.SpriteSheet({
         [68, 128, 116, 64],
         [68, 196, 226, 58],
         [68, 260, 212, 64],
+        [74, 398, 206, 70],
     ],
 });
 
@@ -241,9 +245,19 @@ function start_websocket(sid, login)
             var projectile = projectiles[i];
             var angle = compute_angle(projectile[VX], projectile[VY]);
             if (projectile[TICKS] > ticks_want_to_draw[projectile[WEAPON]] || projectile[VX] == 0 && projectile[VY] == 0) {
-                projectile[WEAPON] == ROCKET_LAUNCHER && projectile[VX] == 0 && projectile[VY] == 0 ?
-                    stage.addChild(get_effect("explosion", EXPLOSION_SCALE)).set({x: projectile[X] * SCALE , y: projectile[Y] * SCALE}) :
-                    container.addChild(get_projectile(projectile[WEAPON], angle)).set({x: projectile[X] * SCALE , y: projectile[Y] * SCALE});
+                if (projectile[VX] == 0 && projectile[VY] == 0) {
+                    if (projectile[WEAPON] == ROCKET_LAUNCHER)
+                        stage.addChild(get_effect("explosion", EXPLOSION_SCALE)).set({x: projectile[X] * SCALE , y: projectile[Y] * SCALE})
+                }
+                else {
+                    if (projectile[WEAPON] == RAIL_GUN) {
+                        moving_objects.graphics.moveTo(projectile[X] * SCALE, projectile[Y] * SCALE);
+                        moving_objects.graphics.beginStroke("blue").lineTo((projectile[X] + projectile[VX]) * SCALE,
+                            (projectile[Y] + projectile[VY]) * SCALE).endStroke();
+                    }
+                    else
+                        container.addChild(get_projectile(projectile[WEAPON], angle)).set({x: projectile[X] * SCALE , y: projectile[Y] * SCALE});
+                }
             }
         }
 
