@@ -274,8 +274,10 @@ class ActiveGame
       if c_player[:status] == ALIVE && Geometry::line_len(center, c_player[:coord]) <= radius
         player.do_damage(client, damage)
         der = Geometry::normalize(c_player[:coord] - center)
-        client.player[:velocity] = der * Settings.def_game.consts.maxVelocity
-        client.move_position
+        if client.player[:status] == ALIVE
+          client.player[:velocity] = der * Settings.def_game.consts.maxVelocity
+          client.move_position
+        end
       end
     end
   end
@@ -562,6 +564,7 @@ class Client
 
   ###ACTIONS###
   def move(new_pos)
+    return if player[:status] == DEAD
     player[:velocity] = new_velocity(new_pos, player[:velocity])
     move_position
   end
