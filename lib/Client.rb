@@ -397,6 +397,7 @@ class Client
   def init_player
     resp = next_respawn
     player[:coord].set(resp + 0.5)
+    player[:weapon] = KNIFE
     player[:login] = login
     player[:hp] = 100
     player[:weapon_angle] = -1
@@ -516,7 +517,6 @@ class Client
 
   def die
     player[:status] = DEAD
-    player[:weapon] = KNIFE
     player[:deaths] += 1
     player[:respawn] = Settings.respawn_ticks
   end
