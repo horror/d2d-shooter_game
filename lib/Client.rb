@@ -324,11 +324,20 @@ class ActiveGame
     @map = ["#" * (@map[0].size + 2)] + @map.map{|i| i = "#" + i + "#"} + ["#" * (@map[0].size + 2)]
     @last_spawn = 0
   end
+
+  def save_stats
+    clients.each do |c_sid, client|
+      Stat.find_or_initialize_by_user_id_and_game_id(client.id, id).update_attributes({
+        kills: client.player[:kills],
+        deaths: client.player[:deaths],
+      })
+    end
+  end
 end
 
 class Client
 
-  attr_accessor :ws, :sid, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :ticks_after_last_fire
+  attr_accessor :ws, :sid, :id, :login, :game_id, :games, :player, :summed_move_params, :position_changed, :answered, :ticks_after_last_fire
 
   def initialize(ws, games)
     @player = {velocity: Point(0.0, 0.0), coord: Point(0.0, 0.0), hp: Settings.def_game.maxHP, status: ALIVE, respawn: 0, weapon: KNIFE, kills: 0, deaths: 0}
@@ -378,6 +387,7 @@ class Client
 
     return if !(user = User.find_by_sid(params["sid"])) || !(player_model = Player.find_by_user_id(user.id)) || (@initialized && tick > params['tick'])
 
+    @id ||= user.id
     @login ||= user.login
     @game_id ||= player_model.game_id
     @sid ||= params["sid"]
@@ -387,6 +397,7 @@ class Client
 
     if !@initialized
       init_player
+      load_stats
       game.clients[sid] = self
     end
 
@@ -565,6 +576,13 @@ class Client
       velocity.x = velocity.x.abs <= @consts[:friction] ? 0 : velocity.x - v_sign(velocity.x) * @consts[:friction]
     end
     return velocity.map{|i| [i.abs, @consts[:max_velocity]].min * v_sign(i)}
+  end
+
+  def load_stats
+    if (s = Stat.find_by_user_id_and_game_id(id, game_id))
+      player[:kills] = s.kills
+      player[:deaths] = s.deaths
+    end
   end
 
   ###ACTIONS###
