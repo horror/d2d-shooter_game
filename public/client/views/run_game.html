@@ -40,11 +40,12 @@
             var x = key == KEY_MOUSE ? e.clientX - offset.left : 0,
                 y = key == KEY_MOUSE ? e.clientY - offset.top : 0;
             if (!(key in pressed_keys))
-                return;
+                return true;
             pressed_keys[key] = true;
 
             if (!pressed)
                 key_hold("<%=AppState.sid%>", x, y);
+            return false;
         };
         var onbuttonup = function(e) {
             var key = e.type == "keyup" ? e.keyCode : KEY_MOUSE;
