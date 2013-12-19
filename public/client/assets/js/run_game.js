@@ -218,7 +218,6 @@ function get_text(text, x, y) {
 }
 
 createjs.Sound.alternateExtensions = ["mp3"];
-createjs.Sound.addEventListener("fileload", createjs.proxy(this.loadHandler, this));
 createjs.Sound.registerSound("assets/audio/die.mp3", "die");
 
 var die_text = new createjs.Bitmap("assets/img/die.png");
