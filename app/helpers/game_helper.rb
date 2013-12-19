@@ -25,7 +25,7 @@ module GameHelper
   end
 
   def getGames(params)
-    user = find_by_sid(params["sid"])
+    find_by_sid(params["sid"])
 
     games = Game.all(
         :select => "g.id, g.name, m.id AS map, g.max_players AS maxplayers, g.status, u.login AS player",
@@ -67,5 +67,13 @@ module GameHelper
     check_error((not (player = Player.find_by_user_id(user.id))), "notInGame")
     ok({tickSize: Settings.tick_size, accuracy: Settings.accuracy, accel: player.game.accel,
         maxVelocity: player.game.max_velocity, gravity: player.game.gravity, friction: player.game.friction})
+  end
+
+  def getGameStats(params)
+    find_by_sid(params["sid"])
+    game = find_by_id(Game, params["game"], "badGame")
+    check_error(Settings.game_statuses.running == game.status, "gameRunning")
+
+    ok({stats: game.get_stats})
   end
 end

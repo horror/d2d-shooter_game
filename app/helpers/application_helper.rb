@@ -59,6 +59,10 @@ module ApplicationHelper
     resp({result: "gameFull", message: "This game full"})
   end
 
+  def gameRunning
+    resp({result: "gameRunning", message: "This game running, u can see stats only after game is finished"})
+  end
+
   def alreadyInGame
     resp({result: "alreadyInGame", message: "U already playing"})
   end

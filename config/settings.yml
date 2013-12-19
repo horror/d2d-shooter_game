@@ -6,6 +6,7 @@ eps: 1.0e-07
 tick_size: 60
 player_halfrect: 0.5
 respawn_ticks: 50
+game_statuses: [running: 0, finished: 1]
 def_game: {
   consts: {accel: 0.05, friction: 0.05, maxVelocity: 0.7, gravity: 0.05},
   weapons: {
