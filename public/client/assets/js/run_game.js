@@ -26,7 +26,7 @@ var keys_to_params = {
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
     stage, container, web_socket, player_x = 0, player_y = 0, view_port_offset_x = 0, view_port_offset_y = 0,
-    mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0, map_items = [], die_fixed = false;
+    mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0, map_items = [], die_fixed = false, die_text_zoom = 0.07;
 
 function compute_angle(x, y) {
     return (y < 0) ? Math.acos(-x / Math.sqrt(x * x + y * y)) * 180 / Math.PI + 180 : Math.acos(x / Math.sqrt(x * x + y * y)) * 180 / Math.PI
@@ -218,8 +218,11 @@ function get_text(text, x, y) {
 }
 
 createjs.Sound.alternateExtensions = ["mp3"];
-createjs.Sound.addEventListener("fileload", createjs.proxy(this.loadHandler, this));
 createjs.Sound.registerSound("assets/audio/die.mp3", "die");
+
+var die_text = new createjs.Bitmap("assets/img/die.png");
+die_text.regX = 250;
+die_text.regY = 75;
 
 function start_websocket(sid, login)
 {
@@ -302,14 +305,22 @@ function start_websocket(sid, login)
             if (player[RESPAWN] > 0 && sprite.currentAnimation != "die") {
                 sprite.gotoAndPlay("die");
                 if (player[LOGIN] == login && !die_fixed) {
+                    stage.addChild(die_text).set({x: view_port_offset_x + $("#canvas_wrapper").width() / 2,
+                        y: view_port_offset_y + $("#canvas_wrapper").height() / 2});
                     createjs.Sound.play("die");
                     die_fixed = true;
                 }
+            }
 
+            if (die_fixed) {
+                die_text.scaleX += die_text_zoom
+                die_text.scaleY += die_text_zoom
+                die_text_zoom = (die_text.scaleY > 1.5) ? -0.07 : ((die_text.scaleY < 1) ? 0.07 : die_text_zoom)
             }
 
             if (player[RESPAWN] == 0) {
                 if (player[LOGIN] == login && die_fixed) {
+                    stage.removeChild(die_text);
                     createjs.Sound.stop("die");
                     die_fixed = false;
                 }
