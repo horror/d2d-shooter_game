@@ -45,6 +45,7 @@ EM.next_tick do
     ws.onclose do
       puts "WebSocket closed"
       if @clients[ws].game
+        @clients[ws].game.save_stats
         @clients[ws].game.clients.delete(@clients[ws].sid)
       end
       @clients.delete(ws)

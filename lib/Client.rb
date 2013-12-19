@@ -242,29 +242,32 @@ class ActiveGame
   end
 
   def projectile_intersects?(projectile)
-    return true if projectile[:weapon] == RAIL_GUN
     intersected = false
     old_coord = projectile[:coord]
     v_der = projectile[:velocity]
     dm = Settings.def_game.weapons[projectile[:weapon]].damage
     r = Settings.def_game.weapons[projectile[:weapon]].radius
-    new_coord = old_coord + v_der
-    der = Line(old_coord, new_coord)
 
-    Geometry::walk_cells_around_coord(old_coord, v_der, false) {|itr_cell|
-      intersected = true if symbol(itr_cell) == WALL && Geometry::check_intersect(itr_cell, [der])
-    }
+    begin
+      new_coord = old_coord + v_der
+      der = Line(old_coord, new_coord)
+      Geometry::walk_cells_around_coord(old_coord, v_der, false) {|itr_cell|
+        intersected = true if symbol(itr_cell) == WALL && Geometry::check_intersect(itr_cell, [der])
+      }
 
-    clients.each do |c_sid, client|
-      c_player = client.player
-      if client.login != projectile[:owner].login && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
-        projectile[:owner].do_damage(client, dm)
-        intersected = true
-        break
+      clients.each do |c_sid, client|
+        c_player = client.player
+        if client.login != projectile[:owner].login && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
+          projectile[:owner].do_damage(client, dm)
+          intersected = true
+          break
+        end
       end
-    end
+      old_coord = new_coord
+    end until (intersected || projectile[:weapon] != RAIL_GUN)
 
-    projectile[:coord] = new_coord
+    projectile[:coord] = new_coord if projectile[:weapon] != RAIL_GUN
+    projectile[:velocity] = new_coord - projectile[:coord] if projectile[:weapon] == RAIL_GUN
     damage_players_on_area(projectile[:owner], new_coord, r, dm) if projectile[:weapon] == ROCKET_LAUNCHER && intersected
     intersected
   end
