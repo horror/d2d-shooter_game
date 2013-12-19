@@ -276,17 +276,20 @@ class ActiveGame
     v_der = projectile[:velocity]
     dm = Settings.def_game.weapons[projectile[:weapon]].damage
     r = Settings.def_game.weapons[projectile[:weapon]].radius
-
+    min_dist = 2
     begin
       new_coord = old_coord + v_der
       der = Line(old_coord, new_coord)
       Geometry::walk_cells_around_coord(old_coord, v_der, false) {|itr_cell|
-        intersected = true if symbol(itr_cell) == WALL && Geometry::rect_line_intersect(itr_cell, der)
+        next if symbol(itr_cell) != WALL || !Geometry::rect_line_intersect(itr_cell, der)
+        intersected = true
+        min_dist = [min_dist, Geometry::line_len(old_coord, itr_cell + Settings.player_halfrect)].min
       }
 
       clients.each do |c_sid, client|
         c_player = client.player
         player_cell = c_player[:coord] - Settings.player_halfrect
+        next if min_dist < Geometry::line_len(c_player[:coord], old_coord)
         if client.login != projectile[:owner].login && c_player[:status] == ALIVE && Geometry::rect_line_intersect(player_cell, der)
           projectile[:owner].do_damage(client, dm)
           intersected = true
