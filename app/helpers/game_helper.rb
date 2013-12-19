@@ -47,6 +47,7 @@ module GameHelper
     user = find_by_sid(params["sid"])
     game = find_by_id(Game, params["game"], "badGame")
     check_error(game.players.count == game.max_players, "gameFull")
+    check_error(Settings.game_statuses.finished == game.status, "gameFinished")
     check_error(Player.where(user_id: user.id).exists?, "alreadyInGame")
 
     try_save(Player, {user_id: user.id, game_id: game.id})
@@ -55,9 +56,9 @@ module GameHelper
   def leaveGame(params)
     user = find_by_sid(params["sid"])
     check_error((not (player = Player.find_by_user_id(user.id))), "notInGame")
-    #if (game = Game.find(player.game_id)).players.length == 1
-      #game.delete
-    #end
+    if (game = Game.find(player.game_id)).players.length == 1
+      game.update_attributes({status: Settings.game_statuses.finished})
+    end
     player.delete
     ok
   end

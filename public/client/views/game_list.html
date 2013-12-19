@@ -2,7 +2,18 @@
 _.each(Games, function(game,key,list){
 %>
 <li class="list-group-item">
-    <%= game.name %> <a href="/" class="join_game badge" id="<%= game.id %>">join</a>
+    <%= game.name %>
+    <%
+    if (game.status == "running") {
+    %>
+        <a href="/" class="join_game badge" id="<%= game.id %>">join</a>
+    <%
+    } else {
+    %>
+        <a href="/" class="show_stats badge" id="<%= game.id %>">stats</a>
+    <%
+    }
+    %>
 </li>
 <%
 });

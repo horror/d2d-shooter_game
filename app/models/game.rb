@@ -8,7 +8,7 @@
 #
 
 class Game < ActiveRecord::Base
-  attr_accessible :user_id, :map_id, :name, :max_players, :accel, :max_velocity, :friction, :gravity
+  attr_accessible :user_id, :map_id, :name, :status, :max_players, :accel, :max_velocity, :friction, :gravity
 
   has_many :players
   has_many :stats

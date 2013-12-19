@@ -1,6 +1,6 @@
 (function($){
 $(document).on('click', 'a', function() {return false;});
-tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'new_game', 'new_map', 'run_game'], function() {
+tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'new_game', 'new_map', 'run_game', 'stats'], function() {
 
 /*+++++++++++++++++++++++++++++++++++++++++++++++++++++ MODELS +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
     var AppState = Backbone.Model.extend({
@@ -35,12 +35,12 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             return;
         }
 
-        if (this.get("sid") && curr_game.get("id") && state != "runGame") { //продолжить играть
+        if (this.get("sid") && $.cookie("game_id") && state != "runGame") { //продолжить играть
             controller.navigate("!/run_game", true);
             return;
         }
 
-        if (state == "runGame" && !curr_game.get("id") ||
+        if (state == "runGame" && !$.cookie("game_id") ||
             (state == "signup" || state == "signin") && this.get("sid")) { //перейти в лобби, если мы уже не играем или пытаемся перейти на лоигн и регистрацию
             controller.navigate("!/lobby", true);
             return;
@@ -135,9 +135,22 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         leave: function () {
             this.set({id: undefined});
             $.removeCookie("game_id");
-        }
+        },
+        set_game: function (id) {
+            this.set({id: id});
+        },
     });
     var curr_game = new Game({id: $.cookie("game_id")});
+
+    var Stat = SendActionModel.extend({
+        defaults: {
+            game_id: '',
+            user_id: '',
+            kills: '',
+            deaths: '',
+        },
+        name: "Stat",
+    });
 
     var Message = SendActionModel.extend({
         defaults: {
@@ -249,6 +262,23 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
     });
     var games = new Games;
 
+    var Stats = AddNewUpdateActionCollection.extend({
+        model: Stat,
+
+        action: "getGameStats",
+
+        set_game: function (game_id) {
+            this.params['game'] = game_id;
+        },
+
+        parse: function(response){
+            return response.stats;
+        },
+
+        name: "Stats",
+    });
+    var stats = new Stats;
+
     var Maps = AddNewUpdateActionCollection.extend({
         model: Map,
 
@@ -269,6 +299,7 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             "!/new_game": "newGame",
             "!/new_map": "newMap",
             "!/run_game": "runGame",
+            "!/stats": "stats",
         },
 
         signin: function () {
@@ -294,6 +325,10 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
         runGame: function () {
             appState.set({ state: "runGame" });
         },
+
+        stats: function () {
+            appState.set({ state: "stats" });
+        },
     });
     var controller = new Controller();
 
@@ -312,16 +347,19 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
             newGame: _.template(tpl.get('new_game')),
             newMap: _.template(tpl.get('new_map')),
             runGame: _.template(tpl.get('run_game')),
+            stats: _.template(tpl.get('stats')),
         },
 
         models: {
             signin: [appState],
             signup: [appState],
             runGame: [curr_game, appState],
+            stats: [curr_game],
         },
 
         collections: {
             newGame: [maps],
+            stats: [stats],
         },
 
         refresh: function() {
@@ -383,10 +421,21 @@ tpl.loadTemplates(['header', 'login', 'lobby', 'chat_messages', 'game_list', 'ne
                     });
                 });
             },
+            'click a.show_stats': function (e) {
+                var game_id = $(e.currentTarget).attr("id");
+                stats.set_game(game_id);
+                curr_game.set_game(game_id);
+                stats.update(function () {
+                    curr_game.refreshData(function () {
+                        controller.navigate("!/stats", true);
+                    });
+                });
+            },
             'click a#leave_game': function () {
                 sendRequest({action: "leaveGame", params: {sid: this.sid()}}, function(response) {
                     process(response, function () {
                         curr_game.leave();
+                        web_socket.close();
                         controller.navigate("!/lobby", true);
                     });
                 });

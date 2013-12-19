@@ -29,7 +29,8 @@ module ValidationHelper
           "sendMessage" => ["sid", "game", "text"], "getMessages" => ["sid", "game", "since"],
           "createGame" => ["sid", "name", "map", "maxPlayers"], "getGames" => ["sid"],
           "joinGame" => ["sid", "game"], "leaveGame" => ["sid"], "getGameConsts" => ["sid"],
-          "uploadMap" => ["sid", "name", "map", "maxPlayers"], "getMaps" => ["sid"]}
+          "uploadMap" => ["sid", "name", "map", "maxPlayers"], "getMaps" => ["sid"],
+          "getGameStats" => ["sid", "game"]}
 
     raise BadParamsError.new(badAction) unless arr.include?(action)
     raise BadParamsError.new(badRequest) unless params.is_a?(Hash) and (arr[action] - params.keys).length == 0
