@@ -26,7 +26,7 @@ var keys_to_params = {
     hostname = window.location.hostname.replace('www.',''), port = window.location.port,
     web_socket_url = 'ws://' + hostname + ':8001', server_url = 'http://' + hostname + ':' + port, tick = 0,
     stage, container, web_socket, player_x = 0, player_y = 0, view_port_offset_x = 0, view_port_offset_y = 0,
-    mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0, map_items = [];
+    mouse_x, mouse_y, p_sprites = {}, wrapper_scroll_x = wrapper_scroll_y = 0, map_items = [], die_fixed = false;
 
 function compute_angle(x, y) {
     return (y < 0) ? Math.acos(-x / Math.sqrt(x * x + y * y)) * 180 / Math.PI + 180 : Math.acos(x / Math.sqrt(x * x + y * y)) * 180 / Math.PI
@@ -217,6 +217,10 @@ function get_text(text, x, y) {
     return text
 }
 
+createjs.Sound.alternateExtensions = ["mp3"];
+createjs.Sound.addEventListener("fileload", createjs.proxy(this.loadHandler, this));
+createjs.Sound.registerSound("assets/audio/die.mp3", "die");
+
 function start_websocket(sid, login)
 {
     if (web_socket)
@@ -295,10 +299,20 @@ function start_websocket(sid, login)
 
             //ИГРОК
 
-            if (player[RESPAWN] > 0 && sprite.currentAnimation != "die")
+            if (player[RESPAWN] > 0 && sprite.currentAnimation != "die") {
                 sprite.gotoAndPlay("die");
+                if (player[LOGIN] == login && !die_fixed) {
+                    createjs.Sound.play("die");
+                    die_fixed = true;
+                }
+
+            }
 
             if (player[RESPAWN] == 0) {
+                if (player[LOGIN] == login && die_fixed) {
+                    createjs.Sound.stop("die");
+                    die_fixed = false;
+                }
                 var curr_animation = ((player[VY] != 0) ? "jump_" : "run_") + ((player[VX] >= 0) ? "right" : "left");
                 if (player[VX] == 0 && sprite.currentAnimation != DEAD)
                     sprite.stop();
@@ -334,7 +348,7 @@ function start_websocket(sid, login)
 
         stage.addChild(container);
         stage.update();
-        console.log('onmessage, ' + event.data);
+        //console.log('onmessage, ' + event.data);
     };
 
     web_socket.onclose = function(event) {
