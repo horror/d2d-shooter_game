@@ -19,19 +19,42 @@ def v_sign(num)
   return f_eq(num.to_f, 0) ? 0.0 : num.to_f > 0.0 ? 1 : -1
 end
 
+class PlayerPolygon
+  attr_accessor :p1, :p2
+
+  def initialize(start_rect_point, end_rect_point)
+    set(start_rect_point, end_rect_point)
+  end
+
+  def set(start_rect_point, end_rect_point)
+    @p1, @p2, = start_rect_point, end_rect_point
+    self
+  end
+  #Проверка теоремы о разделяющих осях для полигона
+  def check_SAT(shape)
+    offset = Settings.player_halfrect - Settings.eps
+    der = (p2 - p1).map{|i| f_eq(i.to_f, 0) || i.to_f > 0.0 ? 1 : -1} * offset
+    poly = [Point(p1.x - der.x, p1.y + der.y), p1 - der, Point(p1.x + der.x, p1.y - der.y),
+            Point(p2.x + der.x, p2.y - der.y), p2 + der, Point(p2.x - der.x, p2.y + der.y)]
+    diagonal_prj_intersect = true
+    if !f_eq(p1.x, p2.x) && !f_eq(p1.y, p2.y)
+      #нормаль к диагональной грани полигона
+      normal = Line(Point(-poly[0].y, poly[0].x), Point(-poly[poly.size - 1].y, poly[poly.size - 1].x))
+      #вектор нормали
+      normal_vector = normal.p2 - normal.p1
+      #проверка пересечения проекций полигона и фигуры на вектор нормаль
+      diagonal_prj_intersect = Geometry.segments_intersection(Geometry::axis_projection(normal_vector, poly),
+                                                              Geometry::axis_projection(normal_vector, shape))
+    end
+    diagonal_prj_intersect && Geometry::x_projections_intersect(poly, shape) && Geometry::y_projections_intersect(poly, shape)
+  end
+end
+
 class Geometry
 
-  def self.check_intersect(wall_cell, der_vectors)
-    #внутренние горизантальная и вертикальная грани текущей стенки
-    cell_h_edge = Line(wall_cell, Point(wall_cell.x + 1, wall_cell.y))
-    cell_v_edge = Line(wall_cell, Point(wall_cell.x, wall_cell.y + 1))
-
-    #проверка пересечений проекций граней стенок со всеми векторами движения
-    has_intersect = false
-    der_vectors.each {|i|
-      has_intersect ||= i.prj_intersect(cell_h_edge, :x) && i.prj_intersect(cell_v_edge, :y)
-    }
-    has_intersect
+  def self.rect_line_intersect(wall_cell, line)
+    wall_points = Geometry::cell_points(wall_cell)
+    x_projections_intersect(line.points, wall_points) && y_projections_intersect(line.points, wall_points) && line.check_SAT(wall_points)
   end
 
   def self.walk_cells_around_coord(coord, velocity, is_rect, &block)
@@ -46,43 +69,42 @@ class Geometry
     }
   end
 
+  def self.cell_points(cell)
+    offset = Settings.player_halfrect
+    [cell, Point(cell.x + 2 * offset, cell.y), Point(cell.x, cell.y + 2 * offset), cell + 2 * offset]
+  end
+
+  def self.segments_intersection(a, b)
+    return !f_eq(a[1], b[0]) && !f_eq(a[0], b[1]) && a[1] > b[0] && b[1] > a[0]
+  end
+
   def self.scalar_prod(p1, p2)
     p1.x * p2.x + p1.y * p2.y
   end
 
-  def self.polygon_include_point?(start_rect_point, end_rect_point, point)
-    p1, p2 = start_rect_point, end_rect_point
-    return false if p1 == p2
-    offset = Settings.player_halfrect - Settings.eps
-    der = (p2 - p1).map{|i| f_eq(i.to_f, 0) || i.to_f > 0.0 ? 1 : -1} * offset
-    poly = [Point(p1.x - der.x, p1.y + der.y), p1 - der, Point(p1.x + der.x, p1.y - der.y),
-            Point(p2.x + der.x, p2.y - der.y), p2 + der, Point(p2.x - der.x, p2.y + der.y)]
-    prj_x = [poly[0].x, poly[0].x]
-    prj_y = [poly[0].y, poly[0].y]
-    poly.each{ |i|
-      prj_x = [[prj_x[0], i.x].min, [prj_x[1], i.x].max]
-      prj_y = [[prj_y[0], i.y].min, [prj_y[1], i.y].max]
-    }
-    diag_prj_intersect = true
-    if !f_eq(p1.x, p2.x) && !f_eq(p1.y, p2.y)
-      #Нормаль к диагональной грани полигона
-      normal = Line(Point(-poly[1].y, poly[1].x), Point(-poly[2].y, poly[2].x))
-      normal_p = normal.p2 - normal.p1
-      #Проекция полигона на нормаль
-      prj_normal = [Geometry::scalar_prod(normal_p, poly[1]), Geometry::scalar_prod(normal_p, poly[1])]
-      poly.each{ |i|
-        prj_normal = [[prj_normal[0], Geometry::scalar_prod(normal_p, i)].min, [prj_normal[1], Geometry::scalar_prod(normal_p, i)].max]
-      }
-      #Проверка пересечения проекций точки и полигона на нормаль
-      diag_prj_intersect = Geometry::scalar_prod(normal_p, point) > prj_normal[0] && Geometry::scalar_prod(normal_p, point) < prj_normal[1]
-    end
-    return diag_prj_intersect && point.x > prj_x[0] && point.x < prj_x[1] && point.y > prj_y[0] && point.y < prj_y[1]
+  def self.def_axis_projection(shape, axis_name)
+    prj = [shape[0].send(axis_name), shape[0].send(axis_name)]
+    shape.each{|i| prj = [[prj[0], i.send(axis_name)].min, [prj[1], i.send(axis_name)].max]}
+    prj
+  end
+
+  def self.x_projections_intersect(shape_a, shape_b)
+    segments_intersection(def_axis_projection(shape_a, :x), def_axis_projection(shape_b, :x))
+  end
+
+  def self.y_projections_intersect(shape_a, shape_b)
+    segments_intersection(def_axis_projection(shape_a, :y), def_axis_projection(shape_b, :y))
+  end
+
+  def self.axis_projection(axis, shape_points)
+    projection = [scalar_prod(axis, shape_points[0]), scalar_prod(axis, shape_points[0])]
+    shape_points.each{ |i| projection = [[projection[0], scalar_prod(axis, i)].min, [projection[1], scalar_prod(axis, i)].max] }
+    projection
   end
 
   def self.rect_include_point?(center, point)
-    top_right = (center + Settings.player_halfrect).map{|i| i.round(Settings.accuracy)}
-    bottom_left = (center - Settings.player_halfrect).map{|i| i.round(Settings.accuracy)}
-    point.x > bottom_left.x && point.x < top_right.x && point.y > bottom_left.y && point.y < top_right.y
+    offset = Settings.player_halfrect - Settings.eps
+    point.x > center.x - offset && point.x < center.x + offset && point.y > center.y - offset && point.y < center.y + offset
   end
 
   def self.line_len(p1, p2)
@@ -98,13 +120,11 @@ class Geometry
   end
 
   def self.compute_angle(v)
-      (v.y < 0) ?
-          Geometry::to_degrees(Math.acos(-v.x / Geometry::dist(v))) + 180 :
-          Geometry::to_degrees(Math.acos(v.x / Geometry::dist(v)))
+    (v.y < 0) ? to_degrees(Math.acos(-v.x / dist(v))) + 180 : to_degrees(Math.acos(v.x / dist(v)))
   end
 
   def self.normalize(der)
-    return Point(0, 0) if (norm = Geometry::dist(der)) == 0.0
+    return Point(0, 0) if (norm = dist(der)) == 0.0
     return der.map{|i| i /= norm}
   end
 end
@@ -118,8 +138,7 @@ class Point
 
   def set(*args)
     return set(args[0].x, args[0].y) if args.size == 1
-    @x = args[0]
-    @y = args[1]
+    @x, @y = args[0], args[1]
     self
   end
 
@@ -147,6 +166,10 @@ class Point
     return Point(-x, -y)
   end
 
+  def scalar_prod(point)
+    point.x * x + point.y * y
+  end
+
   def ==(point)
     f_eq(x, point.x) && f_eq(y, point.y)
   end
@@ -170,21 +193,22 @@ class Line
   attr_accessor :p1, :p2
 
   def initialize(p1, p2)
-    @p1 = p1
-    @p2 = p2
+    @p1, @p2 = p1, p2
     self
   end
-
-  def prj_intersect(line, v_der)
-    return intersect_by_coords(p1.send(v_der), p2.send(v_der), line.p1.send(v_der), line.p2.send(v_der))
+  #Проверка теоремы о разделяющих осях для линии
+  def check_SAT(points)
+    #вектор нормали линии
+    normal_vector = Point(-p2.y, p2.x) - Point(-p1.y, p1.x)
+    #проекции линии и фигуры на нормаль
+    line_prj = Geometry::axis_projection(normal_vector, [p1, p2])
+    shape_prj = Geometry::axis_projection(normal_vector, points)
+    #проверка пересечения проекций
+    Geometry.segments_intersection(line_prj, shape_prj)
   end
 
-  private
-
-  def intersect_by_coords(a_1, a_2, b_1, b_2)
-    a_1, a_2 = [a_1, a_2].min, [a_1, a_2].max
-    b_1, b_2 = [b_1, b_2].min, [b_1, b_2].max
-    return !f_eq(a_2, b_1) && !f_eq(a_1, b_2) && a_2 > b_1 && b_2 > a_1
+  def points
+    [@p1, @p2]
   end
 end
 
@@ -194,6 +218,10 @@ end
 
 def Line(p1, p2)
   Line.new(p1, p2)
+end
+
+def PlayerPolygon(p1, p2)
+  PlayerPolygon.new(p1, p2)
 end
 
 class ActiveGame
@@ -252,12 +280,13 @@ class ActiveGame
       new_coord = old_coord + v_der
       der = Line(old_coord, new_coord)
       Geometry::walk_cells_around_coord(old_coord, v_der, false) {|itr_cell|
-        intersected = true if symbol(itr_cell) == WALL && Geometry::check_intersect(itr_cell, [der])
+        intersected = true if symbol(itr_cell) == WALL && Geometry::rect_line_intersect(itr_cell, der)
       }
 
       clients.each do |c_sid, client|
         c_player = client.player
-        if client.login != projectile[:owner].login && c_player[:status] == ALIVE && Geometry::check_intersect(c_player[:coord] - Point(0.5, 0.5), [der])
+        player_cell = c_player[:coord] - Settings.player_halfrect
+        if client.login != projectile[:owner].login && c_player[:status] == ALIVE && Geometry::rect_line_intersect(player_cell, der)
           projectile[:owner].do_damage(client, dm)
           intersected = true
           break
@@ -285,7 +314,6 @@ class ActiveGame
       end
     end
   end
-
 
   def move_projectiles
     projectiles.delete_if do |projectile|
@@ -437,12 +465,12 @@ class Client
                        player[:coord].y + (@wall_offset.y != -1 ? @wall_offset.y : player[:velocity].y))
   end
 
-  def calc_wall_offset(wall_cell, player_new_floor_cell, player_cell, der_vectors, der)
-    return if !Geometry::check_intersect(wall_cell, der_vectors)
+  def calc_wall_offset(wall_cell, player_new_floor_cell, player_cell, der, wall_offset)
+    offset = Settings.player_halfrect
+    end_rect = player[:coord] + player[:velocity]
+    return if !PlayerPolygon.new(player[:coord], end_rect).check_SAT(Geometry::cell_points(wall_cell))
 
     cell_pos = wall_cell - player_new_floor_cell
-    offset = Settings.player_halfrect
-
     player_h_edge = Line(player_cell, Point(player_cell.x + offset * 2, player_cell.y))
     player_v_edge = Line(player_cell, Point(player_cell.x, player_cell.y + offset * 2))
 
@@ -450,18 +478,18 @@ class Client
     cell_v_edge = Line(wall_cell, Point(wall_cell.x, wall_cell.y + 1))
 
     #сохранить смещение по Х до стенки, если она не находится над или под ячекой игрока, и если слева/справа от текущей стенки нету другой стенки,
-    #и если нету пересечения проекций текущей стенки и ячейки игрока на ось Y
-    if cell_pos.x != 0 && game.symbol(wall_cell.x - cell_pos.x, wall_cell.y) != WALL && !player_h_edge.prj_intersect(cell_h_edge, :x)
-      @wall_offset.x = (cell_pos.x == 1 ? wall_cell.x : wall_cell.x + 1) - (player[:coord].x + offset * cell_pos.x)
+    #и если нету пересечения проекций текущей стенки и ячейки игрока на ось X
+    if cell_pos.x != 0 && game.symbol(wall_cell.x - cell_pos.x, wall_cell.y) != WALL && !Geometry::x_projections_intersect(player_h_edge.points, cell_h_edge.points)
+      wall_offset.x = (cell_pos.x == 1 ? wall_cell.x : wall_cell.x + 1) - (player[:coord].x + offset * cell_pos.x)
     end
-    if cell_pos.y != 0 && game.symbol(wall_cell.x, wall_cell.y - cell_pos.y) != WALL && !player_v_edge.prj_intersect(cell_v_edge, :y)
-      @wall_offset.y = (cell_pos.y == 1 ? wall_cell.y : wall_cell.y + 1) - (player[:coord].y + offset * cell_pos.y)
+    if cell_pos.y != 0 && game.symbol(wall_cell.x, wall_cell.y - cell_pos.y) != WALL && !Geometry::y_projections_intersect(player_v_edge.points, cell_v_edge.points)
+      wall_offset.y = (cell_pos.y == 1 ? wall_cell.y : wall_cell.y + 1) - (player[:coord].y + offset * cell_pos.y)
     end
 
     bottom_left_cell = game.symbol(player_new_floor_cell.x - 1, player_new_floor_cell.y)
     bottom_right_cell = game.symbol(player_new_floor_cell.x + 1, player_new_floor_cell.y)
     #не обнулять компаненту X, если произашло столкновение с нижней левой/правой стенкой ровно в угол и нету стенок слева/стправа
-    @wall_offset.x = -1 if @wall_offset.eq?(0, 0) && (der.x < 0 && bottom_left_cell != WALL || der.x > 0 && bottom_right_cell != WALL)
+    wall_offset.x = -1 if wall_offset.eq?(0, 0) && (der.x < 0 && bottom_left_cell != WALL || der.x > 0 && bottom_right_cell != WALL)
   end
 
   def check_collisions
@@ -472,25 +500,9 @@ class Client
     player_cell  = player[:coord] - offset
     #координаты ячейки в которой находится начало вектора движения игрока
     player_new_floor_cell = (player[:coord] + v_der * offset - v_der * Settings.eps).map{|i| i.floor}
-    #массив векторов движения игрока
-    der_vectors = Array.new()
-    #движение вправо/влево или вверх/вниз
-    der_vectors.push Line(player[:coord] + v_der * offset,
-                          player[:coord] + v_der * offset + player[:velocity])                    if v_der.y == 0 || v_der.x == 0
-    #движение влево-вверх
-    der_vectors.push Line(player_cell, player_cell + player[:velocity])                           if v_der.y < 0 || v_der.x < 0
-    #движение вправо-вверх
-    der_vectors.push Line(Point(player_cell.x + offset * 2, player_cell.y),
-                          Point(player_cell.x + offset * 2, player_cell.y) + player[:velocity])   if v_der.y < 0 || v_der.x > 0
-    #движение влево-вниз
-    der_vectors.push Line(Point(player_cell.x, player_cell.y + offset * 2),
-                          Point(player_cell.x, player_cell.y + offset * 2) + player[:velocity])   if v_der.y > 0 || v_der.x < 0
-    #движение вправо-вниз
-    der_vectors.push Line(player_cell + offset * 2, player_cell + offset * 2 + player[:velocity]) if v_der.y > 0 || v_der.x > 0
-
     #перебор по всем стенкам вокруг player_cell
     Geometry::walk_cells_around_coord(player[:coord], player[:velocity], true) {|itr_cell|
-      calc_wall_offset(itr_cell, player_new_floor_cell, player_cell, der_vectors, v_der) if game.symbol(itr_cell) == WALL
+      calc_wall_offset(itr_cell, player_new_floor_cell, player_cell, v_der, @wall_offset) if game.symbol(itr_cell) == WALL
     }
   end
 
@@ -503,7 +515,7 @@ class Client
       next if [VOID, WALL, RESPAWN].include?(game.symbol(itr_cell))
       cell_center = itr_cell + Settings.player_halfrect
       end_rect = player[:coord] + updated_velocity
-      next if !Geometry::polygon_include_point?(player[:coord], end_rect, cell_center) ||
+      next if !PlayerPolygon.new(player[:coord], end_rect).check_SAT([cell_center]) ||
               Geometry::rect_include_point?(player[:coord], cell_center) ||
               min_tp_dist <= Geometry::line_len(player[:coord], cell_center)
       if ("0".."9").include?(game.symbol(itr_cell))
@@ -516,7 +528,7 @@ class Client
                             [(offset_to_collision).y.abs, updated_velocity.y.abs].min) * v_der
         end_rect = player[:coord] + min_offset
         #если на момент первого столкновения небыло пересечения с телепортом, то занулить скорость
-        stop_by_collision if !Geometry::polygon_include_point?(player[:coord], end_rect, cell_center)
+        stop_by_collision if !PlayerPolygon.new(player[:coord], end_rect).check_SAT([cell_center])
 
         min_tp_dist = Geometry::line_len(player[:coord], cell_center)
         tp_cell = itr_cell
