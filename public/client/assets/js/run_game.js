@@ -286,6 +286,12 @@ function start_websocket(sid, login)
             container.addChild(get_text(player[LOGIN] + " - kills:" + player[KILLS] + ", death:" + player[DEATHS],
                 40 + view_port_offset_x, (i + 1) * 10 + view_port_offset_y));
 
+            if (die_fixed) {
+                die_text.scaleX += die_text_zoom
+                die_text.scaleY += die_text_zoom
+                die_text_zoom = (die_text.scaleY > 1.5) ? -0.07 : ((die_text.scaleY < 1) ? 0.07 : die_text_zoom)
+            }
+
             if (player[RESPAWN] > 0 && sprite.currentAnimation == DEAD)
                 continue;
             //НИК
@@ -310,12 +316,6 @@ function start_websocket(sid, login)
                     createjs.Sound.play("die");
                     die_fixed = true;
                 }
-            }
-
-            if (die_fixed) {
-                die_text.scaleX += die_text_zoom
-                die_text.scaleY += die_text_zoom
-                die_text_zoom = (die_text.scaleY > 1.5) ? -0.07 : ((die_text.scaleY < 1) ? 0.07 : die_text_zoom)
             }
 
             if (player[RESPAWN] == 0) {
