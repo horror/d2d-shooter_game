@@ -74,9 +74,13 @@ module Requests
       request.send(json_encode({action: action, params: params}))
     end
 
+    def should_be_true(expression, info)
+      expression.should be_true, info
+    end
+
     def should_eql(got, exp, info = "")
       info = info == "" ? "" : info + "\n"
-      ((got - exp).abs < Settings.eps).should be_true, "#{info}expected: #{exp}\n\tgot: #{got}"
+      should_be_true((got - exp).abs < Settings.eps, "#{info}expected: #{exp}\n\tgot: #{got}")
     end
   end
 end

@@ -44,7 +44,14 @@ describe 'Socket server' do
   end
 
   def check_player(got_player, expected_player)
-    expected_player.map{|key, val| should_eql(got_player[key.to_s], val, key.to_s)}
+    expected_player.map{|key, val|
+      [:x, :y, :vx, :vy, :angel].include?(key) ? should_eql(got_player[key.to_s], val, key.to_s)
+                                               : got_player[key.to_s].should == val
+    }
+  end
+
+  def check_items(got_items, expected_items)
+    expected_items.each_index{|i| should_eql(got_items[i], expected_items[i], "item #{i}")}
   end
 
   @requests_file
@@ -69,9 +76,10 @@ describe 'Socket server' do
       full_response = json_decode(message)
       tick = full_response['tick']
       player = full_response['players'][params[:index]]
-      player = {"x" => player[0], "y" => player[1], "vx" => player[2], "vy" => player[3], "weapon" => player[4],
-                "angel" => player[5], "login" => player[6], "hp" => player[7], "respawn" => player[8]}
-      puts "Sid = #{params[:sid][0..2]}, Cnt = #{p_tick}, Player = #{player}, Tick = #{tick}" if params.include?(:log)
+      player = {"x" => player[0], "y" => player[1], "vx" => player[2], "vy" => player[3], "weapon" => player[4], "angel" => player[5],
+                "login" => player[6], "hp" => player[7], "respawn" => player[8], "kills" => player[9], "deaths" => player[10]}
+      puts "Sid = #{params[:sid][0..2]}, Cnt = #{p_tick}, Player = #{player}, Items = #{full_response['items']}," +
+           " Tick = #{tick}" if params.include?(:log)
       close_socket(request, params[:sid]) if params[:checking].call(player, p_tick, params, full_response)
       dx = params[:dx_rule].kind_of?(Proc) ? params[:dx_rule].call(p_tick, player) : params[:dx_rule]
       dy = params[:dy_rule].kind_of?(Proc) ? params[:dy_rule].call(p_tick, player) : params[:dy_rule]
@@ -109,7 +117,7 @@ describe 'Socket server' do
         check_player(player, {x: 2.5, y: 0.5, vx: -0.05, vy: 0}) if p_tick == 3
         p_tick == 4 ? true : false
       }
-      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
+      EM.run{ send_and_check( {log: 1, sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
     end
 
     it "inc/dec velocity" do
@@ -662,6 +670,94 @@ describe 'Socket server' do
         p_tick == 21 ? true : false
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
+    end
+  end
+
+  describe "Items, fire: " do
+
+    spawns = [Point(12.5, 0.5), Point(1.5, 2.5)]
+
+    before(:all) do
+      map = ['.h...........',
+             '.h..P.......#',
+             'M$..R..A...P#',]
+      recreate_game(map, sid_a, sid_b, {accel: 0.05, friction: 0.05, max_velocity: 0.5, gravity: 0.05}, 8)
+    end
+
+    #spawn 0, 1
+    it "pick up some stuff" do
+      dx_rule = Proc.new{ |p_tick| p_tick > 3 ? -1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 0 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick, params, full_request|
+        items = full_request["items"]
+
+        should_be_true(items[1].should > 0, "item 1 > 0") if p_tick == 2
+        should_be_true(items[0].should > 0, "item 0 > 0") if p_tick == 4
+        if p_tick == 14
+          should_be_true(items[3].should > 0, "item 3 > 0")
+          check_player(player, {weapon: "M"})
+        end
+        p_tick == 14 ? true : false
+      }
+      EM.run{
+        send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
+      }
+    end
+
+    #spawn 0, 1
+    it "pick up some stuff 2" do
+      dx_rule = Proc.new{ |p_tick|
+        next 0 if p_tick == 8
+        p_tick < 13 ? 1 : 0
+      }
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
+      checking = Proc.new{ |player, p_tick, params, full_request|
+        items = full_request["items"]
+        if p_tick == 10
+          should_be_true(items[2].should > 0, "item #2 > 0")
+          check_player(player, {weapon: "P"})
+        end
+        if p_tick == 24
+          should_be_true(items[5].should > 0, "item #5 > 0")
+          check_player(player, {weapon: "A"})
+        end
+        p_tick == 24 ? true : false
+      }
+      EM.run{
+        send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
+      }
+    end
+
+    #spawn 0, 1
+    it "projectiles collisions" do
+      dx_rule = Proc.new{ |p_tick|
+        next -1 if p_tick < 6  #идем влево
+        next 0 if p_tick == 6 || p_tick == 20  #стреляем
+        next 3 if p_tick == 7
+        next 1 if p_tick == 8
+        next -1 if p_tick == 22
+      }
+      dy_rule = Proc.new{ |p_tick|
+        next -1 if p_tick == 6
+        next -2 if p_tick == 7
+        next 0 if p_tick == 8 ||  p_tick == 22
+        next 1 if p_tick == 20
+      }
+      action = Proc.new{ |p_tick|
+        next "move" if p_tick < 6
+        next "fire" if [6, 7, 8, 20, 22].include?(p_tick)
+        "empty"
+      }
+      checking = Proc.new{ |player, p_tick, params, full_request|
+        prjs = full_request["projectiles"]
+        prjs.size.should == 0 if p_tick == 1
+        prjs.size.should == 1 if [7, 21, 23].include?(p_tick)
+        prjs.size.should == 2 if [8, 11].include?(p_tick)
+        p_tick == 23 ? true : false
+      }
+      EM.run{
+        send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, action: action, checking: checking} )
+      }
     end
   end
 end
