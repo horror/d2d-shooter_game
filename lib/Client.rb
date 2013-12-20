@@ -318,7 +318,8 @@ class ActiveGame
   def move_projectiles
     projectiles.delete_if do |projectile|
       need_delete = projectile[:velocity] == Point.new(0, 0) ||
-          (projectile_intersects?(projectile) && (projectile[:weapon] != RAIL_GUN || projectile[:ticks] != 0))
+          (projectile[:weapon] == RAIL_GUN && projectile[:ticks] != 0 || projectile_intersects?(projectile))
+      need_delete = false if projectile[:weapon] == RAIL_GUN && projectile[:ticks] == 0
       projectile[:ticks] += 1
       projectile[:velocity] = Point.new(0, 0) if [KNIFE].include?(projectile[:weapon])
       if need_delete && projectile[:velocity] != Point.new(0, 0)
