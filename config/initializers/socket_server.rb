@@ -47,6 +47,7 @@ module WS
 
   def self.on_message(ws, msg)
     msg = ActiveSupport::JSON.decode(msg)
+    msg['params']['sid'] ||= clients[ws].sid
     clients[ws].process(msg, @tick) if msg["action"] != "empty"
     if synchron? && clients[ws].game
       players = clients[ws].game.clients

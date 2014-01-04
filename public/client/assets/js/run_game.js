@@ -232,7 +232,7 @@ function start_websocket(sid, login)
 
     web_socket.onopen = function(event) {
         console.log('onopen');
-        web_socket.send(JSON.stringify({"action": "move", "params": {"sid": sid, "dx": 0, "dy": 0}}));
+        web_socket.send(JSON.stringify({"action": "move", "params": {"sid": sid, "dx": 0, "dy": 0, "tick": 0}}));
     };
 
     web_socket.onmessage = function(event) {
@@ -417,7 +417,6 @@ function key_hold(sid)
         {
             pressed = true;
             var arr = keys_to_params[i];
-            arr["params"]["sid"] = sid;
             arr["params"]["tick"] = tick;
             if (i == KEY_MOUSE)
             {
