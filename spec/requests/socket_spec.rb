@@ -351,6 +351,12 @@ describe 'Socket server' do
         send_and_check( {sid: sid_a, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
       }
     end
+
+    it "save coords after WS disconnect" do
+      (0..4).each{
+        EM.run{ send_and_check( {sid: sid_a, x: spawns[0].x, y: spawns[0].y, check_limit: 10} ) }
+      }
+    end
   end
 
   describe "Flying close to the wall: " do
