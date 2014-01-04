@@ -3,7 +3,7 @@ require "spec_helper"
 describe 'Socket server' do
 
   sid_a = sid_b = ""
-  map = ""
+  game_id, map = ""
   game_consts = {accel: 0.05, max_velocity: 0.5, gravity: 0.05, friction: 0.05}
 
   before(:all) do
@@ -26,6 +26,10 @@ describe 'Socket server' do
 
   before do
     @ws_requests = Array.new
+    send_request(action: "leaveGame", params: {sid: sid_a})
+    send_request(action: "joinGame", params: {sid: sid_a, game: game_id})
+    send_request(action: "leaveGame", params: {sid: sid_b})
+    send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
   end
 
   def recreate_game(map, sid_a, sid_b, game_consts, index)

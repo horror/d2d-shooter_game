@@ -6,14 +6,8 @@ end
 
 module ValidationHelper
 
-  @@synchron_websocket = false
-
-  def self.synchron_websocket?
-    return @@synchron_websocket
-  end
-
   def startTesting(params)
-    @@synchron_websocket = params["websocketMode"] == "sync"
+    WS.switch_on_synchron_mode(params["websocketMode"] == "sync")
     connection = ActiveRecord::Base.connection
     connection.disable_referential_integrity do
       connection.tables.each do |table_name|
