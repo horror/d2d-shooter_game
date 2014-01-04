@@ -210,9 +210,13 @@ describe 'Socket server' do
 
     it "respawns order" do
       EM.run{ send_and_check( {sid: sid_a, x: spawns[0].x, y: spawns[0].y} ) }
-      EM.run{ send_and_check( {sid: sid_a, x: spawns[1].x, y: spawns[1].y} ) }
+      EM.run{ send_and_check( {index: 1, sid: sid_b, x: spawns[1].x, y: spawns[1].y} ) }
+      send_request(action: "leaveGame", params: {sid: sid_a})
+      send_request(action: "joinGame", params: {sid: sid_a, game: game_id})
+      send_request(action: "leaveGame", params: {sid: sid_b})
+      send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
       EM.run{
-        send_and_check( {sid: sid_a, check_limit: 5, x: spawns[2].x, y: spawns[2].y} )
+        send_and_check( {sid: sid_a, check_limit: 10, x: spawns[2].x, y: spawns[2].y} )
         send_and_check( {index: 1, sid: sid_b, x: spawns[0].x, y: spawns[0].y} )
       }
     end
