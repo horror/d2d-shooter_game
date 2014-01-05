@@ -84,6 +84,10 @@ describe 'Socket server' do
       player = full_response['players'][params[:index]]
       player = {"x" => player[0], "y" => player[1], "vx" => player[2], "vy" => player[3], "weapon" => player[4], "angel" => player[5],
                 "login" => player[6], "hp" => player[7], "respawn" => player[8], "kills" => player[9], "deaths" => player[10]}
+      if params.include?(:wait_items_resp) && full_response['items'].delete_if{|i| i.to_i == 0}.size != 0
+        send_ws_request(request, "empty", {sid: params[:sid], dx: 0, dy: 0, tick: tick})
+        next
+      end
       puts "Sid = #{params[:sid][0..2]}, Cnt = #{p_tick}, Player = #{player}, Items = #{full_response['items']}," +
            " Tick = #{tick}" if params.include?(:log)
       close_socket(request, params[:sid]) if params[:checking].call(player, p_tick, params, full_response)
@@ -773,7 +777,7 @@ describe 'Socket server' do
         p_tick == 23
       }
       EM.run{
-        send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, action: action, checking: checking} )
+        send_and_check( {wait_items_resp: 1, sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, action: action, checking: checking} )
       }
     end
   end
