@@ -121,9 +121,9 @@ describe 'Socket server' do
         check_player(player, {x: 2.55, y: 0.5, vx: 0.05, vy: 0}) if p_tick == 1
         check_player(player, {x: 2.55, y: 0.5, vx: 0, vy: 0}) if p_tick == 2
         check_player(player, {x: 2.5, y: 0.5, vx: -0.05, vy: 0}) if p_tick == 3
-        p_tick == 4 ? true : false
+        p_tick == 4
       }
-      EM.run{ send_and_check( {log: 1, sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
     end
 
     it "inc/dec velocity" do
@@ -143,7 +143,7 @@ describe 'Socket server' do
       checking = Proc.new{ |player, p_tick, params, request|
         should_eql(request['tick'], check_tick + 1,  "tick") if check_tick != -1
         check_tick = request['tick']
-        p_tick == 10 ? true : false
+        p_tick == 10
       }
       EM.run {send_and_check( {sid: sid_a, checking: checking} ) }
     end
@@ -230,7 +230,7 @@ describe 'Socket server' do
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 0.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 3 #ударились головой
         check_player(player, {x: 0.5, y: 3.5, vx: 0, vy: 0}) if p_tick == 9 #упали
-        p_tick == 10 ? true : false
+        p_tick == 10
       }
       dy_rule = Proc.new{|p_tick| p_tick == 0 ? -1 : 0}
       EM.run{ send_and_check( {sid: sid_a, dx_rule: -1, dy_rule: dy_rule, checking: checking} ) }
@@ -244,7 +244,7 @@ describe 'Socket server' do
         check_player(player, {y: curr_player[:coord].y, vy: curr_player[:velocity].y})
         curr_player[:coord].y += (curr_player[:velocity].y = -game_consts[:max_velocity]) if p_tick == 0
         curr_player[:coord].y += (curr_player[:velocity].y += game_consts[:gravity]) if p_tick > 0
-        p_tick == 20 ? true : false
+        p_tick == 20
       }
       EM.run{ send_and_check( {sid: sid_a, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -291,7 +291,7 @@ describe 'Socket server' do
           check_player(player, {y: 2.55, vy: 0.05})
         end
         check_player(player, {x: 3.5, y: 4.5, vx: 0, vy: 0}) if p_tick == 20  #ударились левым нижним углом, упали
-        p_tick == 21 ? true : false
+        p_tick == 21
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -301,7 +301,7 @@ describe 'Socket server' do
       checking = Proc.new{ |player, p_tick|
         check_player(player, {y: 0.5, vy: 0}) if p_tick < 3 #бъемся в потолок
         check_player(player, {x: 7.5, y: 3.5, vx: 0, vy: 0}) if p_tick == 22  #ударились левым нижним углом, упали
-        p_tick == 22 ? true : false
+        p_tick == 22
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: 1, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -322,7 +322,7 @@ describe 'Socket server' do
         check_player(player, {x: 4.55, y: 3.5, vy: 0, vx: 0}) if p_tick == 50 #стоим на уголке
         check_player(player, {x: 4.55, y: 2.5, vy: 0, vx: 0}) if p_tick == 53 #ударились в верхний уголок
         check_player(player, {x: 4.5, y: 4.5, vy: 0, vx: 0}) if p_tick == 65 #упали на пол
-        p_tick == 66 ? true : false
+        p_tick == 66
       }
       EM.run{
         send_and_check( {sid: sid_a, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
@@ -335,7 +335,7 @@ describe 'Socket server' do
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 4.2, y: 2.5, vy: 0, vx: 0.5}) if p_tick == 12 #ударились головой
         check_player(player, {x: 7.5, y: 3.5, vy: 0, vx: 0}) if p_tick == 20
-        p_tick == 21 ? true : false
+        p_tick == 21
       }
       EM.run{
         send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
@@ -349,7 +349,7 @@ describe 'Socket server' do
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 6.5, y: 1.5, vx: 0, vy: -0.3}) if p_tick == 8 #ударились об правое ребро стены
         check_player(player, {x: 6.45, y: 2.5, vx: 0, vy: 0}) if p_tick == 28  #ударились головой
-        p_tick == 29 ? true : false
+        p_tick == 29
       }
       EM.run{
         send_and_check( {sid: sid_a, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
@@ -379,7 +379,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 18 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 7.9, y: 1.15, vx: 0.55, vy: -0.65}) if p_tick == 20
-        p_tick == 20 ? true : false
+        p_tick == 20
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -393,7 +393,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 14 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 5.2, y: 1.15, vx: -0.45, vy: -0.65}) if p_tick == 16
-        p_tick == 16 ? true : false
+        p_tick == 16
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -418,7 +418,7 @@ describe 'Socket server' do
         check_player(player, {x: 1.5, y: 0.5, vx: -0.5, vy: 0.25}) if p_tick == 13
         check_player(player, {x: 4.5, y: 2.5, vx: -0.5, vy: 0.35}) if p_tick == 15
         check_player(player, {x: 2.0, y: 4.5, vx: -0.5, vy: 0}) if p_tick == 20 #Облетели все тп
-        p_tick == 21 ? true : false
+        p_tick == 21
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: -1, checking: checking} ) }
     end
@@ -430,7 +430,7 @@ describe 'Socket server' do
       }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 1.0, y: 4.5, vx: 0, vy: 0}) if p_tick == 65 #касаемся границы телепорта
-        p_tick == 66 ? true : false
+        p_tick == 66
       }
       EM.run{ send_and_check( {sid: sid_a, action: action, dx_rule: -1, checking: checking} ) }
     end
@@ -443,7 +443,7 @@ describe 'Socket server' do
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 0.5, y: 0.5, vx: 0, vy: -0.35}) if p_tick == 16
         check_player(player, {x: 7.5, y: 1.5, vx: 0, vy: 0.5}) if p_tick == 29
-        p_tick == 30 ? true : false
+        p_tick == 30
       }
       EM.run{ send_and_check( {sid: sid_a, action: action, dx_rule: 1, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -456,7 +456,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 0.5, y: 0.5, vx: 0.3, vy: -0.35}) if p_tick == 11
-        p_tick == 12 ? true : false
+        p_tick == 12
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -470,7 +470,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 27 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 1.5, y: 0.5, vx: -0.3, vy: -0.35}) if p_tick == 31
-        p_tick == 32 ? true : false
+        p_tick == 32
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -484,7 +484,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 48 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 6.65, y: 3.15, vx: 0.5, vy: -0.4}) if p_tick == 51
-        p_tick == 52 ? true : false
+        p_tick == 52
       }
       #load_requests_file(example.description, spawns[0])
       EM.run{ send_and_check( {sid: sid_a, action: action, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
@@ -510,7 +510,7 @@ describe 'Socket server' do
         check_player(player, {x: 1.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 9 #упали на место, после прыжка
         check_player(player, {x: 7.5, y: 1.5, vx: 0, vy: 0}) if p_tick == 27 #врезались в правый верхний угол блока
         check_player(player, {x: 7.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 33 #упали вниз
-        p_tick == 34 ? true : false
+        p_tick == 34
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -522,7 +522,7 @@ describe 'Socket server' do
         check_player(player, {x: 7.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 9 #упали на место, после прыжка
         check_player(player, {x: 1.5, y: 1.5, vx: 0, vy: 0}) if p_tick == 27 #врезались в левый верхний угол блока
         check_player(player, {x: 1.5, y: 2.5, vx: 0, vy: 0}) if p_tick == 33 #упали вниз
-        p_tick == 34 ? true : false
+        p_tick == 34
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -533,7 +533,7 @@ describe 'Socket server' do
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 11.2, y: 2.5, vx: -0.15, vy: 0}) if p_tick == 6 #залезли на стену
         check_player(player, {x: 11.8, y: 2.5, vx: 0.25, vy: 0}) if p_tick == 14 #пробежали яму вправо
-        p_tick == 15 ? true : false
+        p_tick == 15
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -547,7 +547,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 6 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 3.85, y: 1.55, vx: 0.35, vy: 0.05}) if p_tick == 10 #не зацепились за левый стык
-        p_tick == 11 ? true : false
+        p_tick == 11
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -561,7 +561,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 6 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 5.15, y: 1.55, vx: -0.35, vy: 0.05}) if p_tick == 10 #не зацепились за правый стык
-        p_tick == 11 ? true : false
+        p_tick == 11
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -572,7 +572,7 @@ describe 'Socket server' do
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 11.8, y: 2.5, vx: 0.15, vy: 0}) if p_tick == 6 #залезли на стену
         check_player(player, {x: 11.2, y: 2.5, vx: -0.25, vy: 0}) if p_tick == 14 #пробежали яму влево
-        p_tick == 15 ? true : false
+        p_tick == 15
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -595,7 +595,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 10.5, y: 1.5, vx: 0.4, vy: 0}) if p_tick == 10
-        p_tick == 10 ? true : false
+        p_tick == 10
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -605,7 +605,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 10.5, y: 1.5, vx: -0.4, vy: 0}) if p_tick == 10
-        p_tick == 10 ? true : false
+        p_tick == 10
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -615,7 +615,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 20.5, y: 1.5, vx: 0, vy: -0.72}) if p_tick == 10
-        p_tick == 10 ? true : false
+        p_tick == 10
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -625,7 +625,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 23.5, y: 1.5, vx: 0, vy: -0.72}) if p_tick == 10
-        p_tick == 10 ? true : false
+        p_tick == 10
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -635,7 +635,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 10.5, y: 1.5, vx: 0.64, vy: -0.8}) if p_tick == 9
-        p_tick == 9 ? true : false
+        p_tick == 9
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -645,7 +645,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 10.5, y: 1.5, vx: -0.64, vy: -0.8}) if p_tick == 9
-        p_tick == 9 ? true : false
+        p_tick == 9
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -655,7 +655,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 20.5, y: 1.5, vx: 0.72, vy: -0.64}) if p_tick == 10
-        p_tick == 10 ? true : false
+        p_tick == 10
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -665,7 +665,7 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 23.5, y: 1.5, vx: -0.72, vy: -0.64}) if p_tick == 10
-        p_tick == 10 ? true : false
+        p_tick == 10
       }
       #load_requests_file(example.description, spawns[3])
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
@@ -685,7 +685,7 @@ describe 'Socket server' do
       dx_rule = Proc.new{ |p_tick| p_tick % 2 == 0 ? 1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 0.5, y: 0.5}) if p_tick == 21
-        p_tick == 21 ? true : false
+        p_tick == 21
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
     end
@@ -715,7 +715,7 @@ describe 'Socket server' do
           should_be_true(items[3] > 0, "item 3 > 0")
           check_player(player, {weapon: "M"})
         end
-        p_tick == 14 ? true : false
+        p_tick == 14
       }
       EM.run{
         send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
@@ -739,7 +739,7 @@ describe 'Socket server' do
           should_be_true(items[5] > 0, "item #5 > 0")
           check_player(player, {weapon: "A"})
         end
-        p_tick == 24 ? true : false
+        p_tick == 24
       }
       EM.run{
         send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} )
@@ -749,17 +749,16 @@ describe 'Socket server' do
     #spawn 0, 1
     it "projectiles collisions" do
       dx_rule = Proc.new{ |p_tick|
-        next -1 if p_tick < 6  #идем влево
-        next 0 if p_tick == 6 || p_tick == 20  #стреляем
+        next -1 if p_tick < 6 || p_tick == 22  #идем влево
         next 3 if p_tick == 7
         next 1 if p_tick == 8
-        next -1 if p_tick == 22
+        0
       }
       dy_rule = Proc.new{ |p_tick|
         next -1 if p_tick == 6
         next -2 if p_tick == 7
-        next 0 if p_tick == 8 ||  p_tick == 22
         next 1 if p_tick == 20
+        0
       }
       action = Proc.new{ |p_tick|
         next "move" if p_tick < 6
@@ -771,11 +770,16 @@ describe 'Socket server' do
         prjs.size.should == 0 if p_tick == 1
         prjs.size.should == 1 if [7, 21, 23].include?(p_tick)
         prjs.size.should == 2 if [8, 11].include?(p_tick)
-        p_tick == 23 ? true : false
+        p_tick == 23
       }
       EM.run{
         send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, action: action, checking: checking} )
       }
     end
+  end
+
+  after do
+    send_request(action: "leaveGame", params: {sid: sid_a})
+    send_request(action: "leaveGame", params: {sid: sid_b})
   end
 end
