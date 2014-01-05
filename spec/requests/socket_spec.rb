@@ -2,8 +2,9 @@ require "spec_helper"
 
 describe 'Socket server' do
 
+  game_id = 0
   sid_a = sid_b = ""
-  game_id, map = ""
+  map = ""
   game_consts = {accel: 0.05, max_velocity: 0.5, gravity: 0.05, friction: 0.05}
 
   before(:all) do
@@ -21,7 +22,7 @@ describe 'Socket server' do
            '.3.#.',
            '#####',
            '#2..#']
-    recreate_game(map, sid_a, sid_b, game_consts, 0)
+    game_id = recreate_game(map, sid_a, sid_b, game_consts, 0)
   end
 
   before do
@@ -45,6 +46,7 @@ describe 'Socket server' do
     game_id = json_decode(response.body)["games"]
     game_id = game_id[game_id.size - 1]["id"]
     send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
+    game_id
   end
 
   def check_player(got_player, expected_player)
@@ -205,12 +207,14 @@ describe 'Socket server' do
              '........',
              '$......$',
              '#.#..###']
-      recreate_game(map, sid_a, sid_b, game_consts, 2)
+      game_id = recreate_game(map, sid_a, sid_b, game_consts, 2)
     end
 
     it "respawns order" do
-      EM.run{ send_and_check( {sid: sid_a, x: spawns[0].x, y: spawns[0].y} ) }
-      EM.run{ send_and_check( {index: 1, sid: sid_b, x: spawns[1].x, y: spawns[1].y} ) }
+      EM.run{
+        send_and_check( {sid: sid_a, check_limit: 10, x: spawns[0].x, y: spawns[0].y} )
+        send_and_check( {index: 1, sid: sid_b, x: spawns[1].x, y: spawns[1].y} )
+      }
       send_request(action: "leaveGame", params: {sid: sid_a})
       send_request(action: "joinGame", params: {sid: sid_a, game: game_id})
       send_request(action: "leaveGame", params: {sid: sid_b})
@@ -367,7 +371,7 @@ describe 'Socket server' do
       map = ['......#...',
              '..........',
              '$........$']
-      recreate_game(map, sid_a, sid_b, {accel: 0.05, friction: 0.05, max_velocity: 0.7, gravity: 0.05}, 3)
+      game_id = recreate_game(map, sid_a, sid_b, {accel: 0.05, friction: 0.05, max_velocity: 0.7, gravity: 0.05}, 3)
     end
     #spawn 0
     it "from left to right" do
@@ -405,7 +409,7 @@ describe 'Socket server' do
              '....12..',
              '.......4',
              '3.$.....']
-      recreate_game(map, sid_a, sid_b, game_consts, 4)
+      game_id = recreate_game(map, sid_a, sid_b, game_consts, 4)
     end
 
     it "Multy tp" do
@@ -496,7 +500,7 @@ describe 'Socket server' do
              '#.......#..#..',
              '#$.....$#.....',
              '.#######..#$#.']
-      recreate_game(map, sid_a, sid_b, game_consts, 5)
+      game_id = recreate_game(map, sid_a, sid_b, game_consts, 5)
     end
     #Spawn 0
     it "jump, fall, run to right corner" do
@@ -583,7 +587,7 @@ describe 'Socket server' do
              '$.......$.1.#3...2#.2..3',
              '#############.....#.....',
              '............#$...$#.....']
-      recreate_game(map, sid_a, sid_b, {accel: 0.08, friction: 0.08, max_velocity: 0.8, gravity: 0.08}, 6)
+      game_id = recreate_game(map, sid_a, sid_b, {accel: 0.08, friction: 0.08, max_velocity: 0.8, gravity: 0.08}, 6)
     end
     #spawn 0
     it "run right, jump, vertical collision before tp" do
@@ -674,7 +678,7 @@ describe 'Socket server' do
 
     before(:all) do
       map = ['1............................$1']
-      recreate_game(map, sid_a, sid_b, {accel: 0.05, friction: 0.05, max_velocity: 0.5, gravity: 0.05}, 7)
+      game_id = recreate_game(map, sid_a, sid_b, {accel: 0.05, friction: 0.05, max_velocity: 0.5, gravity: 0.05}, 7)
     end
 
     it "eps error" do
@@ -694,8 +698,8 @@ describe 'Socket server' do
     before(:all) do
       map = ['.h...........',
              '.h..P.......#',
-             'M$..R..A...P#',]
-      recreate_game(map, sid_a, sid_b, {accel: 0.05, friction: 0.05, max_velocity: 0.5, gravity: 0.05}, 8)
+             'M$..R..A...P#']
+      game_id = recreate_game(map, sid_a, sid_b, {accel: 0.05, friction: 0.05, max_velocity: 0.5, gravity: 0.05}, 8)
     end
 
     #spawn 0, 1
@@ -704,11 +708,11 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 0 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick, params, full_request|
         items = full_request["items"]
-
-        should_be_true(items[1].should > 0, "item 1 > 0") if p_tick == 2
-        should_be_true(items[0].should > 0, "item 0 > 0") if p_tick == 4
+        puts full_request
+        should_be_true(items[1] > 0, "item 1 > 0") if p_tick == 2
+        should_be_true(items[0] > 0, "item 0 > 0") if p_tick == 4
         if p_tick == 14
-          should_be_true(items[3].should > 0, "item 3 > 0")
+          should_be_true(items[3] > 0, "item 3 > 0")
           check_player(player, {weapon: "M"})
         end
         p_tick == 14 ? true : false
@@ -728,11 +732,11 @@ describe 'Socket server' do
       checking = Proc.new{ |player, p_tick, params, full_request|
         items = full_request["items"]
         if p_tick == 10
-          should_be_true(items[2].should > 0, "item #2 > 0")
+          should_be_true(items[2] > 0, "item #2 > 0")
           check_player(player, {weapon: "P"})
         end
         if p_tick == 24
-          should_be_true(items[5].should > 0, "item #5 > 0")
+          should_be_true(items[5] > 0, "item #5 > 0")
           check_player(player, {weapon: "A"})
         end
         p_tick == 24 ? true : false
