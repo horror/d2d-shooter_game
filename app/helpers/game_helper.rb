@@ -59,9 +59,11 @@ module GameHelper
     if (game = Game.find(player.game_id)).players.length == 1
       game.update_attributes({status: Settings.game_statuses.finished})
     end
-    WS.games[game.id].clients.each{ |sid, client|
-      WS.games[game.id].clients.delete(sid) if sid == params["sid"]
-    }
+    if WS.games[game.id]
+      WS.games[game.id].clients.each{ |sid, client|
+        WS.games[game.id].clients.delete(sid) if sid == params["sid"]
+      }
+    end
     player.delete
     ok
   end

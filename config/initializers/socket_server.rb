@@ -31,7 +31,6 @@ module WS
   end
 
   def self.on_open(ws)
-    puts clients
     clients[ws] = Client.new(ws, @games)
     return if synchron?
 
