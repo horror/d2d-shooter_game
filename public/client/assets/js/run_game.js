@@ -379,6 +379,7 @@ function draw_map(map)
     stage = new createjs.Stage($("#main_canvas")[0]);
     rect = new createjs.Shape();
     rect.graphics.beginStroke("black").drawRect(0, 0, map[0].length * SCALE, (map.length + 1) * SCALE).endStroke();
+    map_items = [];
     for (var j = 0; j < map.length; ++j)
         for (var i = 0; i < map[0].length; ++i)
         {
