@@ -383,7 +383,7 @@ function draw_map(map)
     for (var j = 0; j < map.length; ++j)
         for (var i = 0; i < map[0].length; ++i)
         {
-            if (map[j][i] == "#") {0
+            if (map[j][i] == "#") {
                 var wall_piece = get_map_wall_piece([
                     Symbol(j - 1, i - 1), Symbol(j - 1, i), Symbol(j - 1, i + 1), //top
                     Symbol(j, i - 1), Symbol(j, i + 1), //left/right
