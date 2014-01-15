@@ -379,10 +379,11 @@ function draw_map(map)
     stage = new createjs.Stage($("#main_canvas")[0]);
     rect = new createjs.Shape();
     rect.graphics.beginStroke("black").drawRect(0, 0, map[0].length * SCALE, (map.length + 1) * SCALE).endStroke();
+    map_items = [];
     for (var j = 0; j < map.length; ++j)
         for (var i = 0; i < map[0].length; ++i)
         {
-            if (map[j][i] == "#") {
+            if (map[j][i] == "#") {0
                 var wall_piece = get_map_wall_piece([
                     Symbol(j - 1, i - 1), Symbol(j - 1, i), Symbol(j - 1, i + 1), //top
                     Symbol(j, i - 1), Symbol(j, i + 1), //left/right
@@ -396,7 +397,7 @@ function draw_map(map)
                 //rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
             }
             else if (/[a-z]/i.test(map[j][i])) {
-                map_items.push({sprite: get_item(map[j][i]), type: map[j][i]});
+                map_items.push({sprite: get_item("empty0"), type: map[j][i]});
                 stage.addChild(map_items[map_items.length-1]["sprite"]).set({x: i * SCALE , y: j * SCALE});
             }
         }
