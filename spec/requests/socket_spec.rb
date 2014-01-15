@@ -63,6 +63,7 @@ describe 'Socket server' do
   @requests_file
 
   def load_requests_file(name, spawn, mode = "w")
+    name = name.gsub(/[\\\/+-]/, "")
     @requests_file = File.open("spec/requests_files/#{name}.txt", mode)
     @requests_file.puts("{\"x\": #{spawn.x}, \"y\": #{spawn.y}}")
   end
@@ -127,7 +128,8 @@ describe 'Socket server' do
         check_player(player, {x: 2.5, y: 0.5, vx: -0.05, vy: 0}) if p_tick == 3
         p_tick == 4
       }
-      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
+      load_requests_file(example.description, spawns[0])
+      EM.run{ send_and_check( {sid: sid_a, make_file: 1, dx_rule: dx_rule, checking: checking} ) }
     end
 
     it "inc/dec velocity" do
@@ -782,7 +784,7 @@ describe 'Socket server' do
     end
   end
 
-  after do
+  after(:all) do
     send_request(action: "leaveGame", params: {sid: sid_a})
     send_request(action: "leaveGame", params: {sid: sid_b})
   end
