@@ -397,7 +397,7 @@ function draw_map(map)
                 //rect.graphics.beginFill("green").drawCircle(i * SCALE + PLAYER_HALFRECT * SCALE, j * SCALE + PLAYER_HALFRECT * SCALE, SCALE / 5);
             }
             else if (/[a-z]/i.test(map[j][i])) {
-                map_items.push({sprite: get_item("empty0"), type: map[j][i]});
+                map_items.push({sprite: get_item(map[j][i]), type: map[j][i]});
                 stage.addChild(map_items[map_items.length-1]["sprite"]).set({x: i * SCALE , y: j * SCALE});
             }
         }
