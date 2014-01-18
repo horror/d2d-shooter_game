@@ -27,10 +27,13 @@ describe 'Socket server' do
 
   before do
     @ws_requests = Array.new
-    send_request(action: "leaveGame", params: {sid: sid_a})
-    send_request(action: "joinGame", params: {sid: sid_a, game: game_id})
-    send_request(action: "leaveGame", params: {sid: sid_b})
-    send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
+    reconnect(sid_a, game_id)
+    reconnect(sid_b, game_id)
+  end
+
+  def reconnect(sid, game_id)
+    send_request(action: "leaveGame", params: {sid: sid})
+    send_request(action: "joinGame", params: {sid: sid, game: game_id})
   end
 
   def recreate_game(map, sid_a, sid_b, game_consts, index)
@@ -109,15 +112,15 @@ describe 'Socket server' do
     it "players spawn" do
       def_params = [2.5, 0.5, 0.0, 0.0, "K", -1, 100, 0, 0, 0]
       checking_a = Proc.new{ |player, p_tick, params, request|
-        request["players"].should == [def_params.dup.insert(6, "user_a")] if p_tick == 0
+        if p_tick == 0
+          request["players"].should == [def_params.dup.insert(6, "user_a")]
+          send_and_check( {index: 1, sid: sid_b, checking: Proc.new{ true }} )
+        end
         request["players"].should == [def_params.dup.insert(6, "user_a"),
-                                      def_params.dup.insert(6, "user_b")] if p_tick == 9
-        p_tick == 10
+                                      def_params.dup.insert(6, "user_b")] if p_tick == 19
+        p_tick == 20
       }
-      EM.run{
-        send_and_check( {sid: sid_a, checking: checking_a} )
-        send_and_check( {index: 1, sid: sid_b, checking: Proc.new{ true }} )
-      }
+      EM.run{ send_and_check( {sid: sid_a, checking: checking_a} ) }
     end
 
     it "+/- one step move" do
@@ -217,18 +220,19 @@ describe 'Socket server' do
     end
 
     it "respawns order" do
-      EM.run{
-        send_and_check( {sid: sid_a, check_limit: 10, x: spawns[0].x, y: spawns[0].y} )
-        send_and_check( {index: 1, sid: sid_b, x: spawns[1].x, y: spawns[1].y} )
+      f_player_spawn = spawns[0]
+      s_player_spawn = spawns[1]
+      checking_a = Proc.new{ |player, p_tick|
+        check_player(player, {x: f_player_spawn.x, y: f_player_spawn.y})
+        send_and_check( {index: 1, sid: sid_b, x: s_player_spawn.x, y: s_player_spawn.y} )
+        p_tick == 20
       }
-      send_request(action: "leaveGame", params: {sid: sid_a})
-      send_request(action: "joinGame", params: {sid: sid_a, game: game_id})
-      send_request(action: "leaveGame", params: {sid: sid_b})
-      send_request(action: "joinGame", params: {sid: sid_b, game: game_id})
-      EM.run{
-        send_and_check( {sid: sid_a, check_limit: 10, x: spawns[2].x, y: spawns[2].y} )
-        send_and_check( {index: 1, sid: sid_b, x: spawns[0].x, y: spawns[0].y} )
-      }
+      EM.run{ send_and_check( {sid: sid_a, checking: checking_a} ) }
+      reconnect(sid_a, game_id)
+      reconnect(sid_b, game_id)
+      f_player_spawn = spawns[2]
+      s_player_spawn = spawns[0]
+      EM.run{ send_and_check( {sid: sid_a, checking: checking_a} ) }
     end
 
     #Spawn = 1
