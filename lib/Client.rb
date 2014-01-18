@@ -435,11 +435,11 @@ class Client
     end
 
     return if player[:status] == DEAD
-    return if f_eq(params["dx"], 0) && f_eq(params["dy"], 0)
     if data["action"] == MOVE
+      return if f_eq(params["dx"], 0) && f_eq(params["dy"], 0)
       summed_move_params.x += params["dx"].to_f
       summed_move_params.y += params["dy"].to_f
-      @position_changed = true
+      @position_changed = !f_eq(params["dx"], 0)
     else
       send(data["action"], params)
     end
@@ -591,9 +591,9 @@ class Client
 
   def new_velocity(der, velocity)
     velocity.y += @consts[:gravity] if !has_floor
+    velocity.y = -@consts[:max_velocity] if has_floor && der.y < 0 && !f_eq(der.y, 0)
     if position_changed
       der = Geometry::normalize(der)
-      velocity.y = -@consts[:max_velocity] if has_floor && der.y < 0
       velocity.x += der.x * @consts[:accel]
     else
       velocity.x = velocity.x.abs <= @consts[:friction] ? 0 : velocity.x - v_sign(velocity.x) * @consts[:friction]

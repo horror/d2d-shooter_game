@@ -131,8 +131,7 @@ describe 'Socket server' do
         check_player(player, {x: 2.5, y: 0.5, vx: -0.05, vy: 0}) if p_tick == 3
         p_tick == 4
       }
-      load_requests_file(example.description, spawns[0])
-      EM.run{ send_and_check( {sid: sid_a, make_file: 1, dx_rule: dx_rule, checking: checking} ) }
+      EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, checking: checking} ) }
     end
 
     it "inc/dec velocity" do
@@ -343,7 +342,7 @@ describe 'Socket server' do
       dx_rule = Proc.new{ |p_tick| p_tick == 9 ? 0 : 1 }
       dy_rule = Proc.new{ |p_tick| p_tick == 9 ? -1 : 0}
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 4.2, y: 2.5, vy: 0, vx: 0.5}) if p_tick == 12 #ударились головой
+        check_player(player, {x: 4.1, y: 2.5, vy: 0, vx: 0.5}) if p_tick == 12 #ударились головой
         check_player(player, {x: 7.5, y: 3.5, vy: 0, vx: 0}) if p_tick == 20
         p_tick == 21
       }
@@ -378,9 +377,9 @@ describe 'Socket server' do
     spawns = [Point(0.5, 0.5), Point(9.5, 0.5)]
 
     before(:all) do
-      map = ['......#...',
-             '..........',
-             '$........$']
+      map = ['......#......',
+             '.............',
+             '$...........$']
       game_id = recreate_game(map, sid_a, sid_b, {accel: 0.05, friction: 0.05, max_velocity: 0.7, gravity: 0.05}, 3)
     end
     #spawn 0
@@ -388,7 +387,7 @@ describe 'Socket server' do
       dx_rule = Proc.new{ |p_tick| [8, 10, 13].include?(p_tick) || p_tick > 17 ? 0 : 1 }
       dy_rule = Proc.new{ |p_tick| p_tick == 18 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 7.9, y: 1.15, vx: 0.55, vy: -0.65}) if p_tick == 20
+        check_player(player, {x: 7.8, y: 1.15, vx: 0.5, vy: -0.65}) if p_tick == 20
         p_tick == 20
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
@@ -396,14 +395,11 @@ describe 'Socket server' do
 
     #spawn 1
     it "from right to left" do
-      dx_rule = Proc.new{ |p_tick|
-        next 0 if [4, 5, 14].include?(p_tick)
-        p_tick == 15 ? 1 : -1
-      }
-      dy_rule = Proc.new{ |p_tick| p_tick == 14 ? -1 : 0 }
+      dx_rule = Proc.new{ |p_tick| [8, 10, 13].include?(p_tick) || p_tick > 17 ? 0 : -1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 18 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 5.2, y: 1.15, vx: -0.45, vy: -0.65}) if p_tick == 16
-        p_tick == 16
+        check_player(player, {x: 5.2, y: 1.15, vx: -0.5, vy: -0.65}) if p_tick == 20
+        p_tick == 20
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
@@ -465,7 +461,7 @@ describe 'Socket server' do
       }
       dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 0.5, y: 0.5, vx: 0.3, vy: -0.35}) if p_tick == 11
+        check_player(player, {x: 0.5, y: 0.5, vy: -0.35}) if p_tick == 11
         p_tick == 12
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
@@ -479,7 +475,7 @@ describe 'Socket server' do
       }
       dy_rule = Proc.new{ |p_tick| p_tick == 27 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 1.5, y: 0.5, vx: -0.3, vy: -0.35}) if p_tick == 31
+        check_player(player, {x: 1.5, y: 0.5, vx: -0.25, vy: -0.35}) if p_tick == 31
         p_tick == 32
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
@@ -493,7 +489,7 @@ describe 'Socket server' do
       dx_rule = Proc.new{ |p_tick| p_tick == 48 ? 0 : 1 }
       dy_rule = Proc.new{ |p_tick| p_tick == 48 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 6.65, y: 3.15, vx: 0.5, vy: -0.4}) if p_tick == 51
+        check_player(player, {x: 6.5, y: 3.15, vx: 0.45, vy: -0.4}) if p_tick == 51
         p_tick == 52
       }
       #load_requests_file(example.description, spawns[0])
@@ -556,7 +552,7 @@ describe 'Socket server' do
       }
       dy_rule = Proc.new{ |p_tick| p_tick == 6 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 3.85, y: 1.55, vx: 0.35, vy: 0.05}) if p_tick == 10 #не зацепились за левый стык
+        check_player(player, {x: 3.65, y: 1.55, vx: 0.3, vy: 0.05}) if p_tick == 10 #не зацепились за левый стык
         p_tick == 11
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
@@ -570,7 +566,7 @@ describe 'Socket server' do
       }
       dy_rule = Proc.new{ |p_tick| p_tick == 6 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 5.15, y: 1.55, vx: -0.35, vy: 0.05}) if p_tick == 10 #не зацепились за правый стык
+        check_player(player, {x: 5.35, y: 1.55, vx: -0.3, vy: 0.05}) if p_tick == 10 #не зацепились за правый стык
         p_tick == 11
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
@@ -601,27 +597,27 @@ describe 'Socket server' do
     end
     #spawn 0
     it "run right, jump, vertical collision before tp" do
-      dx_rule = Proc.new{ |p_tick| p_tick < 7 ? 1 : 0 }
-      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
+      dx_rule = Proc.new{ |p_tick| p_tick == 7 ? 0 : 1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 10.5, y: 1.5, vx: 0.4, vy: 0}) if p_tick == 10
-        p_tick == 10
+        check_player(player, {x: 11.22, y: 1.5, vx: 0.72, vy: 0}) if p_tick == 11
+        p_tick == 11
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
     #spawn 1
     it "run left, jump,vertical collision before tp" do
-      dx_rule = Proc.new{ |p_tick| p_tick < 7 ? -1 : 0 }
-      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
+      dx_rule = Proc.new{ |p_tick| p_tick == 7 ? 0 : -1 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 10.5, y: 1.5, vx: -0.4, vy: 0}) if p_tick == 10
-        p_tick == 10
+        check_player(player, {x: 9.78, y: 1.5, vx: -0.72, vy: 0}) if p_tick == 11
+        p_tick == 11
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
     #spawn 2
     it "run right, jump, horizontal collision before tp" do
-      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? 1 : 0 }
+      dx_rule = Proc.new{ |p_tick| p_tick == 8 ? 0 : 1 }
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 20.5, y: 1.5, vx: 0, vy: -0.72}) if p_tick == 10
@@ -631,7 +627,7 @@ describe 'Socket server' do
     end
     #spawn 3
     it "run left, jump, horizontal collision before tp" do
-      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? -1 : 0 }
+      dx_rule = Proc.new{ |p_tick| p_tick == 8 ? 0 : -1 }
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
         check_player(player, {x: 23.5, y: 1.5, vx: 0, vy: -0.72}) if p_tick == 10
@@ -641,43 +637,42 @@ describe 'Socket server' do
     end
     #spawn 0
     it "run right, jump, tp before vertical collision" do
-      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? 1 : 0 }
+      dx_rule = Proc.new{ |p_tick| p_tick == 8 ? 0 : 1 }
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 10.5, y: 1.5, vx: 0.64, vy: -0.8}) if p_tick == 9
-        p_tick == 9
+        check_player(player, {x: 10.5, y: 1.5, vx: 0.64, vy: -0.72}) if p_tick == 10
+        p_tick == 10
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
     #spawn 1
     it "run left, jump, tp before vertical collision" do
-      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? -1 : 0 }
+      dx_rule = Proc.new{ |p_tick| p_tick == 8 ? 0 : -1 }
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 10.5, y: 1.5, vx: -0.64, vy: -0.8}) if p_tick == 9
-        p_tick == 9
+        check_player(player, {x: 10.5, y: 1.5, vx: -0.64, vy: -0.72}) if p_tick == 10
+        p_tick == 10
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
     #spawn 2
     it "run right, jump, tp before horizontal collision" do
-      dx_rule = Proc.new{ |p_tick| p_tick == 7 ? 0 : 1 }
-      dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
+      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? 1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 20.5, y: 1.5, vx: 0.72, vy: -0.64}) if p_tick == 10
+        check_player(player, {x: 20.5, y: 1.5, vx: 0.48, vy: -0.72}) if p_tick == 10
         p_tick == 10
       }
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
     #spawn 3
     it "run left, jump, tp before horizontal collision" do
-      dx_rule = Proc.new{ |p_tick| p_tick == 7 ? 0 : -1 }
-      dy_rule = Proc.new{ |p_tick| p_tick == 7 ? -1 : 0 }
+      dx_rule = Proc.new{ |p_tick| p_tick < 8 ? -1 : 0 }
+      dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick|
-        check_player(player, {x: 23.5, y: 1.5, vx: -0.72, vy: -0.64}) if p_tick == 10
+        check_player(player, {x: 23.5, y: 1.5, vx: -0.48, vy: -0.72}) if p_tick == 10
         p_tick == 10
       }
-      #load_requests_file(example.description, spawns[3])
       EM.run{ send_and_check( {sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, checking: checking} ) }
     end
   end
@@ -718,7 +713,6 @@ describe 'Socket server' do
       dy_rule = Proc.new{ |p_tick| p_tick == 0 ? -1 : 0 }
       checking = Proc.new{ |player, p_tick, params, full_request|
         items = full_request["items"]
-        puts full_request
         should_be_true(items[1] > 0, "item 1 > 0") if p_tick == 2
         should_be_true(items[0] > 0, "item 0 > 0") if p_tick == 4
         if p_tick == 14
