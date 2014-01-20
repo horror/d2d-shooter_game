@@ -551,7 +551,9 @@ class Client
     Geometry::walk_cells_around_coord(player[:coord], updated_velocity, true) do |itr_cell|
       cell_center = itr_cell + Settings.player_halfrect
       next if !(game.symbol(itr_cell) =~ /[a-z]/i && game.items[game.item_pos_to_idx[itr_cell.to_s]] == 0) ||
-              !playerPoly.check_SAT([cell_center]) || min_tp_dist <= Geometry::line_len(player[:coord], cell_center)
+              !playerPoly.check_SAT([cell_center]) ||
+              Geometry::rect_include_point?(player[:coord], cell_center) ||
+              min_tp_dist <= Geometry::line_len(player[:coord], cell_center)
       if game.symbol(itr_cell) == HEAL
         player[:hp] = Settings.def_game.maxHP
       elsif [GUN, MACHINE_GUN, ROCKET_LAUNCHER, RAIL_GUN].include?(game.symbol(itr_cell))
