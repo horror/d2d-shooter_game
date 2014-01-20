@@ -430,8 +430,8 @@ class Client
                friction: player_model.game.friction, gravity: player_model.game.gravity}
     games[game_id] = ActiveGame.new(game_id, player_model.game.map.map) if !@games.include?(game_id)
 
-    if !@initialized && !try_load_player
-      init_player
+    if !@initialized
+      init_player if !try_load_player
       load_stats
       game.clients[sid] = self
     end
@@ -452,6 +452,7 @@ class Client
     game.clients.each{ |sid, client|
       if sid == @sid
         @player = client.player
+        client.answered = true
         @initialized = true
         finded = true
         break
