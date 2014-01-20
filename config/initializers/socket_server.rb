@@ -32,8 +32,8 @@ module WS
 
   def self.on_open(ws)
     clients[ws] = Client.new(ws, @games)
+    puts "WS Open"
     return if synchron?
-
     @timer ||= EM::PeriodicTimer.new(0.001 * Settings.tick_size) do
       if clients.empty?
         @timer.cancel
@@ -46,6 +46,7 @@ module WS
 
   def self.on_message(ws, msg)
     msg = ActiveSupport::JSON.decode(msg)
+    puts "Client MSG: #{msg}"
     msg['params']['sid'] ||= clients[ws].sid
     clients[ws].process(msg, @tick) if msg["action"] != "empty"
     if synchron? && clients[ws].game

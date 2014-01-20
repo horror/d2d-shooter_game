@@ -411,8 +411,9 @@ class Client
 
   def on_message(tick)
     return if !@initialized
-
-    ws.send(ActiveSupport::JSON.encode({tick: tick, players: game.get_players, projectiles: game.get_projectiles, items: game.get_items})) if game
+    response = {tick: tick, players: game.get_players, projectiles: game.get_projectiles, items: game.get_items}
+    puts "Server MSG #{response}"
+    ws.send(ActiveSupport::JSON.encode(response)) if game
   end
 
   def process(data, tick)
