@@ -524,37 +524,41 @@ class Client
     min_tp_dist = 2
     updated_velocity = Point(@wall_offset.x != -1 ? @wall_offset.x : player[:velocity].x,
                              @wall_offset.y != -1 ? @wall_offset.y : player[:velocity].y)
+    end_rect = player[:coord] + updated_velocity
+    playerPoly = PlayerPolygon(player[:coord], end_rect)
     Geometry::walk_cells_around_coord(player[:coord], updated_velocity, true) do |itr_cell|
-      next if [VOID, WALL, RESPAWN].include?(game.symbol(itr_cell))
       cell_center = itr_cell + Settings.player_halfrect
-      end_rect = player[:coord] + updated_velocity
-      next if !PlayerPolygon(player[:coord], end_rect).check_SAT([cell_center]) ||
+      next if !("0".."9").include?(game.symbol(itr_cell)) ||
+              !playerPoly.check_SAT([cell_center]) ||
               Geometry::rect_include_point?(player[:coord], cell_center) ||
               min_tp_dist <= Geometry::line_len(player[:coord], cell_center)
-      if ("0".."9").include?(game.symbol(itr_cell))
-        v_der = player[:velocity].map{|i| v_sign(i)}
-        #смещение позициии игрока по Х - на момент вертикального столкновения игрока, и по Y - на момент горизантального
-        offset_to_collision = Point(v_der.y == 0 ? updated_velocity.x : player[:velocity].x * (updated_velocity.y / player[:velocity].y),
-                                    v_der.x == 0 ? updated_velocity.y : player[:velocity].y * (updated_velocity.x / player[:velocity].x))
-        #смещение позиции игрока на момент первого столкновения по какой-либо координате
-        min_offset = Point([(offset_to_collision).x.abs, updated_velocity.x.abs].min,
-                            [(offset_to_collision).y.abs, updated_velocity.y.abs].min) * v_der
-        end_rect = player[:coord] + min_offset
-        #если на момент первого столкновения небыло пересечения с телепортом, то занулить скорость
-        stop_by_collision if !PlayerPolygon(player[:coord], end_rect).check_SAT([cell_center])
 
-        min_tp_dist = Geometry::line_len(player[:coord], cell_center)
-        tp_cell = itr_cell
-      elsif game.symbol(itr_cell) =~ /[a-z]/i && game.items[game.item_pos_to_idx[itr_cell.to_s]] == 0
-        if game.symbol(itr_cell) == HEAL
-          player[:hp] = Settings.def_game.maxHP
-        elsif [GUN, MACHINE_GUN, ROCKET_LAUNCHER, RAIL_GUN].include?(game.symbol(itr_cell))
-          player[:weapon] = game.symbol(itr_cell)
-        end
+      v_der = player[:velocity].map{|i| v_sign(i)}
+      #смещение позициии игрока по Х - на момент вертикального столкновения игрока, и по Y - на момент горизантального
+      offset_to_collision = Point(v_der.y == 0 ? updated_velocity.x : player[:velocity].x * (updated_velocity.y / player[:velocity].y),
+                                  v_der.x == 0 ? updated_velocity.y : player[:velocity].y * (updated_velocity.x / player[:velocity].x))
+      #смещение позиции игрока на момент первого столкновения по какой-либо координате
+      min_offset = Point([(offset_to_collision).x.abs, updated_velocity.x.abs].min,
+                          [(offset_to_collision).y.abs, updated_velocity.y.abs].min) * v_der
+      end_rect = player[:coord] + min_offset
+      #если на момент первого столкновения небыло пересечения с телепортом, то занулить скорость
+      stop_by_collision if !PlayerPolygon(player[:coord], end_rect).check_SAT([cell_center])
 
-        game.items[game.item_pos_to_idx[itr_cell.to_s]] = Settings.respawn_ticks
-      end
+      min_tp_dist = Geometry::line_len(player[:coord], cell_center)
+      tp_cell = itr_cell
     end
+    Geometry::walk_cells_around_coord(player[:coord], updated_velocity, true) do |itr_cell|
+      cell_center = itr_cell + Settings.player_halfrect
+      next if !(game.symbol(itr_cell) =~ /[a-z]/i && game.items[game.item_pos_to_idx[itr_cell.to_s]] == 0) ||
+              !playerPoly.check_SAT([cell_center]) || min_tp_dist <= Geometry::line_len(player[:coord], cell_center)
+      if game.symbol(itr_cell) == HEAL
+        player[:hp] = Settings.def_game.maxHP
+      elsif [GUN, MACHINE_GUN, ROCKET_LAUNCHER, RAIL_GUN].include?(game.symbol(itr_cell))
+        player[:weapon] = game.symbol(itr_cell)
+      end
+      game.items[game.item_pos_to_idx[itr_cell.to_s]] = Settings.respawn_ticks
+    end
+
     return make_tp(tp_cell) if !tp_cell.eq?(-1, -1)
   end
 
