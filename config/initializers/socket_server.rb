@@ -48,14 +48,15 @@ module WS
     msg = ActiveSupport::JSON.decode(msg)
     puts "Client MSG: #{msg}"
     msg['params']['sid'] ||= clients[ws].sid
-    clients[ws].process(msg, @tick) if msg["action"] != "empty"
+    clients[ws].process(msg, @tick)
     if synchron? && clients[ws].game
       players = clients[ws].game.clients
-      all_answered = players[msg['params']['sid']].answered = true
-      players.each{|sid, player| all_answered &= player.answered}
+      return if  !players[msg['params']['sid']]
+      all_answered = true
+      players.each{|sid, player| all_answered &= player.answered if player}
       return if !all_answered
       @tick += 1
-      players.each{|sid, player| players[sid].answered = false}
+      players.each{|sid, player| players[sid].answered = false if players[sid]}
       send_clients_response(ws)
     end
   end

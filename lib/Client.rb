@@ -420,7 +420,8 @@ class Client
     params = data['params']
 
     return if !(user = User.find_by_sid(params["sid"])) || !(player_model = Player.find_by_user_id(user.id)) || (@initialized && tick > params['tick'])
-
+    @answered = true
+    return if data["action"] == "empty"
     @id ||= user.id
     @login ||= user.login
     @game_id ||= player_model.game_id
