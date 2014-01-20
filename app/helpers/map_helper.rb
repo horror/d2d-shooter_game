@@ -11,7 +11,7 @@ module MapHelper
 
     maps = Map.all(:select => "id, name, max_players, map", :from => 'maps', :order => 'id').to_a
     maps = maps.map do |line|
-      {"id" => line["id"], "name" => line["name"], "maxPlayers" => line["max_players"], "map" => ActiveSupport::JSON.decode(line["map"])}
+      {"id" => line["id"].to_i, "name" => line["name"], "maxPlayers" => line["max_players"].to_i, "map" => ActiveSupport::JSON.decode(line["map"])}
     end
     ok({maps: maps})
   end

@@ -37,7 +37,7 @@ module GameHelper
     )
     games = games.group_by(&:id).map do
     |id, rows|
-      {id: id, name: rows[0]["name"], map: rows[0]["map"], maxPlayers: rows[0]["maxplayers"].to_i,
+      {id: id, name: rows[0]["name"], map: rows[0]["map"].to_i, maxPlayers: rows[0]["maxplayers"].to_i,
        status: get_game_status(rows[0]["status"]), players: rows[0]["player"] == nil ? [] : rows.map{|r| r["player"]}}
     end
     ok({games: games})
@@ -52,6 +52,7 @@ module GameHelper
 
     try_save(Player, {user_id: user.id, game_id: game.id})
   end
+
 
   def leaveGame(params)
     user = find_by_sid(params["sid"])
