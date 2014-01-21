@@ -441,7 +441,7 @@ class Client
       return if f_eq(params["dx"], 0) && f_eq(params["dy"], 0)
       summed_move_params.x += params["dx"].to_f
       summed_move_params.y += params["dy"].to_f
-      @position_changed = !f_eq(params["dx"], 0)
+      @position_changed = true if !f_eq(params["dx"], 0)
     else
       send(data["action"], params)
     end
