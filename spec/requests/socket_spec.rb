@@ -276,7 +276,7 @@ describe 'Socket server' do
     #Spawn = 0
     it "exception collison by left bottom corner" do
       action = Proc.new{ |p_tick, player|
-        next p_tick % 2 == 0 ? "move" : "empty" if player["x"] > 4.5
+        next p_tick % 2 == 0 ? "move" : "empty" if player["x"].round(Settings.accuracy) > 4.5
         "move"
       }
       EM.run{ send_and_check( {sid: sid_a, check_limit: 40, vx: -0.1, x: 4.4, y: 0.5, action: action, dx_rule: -1} ) }
@@ -284,7 +284,7 @@ describe 'Socket server' do
     #Spawn = 1
     it "exception collison by right bottom corner" do
       action = Proc.new{ |p_tick, player|
-        next p_tick % 2 == 0 ? "move" : "empty" if player["x"] < 1.5
+        next p_tick % 2 == 0 ? "move" : "empty" if player["x"].round(Settings.accuracy) < 1.5
         "move"
       }
       EM.run{ send_and_check( {sid: sid_a, check_limit: 40, vx: 0.1, x: 1.6, y: 3.5, action: action, dx_rule: 1} ) }
