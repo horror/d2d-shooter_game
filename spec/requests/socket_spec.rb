@@ -223,7 +223,7 @@ describe 'Socket server' do
       s_player_spawn = spawns[1]
       checking_a = Proc.new{ |player, p_tick|
         check_player(player, {x: f_player_spawn.x, y: f_player_spawn.y})
-        send_and_check( {index: 1, sid: sid_b, x: s_player_spawn.x, y: s_player_spawn.y} )
+        send_and_check( {index: 1, sid: sid_b, check_limit: 5, x: s_player_spawn.x, y: s_player_spawn.y} ) if p_tick == 10
         p_tick == 20
       }
       EM.run{ send_and_check( {sid: sid_a, checking: checking_a} ) }
