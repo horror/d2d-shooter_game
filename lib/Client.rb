@@ -603,7 +603,7 @@ class Client
     velocity.y = -@consts[:max_velocity] if has_floor && der.y < 0 && !f_eq(der.y, 0)
     if position_changed
       der = Geometry::normalize(der)
-      velocity.x += der.x * @consts[:accel]
+      velocity.x += v_sign(der.x) * @consts[:accel]
     else
       velocity.x = velocity.x.abs <= @consts[:friction] ? 0 : velocity.x - v_sign(velocity.x) * @consts[:friction]
     end

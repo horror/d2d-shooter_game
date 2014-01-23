@@ -270,8 +270,8 @@ describe 'Socket server' do
     #Spawn = 2
     it "jump to left corner" do
       dx_rule = Proc.new{|p_tick| p_tick < 5 ? -1 : 0}
-      dy_rule = Proc.new{|p_tick| p_tick == 4 ? -1 : 0}
-      EM.run{ send_and_check( {sid: sid_a, check_limit: 7, x: 6.5, y: 2.5, dx_rule: dx_rule, dy_rule: dy_rule} ) }
+      dy_rule = Proc.new{|p_tick| p_tick == 2 ? -1 : 0}
+      EM.run{ send_and_check( {sid: sid_a, log: 1, check_limit: 26, x: 6.5, y: 3.5, dx_rule: dx_rule, dy_rule: dy_rule} ) }
     end
     #Spawn = 0
     it "exception collison by left bottom corner" do
@@ -291,12 +291,12 @@ describe 'Socket server' do
     end
     #Spawn = 2
     it "collision with right portion of the bottom edge of wall and then with top portion of the right edge of other wall" do
-      dx_rule = Proc.new{ |p_tick| p_tick > 8 && p_tick < 17 ? 1 : -1}
+      dx_rule = Proc.new{ |p_tick| p_tick > 7 && p_tick < 15 ? 1 : -1}
       dy_rule = Proc.new{ |p_tick| p_tick == 8 ? -1 : 0}
       checking = Proc.new{ |player, p_tick|
         if p_tick == 12 #ударились головой, пролетели влево
-          player['x'].should < 4.5
-          player['vx'].should < -0.2
+          player['x'].round(Settings.accuracy).should < 5
+          player['vx'].round(Settings.accuracy).should < -0.1
           check_player(player, {y: 2.55, vy: 0.05})
         end
         check_player(player, {x: 3.5, y: 4.5, vx: 0, vy: 0}) if p_tick == 20  #ударились левым нижним углом, упали
