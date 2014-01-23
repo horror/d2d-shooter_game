@@ -112,10 +112,7 @@ describe 'Socket server' do
     it "players spawn" do
       def_params = [2.5, 0.5, 0.0, 0.0, "K", -1, 100, 0, 0, 0]
       checking_a = Proc.new{ |player, p_tick, params, request|
-        if p_tick == 0
-          request["players"].should == [def_params.dup.insert(6, "user_a")]
-          send_and_check( {index: 1, sid: sid_b, checking: Proc.new{ true }} )
-        end
+        send_and_check( {index: 1, sid: sid_b, checking: Proc.new{ true }} ) if p_tick == 0
         request["players"].should == [def_params.dup.insert(6, "user_a"),
                                       def_params.dup.insert(6, "user_b")] if p_tick == 19
         p_tick == 20
@@ -271,7 +268,7 @@ describe 'Socket server' do
     it "jump to left corner" do
       dx_rule = Proc.new{|p_tick| p_tick < 5 ? -1 : 0}
       dy_rule = Proc.new{|p_tick| p_tick == 2 ? -1 : 0}
-      EM.run{ send_and_check( {sid: sid_a, log: 1, check_limit: 26, x: 6.5, y: 3.5, dx_rule: dx_rule, dy_rule: dy_rule} ) }
+      EM.run{ send_and_check( {sid: sid_a, check_limit: 26, x: 6.5, y: 3.5, dx_rule: dx_rule, dy_rule: dy_rule} ) }
     end
     #Spawn = 0
     it "exception collison by left bottom corner" do
@@ -777,7 +774,7 @@ describe 'Socket server' do
         p_tick == 23
       }
       EM.run{
-        send_and_check( {wait_items_resp: 1, sid: sid_a, dx_rule: dx_rule, dy_rule: dy_rule, action: action, checking: checking} )
+        send_and_check( {wait_items_resp: 1, sid: sid_a, log:1, dx_rule: dx_rule, dy_rule: dy_rule, action: action, checking: checking} )
       }
     end
   end
