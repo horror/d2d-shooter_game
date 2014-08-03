@@ -46,7 +46,7 @@ var ss_effects = new createjs.SpriteSheet({
     animations: {
         teleport: {
             frames: [0, 2, 4, 6, 8, 10],
-            speed: 0.8,
+            speed: 0.4,
         },
         explosion: {
             frames: [1, 3, 5, 7, 9, 11, 13, 15, 17, 16],
@@ -271,7 +271,7 @@ function start_websocket(sid, login)
         if (die_fixed) {
             die_text.scaleX += die_text_zoom
             die_text.scaleY += die_text_zoom
-            die_text_zoom = (die_text.scaleY > 1.5) ? -0.07 : ((die_text.scaleY < 1) ? 0.07 : die_text_zoom)
+            die_text_zoom = (die_text.scaleY > 1.5) ? -0.03 : ((die_text.scaleY < 1) ? 0.03 : die_text_zoom)
         }
 
         for (var i = 0; i < players.length; ++i) {

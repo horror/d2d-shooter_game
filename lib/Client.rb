@@ -412,14 +412,13 @@ class Client
   def on_message(tick)
     return if !@initialized
     response = {tick: tick, players: game.get_players, projectiles: game.get_projectiles, items: game.get_items}
-    puts "Server MSG #{response}"
     ws.send(ActiveSupport::JSON.encode(response)) if game
   end
 
   def process(data, tick)
     params = data['params']
 
-    return if !(user = User.find_by_sid(params["sid"])) || !(player_model = Player.find_by_user_id(user.id)) || (@initialized && tick > params['tick'])
+    return if !(user = User.find_by_sid(params["sid"])) || !(player_model = Player.find_by_user_id(user.id)) || (@initialized && tick - 100 > params['tick'])
     @answered = true
     return if data["action"] == "empty"
     @id ||= user.id
