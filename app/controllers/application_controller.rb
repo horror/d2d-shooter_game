@@ -13,7 +13,7 @@ class ApplicationController < ActionController::Base
     req = params['application']
     if req != nil
       begin
-        puts "Request = #{req}\n"
+        #puts "Request = #{req}\n"
         raise BadParamsError.new(badJSON) unless !req.include?("json parser exception")
         raise BadParamsError.new(badRequest) unless req.include?("action")
         req["params"] = req.include?("params") ? req["params"] : {}
@@ -22,7 +22,7 @@ class ApplicationController < ActionController::Base
       rescue
       ensure
           render :json => ActiveSupport::JSON.encode(@response_obj == nil ? {result: "fatalError"} : @response_obj)
-          puts "Response = #{@response_obj}\n"
+         # puts "Response = #{@response_obj}\n"
       end
     else
       render :file => index_file and return
