@@ -290,7 +290,7 @@ function start_websocket(sid, login)
             }
             //СТАТИСТИКА
             container.addChild(get_text(player[LOGIN] + " - kills:" + player[KILLS] + ", death:" + player[DEATHS],
-                40 + view_port_offset_x, (i + 1) * 10 + view_port_offset_y));
+                $("#canvas_wrapper").width() - 200 + view_port_offset_x, (i + 1) * 10 + view_port_offset_y));
 
             if (player[RESPAWN] > 0 && sprite.currentAnimation == DEAD)
                 continue;
