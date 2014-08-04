@@ -418,7 +418,9 @@ class Client
   def process(data, tick)
     params = data['params']
 
-    return if !(user = User.find_by_sid(params["sid"])) || !(player_model = Player.find_by_user_id(user.id)) || (@initialized && tick - 100 > params['tick'])
+    return if !(user = User.find_by_sid(params["sid"])) ||
+        !(player_model = Player.find_by_user_id(user.id)) ||
+        (@initialized && tick - Settings.tickDeleayRange > params['tick'])
     @answered = true
     return if data["action"] == "empty"
     @id ||= user.id
@@ -465,7 +467,7 @@ class Client
     player[:coord].set(resp + 0.5)
     player[:weapon] = KNIFE
     player[:login] = login
-    player[:hp] = 100
+    player[:hp] = Settings.def_game.maxHP
     player[:weapon_angle] = -1
     @initialized = true
   end
