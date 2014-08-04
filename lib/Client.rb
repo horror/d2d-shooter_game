@@ -557,6 +557,7 @@ class Client
               min_tp_dist <= Geometry::line_len(player[:coord], cell_center)
       if game.symbol(itr_cell) == HEAL
         player[:hp] += Settings.def_game.healRegen
+        player[:hp] = Settings.def_game.maxHP if (player[:hp] > Settings.def_game.maxHP)
       elsif [GUN, MACHINE_GUN, ROCKET_LAUNCHER, RAIL_GUN, KNIFE].include?(game.symbol(itr_cell))
         player[:weapon] = game.symbol(itr_cell)
       end

@@ -51,7 +51,7 @@ var ss_effects = new createjs.SpriteSheet({
         explosion: {
             frames: [1, 3, 5, 7, 9, 11, 13, 15, 17, 16],
             next: false,
-            speed: 2,
+            speed: 0.8,
         },
     },
     images: ["assets/img/effects.png"],
