@@ -9,13 +9,35 @@ textarea {
 
 body {
     padding-top: 100px;
+    background: url("./images/bg.png") repeat-x top left;
+    background-color: #9eb5d6;
+    margin: 0px;
+}
+
+.panel, .form-signin, .well, .list-group-item, .table {
+    background-color: rgba(21, 21, 21, 0.5) !important;
+}
+
+.table tr, .table td, .table tbody {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.table {
+    color: #fff;
+}
+
+.list-group-item {
+    color: #eee;
+}
+
+.navbar-nav > li > a {
+    color: #ff9000 !important;
 }
 
 .form-signin {
     max-width: 300px;
     padding: 19px 29px 29px;
     margin: 0 auto 20px;
-    background-color: #151515;
     border: 1px solid #000;
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
@@ -36,6 +58,14 @@ body {
     padding: 7px 9px;
 }
 
+.navbar {
+    background-color: transparent;
+}
+
+.navbar-default {
+    border-color: transparent;
+}
+
 #to_signup {
     right: 0;
 }
@@ -47,6 +77,11 @@ body {
 
 canvas {
 
+}
+
+#full_screen_btn {
+    height: 53px;
+    line-height: 2.5;
 }
 
 #canvas_wrapper {
