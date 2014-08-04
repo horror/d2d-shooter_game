@@ -17,5 +17,6 @@ def_game: {
     R: {velocity: 0.5, damage: 50, latency: 10, radius: 3},
     A: {velocity: 0.99, damage: 100, latency: 20},
   },
-  maxHP: 100
+  healRegen: 60,
+  maxHP: 100,
 }
