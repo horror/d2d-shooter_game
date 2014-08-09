@@ -1,5 +1,7 @@
 require 'em-websocket'
 
+
+
 module WS
 
   @synchron = false
@@ -24,6 +26,10 @@ module WS
     @games
   end
 
+  def self.inc_tick
+    @tick += 1
+  end
+
   def self.send_clients_response(ws)
     clients.each { |ws_handler, client| client.apply_changes if !synchron? || client.game_id == clients[ws].game_id }
     @games.each { |ws_handler, game| game.apply_changes if !synchron? || game.id == clients[ws].game_id }
@@ -33,16 +39,6 @@ module WS
   def self.on_open(ws)
     clients[ws] = Client.new(ws, @games)
     puts "WS Open"
-    return if synchron?
-    @timer ||= EM::PeriodicTimer.new(0.001 * Settings.tick_size) do
-      if clients.empty?
-        @timer.cancel
-        @timer = nil
-      end
-      @tick += 1
-
-      send_clients_response(ws)
-    end
   end
 
   def self.on_message(ws, msg)
@@ -73,11 +69,14 @@ module WS
 end
 
 EM.next_tick do
+  EventMachine.add_periodic_timer(0.001 * Settings.tick_size) do
+    WS.inc_tick
+    WS.send_clients_response(nil)
+  end
+
   EM::WebSocket.start(:host => '0.0.0.0', :port => 8001) do |ws|
     ws.onopen { WS.on_open(ws) }
-
     ws.onmessage { |msg| WS.on_message(ws, msg) }
-
     ws.onclose { WS.on_close(ws) }
   end
 end
