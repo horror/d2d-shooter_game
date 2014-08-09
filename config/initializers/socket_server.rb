@@ -40,6 +40,7 @@ module WS
         @timer = nil
       end
       @tick += 1
+
       send_clients_response(ws)
     end
   end

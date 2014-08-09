@@ -349,7 +349,6 @@ function start_websocket(sid, login)
                     )
                 ).set({x: p_x + PLAYER_HALFRECT * SCALE, y: p_y + PLAYER_HALFRECT * SCALE});
 
-            mouse_pressed = false;
             container.addChild(sprite)
                 .set({x: p_x , y: p_y});
         }
