@@ -73,6 +73,7 @@ require 'faye/websocket'
 
 App = lambda do |env|
   if Faye::WebSocket.websocket?(env)
+
     ws = Faye::WebSocket.new(env)
 
     ws.on :open do |event|
@@ -98,19 +99,14 @@ end
 
 Faye::WebSocket.load_adapter('thin')
 EM.next_tick do
-  Thread.new do
-    while true
-      WS.inc_tick
-      WS.send_clients_response(nil)
-      sleep(0.001 * Settings.tick_size)
-    end
+  EventMachine.add_periodic_timer(0.001 * Settings.tick_size) do
+    WS.inc_tick
+    WS.send_clients_response(nil)
   end
-
 
   EM.run {
     thin = Rack::Handler.get('thin')
-
-    thin.run(App, :Port => 9292) do |server|
+    thin.run(App, :Port => 8001) do |server|
     end
   }
 end
