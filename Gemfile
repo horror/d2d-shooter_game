@@ -37,7 +37,7 @@ group :test do
 end
 
 gem 'rest-client'
-gem 'faye-websocket', '0.7.2'
+gem 'em-websocket'
 gem 'em-http-request'
 gem 'rails_config'
 
