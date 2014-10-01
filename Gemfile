@@ -37,10 +37,8 @@ group :test do
 end
 
 gem 'rest-client'
-gem 'em-synchrony'
-gem 'em-websocket'
+gem 'faye-websocket', '0.7.2'
 gem 'em-http-request'
-gem 'em-websocket-request'
 gem 'rails_config'
 
 # To use ActiveModel has_secure_password

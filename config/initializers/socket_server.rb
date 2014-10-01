@@ -1,6 +1,3 @@
-require 'em-websocket'
-
-
 
 module WS
 
@@ -68,15 +65,52 @@ module WS
 
 end
 
+require 'eventmachine'
+require 'rack'
+require 'thin'
+
+require 'faye/websocket'
+
+App = lambda do |env|
+  if Faye::WebSocket.websocket?(env)
+    ws = Faye::WebSocket.new(env)
+
+    ws.on :open do |event|
+      WS.on_open(ws)
+    end
+
+    ws.on :message do |event|
+      WS.on_message(ws, event.data)
+    end
+
+    ws.on :close do |event|
+      WS.on_close(ws)
+    end
+
+    # Return async Rack response
+    ws.rack_response
+
+  else
+    # Normal HTTP request
+    [200, {'Content-Type' => 'text/plain'}, ['Hello']]
+  end
+end
+
+Faye::WebSocket.load_adapter('thin')
 EM.next_tick do
-  EventMachine.add_periodic_timer(0.001 * Settings.tick_size) do
-    WS.inc_tick
-    WS.send_clients_response(nil)
+  Thread.new do
+    while true
+      WS.inc_tick
+      WS.send_clients_response(nil)
+      sleep(0.001 * Settings.tick_size)
+    end
   end
 
-  EM::WebSocket.start(:host => '0.0.0.0', :port => 8001) do |ws|
-    ws.onopen { WS.on_open(ws) }
-    ws.onmessage { |msg| WS.on_message(ws, msg) }
-    ws.onclose { WS.on_close(ws) }
-  end
+
+  EM.run {
+    thin = Rack::Handler.get('thin')
+
+    thin.run(App, :Port => 9292) do |server|
+    end
+  }
 end
