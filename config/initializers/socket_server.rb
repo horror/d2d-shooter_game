@@ -68,14 +68,10 @@ module WS
 
 end
 
-def time_diff_milli(start, finish)
-  ((finish - start) * 1000.0).to_i
-end
-@old = Time.now
 EM.next_tick do
   quantum = 0.005
-  EM.set_quantum(quantum * 2000) # Lowest possible timer resolution
-  EM.set_heartbeat_interval(quantum)
+  EM.set_quantum(quantum * 1000) # Lowest possible timer resolution
+  EM.set_heartbeat_interval(quantum * 0.001)
   EventMachine.add_periodic_timer(0.001 * Settings.tick_size) do
     WS.inc_tick
     WS.send_clients_response(nil)

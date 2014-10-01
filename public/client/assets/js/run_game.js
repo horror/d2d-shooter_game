@@ -410,6 +410,12 @@ function draw_map(map)
 var pressed_keys = {38: false, 37: false, 39: false, 40: false, 81: false, "m": false}
 var pressed = false;
 
+function start_keys_checking(sid)
+{
+    key_hold(sid);
+    setTimeout("start_keys_checking('" + sid + "')", 30);
+}
+
 function key_hold(sid)
 {
     for (i in pressed_keys)
@@ -421,15 +427,11 @@ function key_hold(sid)
             if (i == KEY_MOUSE)
             {
                 arr["params"]["dx"] = mouse_x - player_x * SCALE,
-                arr["params"]["dy"] = mouse_y - player_y * SCALE;
+                    arr["params"]["dy"] = mouse_y - player_y * SCALE;
             }
-
             if (web_socket.readyState == 1)
                 web_socket.send(JSON.stringify(arr));
-
         }
-    if (pressed)
-        setTimeout("key_hold('" + sid + "')", 20);
 }
 
 function scrollCanvas(){

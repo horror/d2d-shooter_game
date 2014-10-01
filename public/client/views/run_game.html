@@ -37,15 +37,12 @@
 
         var onbuttondown = function(e) {
             var key = e.type == "keydown" ? e.keyCode : KEY_MOUSE,
-                offset = $(this).offset();
+                    offset = $(this).offset();
             var x = key == KEY_MOUSE ? e.clientX - offset.left : 0,
-                y = key == KEY_MOUSE ? e.clientY - offset.top : 0;
+                    y = key == KEY_MOUSE ? e.clientY - offset.top : 0;
             if (!(key in pressed_keys))
                 return true;
             pressed_keys[key] = true;
-
-            if (!pressed)
-                key_hold("<%=AppState.sid%>", x, y);
             return false;
         };
         var onbuttonup = function(e) {
@@ -53,8 +50,6 @@
             if (!(key in pressed_keys))
                 return;
             pressed = pressed_keys[key] = false;
-            for (i in pressed_keys)
-                pressed = pressed || pressed_keys[i];
         };
 
         var change_by_scroll = function ()
@@ -70,7 +65,7 @@
         {
             var offset = $(this).offset();
             mouse_x = e.pageX - offset.left,
-            mouse_y = e.pageY - offset.top;
+                    mouse_y = e.pageY - offset.top;
         };
 
         $(document).keydown(onbuttondown)
@@ -88,5 +83,6 @@
         $("#full_screen_btn").click(function () {
             $(".view_port").css('width', '100%');
         })
+        start_keys_checking("<%=AppState.sid%>");
     })
 </script>
