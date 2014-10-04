@@ -4,7 +4,7 @@
     <div class="col-lg-7  view_port">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <h3 class="panel-title">Game: <%=Game.name%></h3>
+                <h3 class="panel-title">Игра: <%=Game.name%></h3>
             </div>
             <div id="canvas_wrapper">
                 <canvas id="main_canvas"></canvas>
@@ -14,20 +14,20 @@
     <div class="col-lg-5  view_port">
         <div class="panel panel-default">
             <div class="panel-heading">
-                <h3 class="panel-title">Chat</h3>
+                <h3 class="panel-title">Чат</h3>
             </div>
             <div class="panel-body">
                 <ul id="chat_messages" class="list-group">
-                    wait...
+                    ждите...
                 </ul>
                 <form id="chat-form">
                     <input id='message_text' name='text' class="form-control" type="text" />
                     <input name='game' type="hidden" value="<%=Game.id%>" />
-                    <input type="submit" class="btn btn-lg btn-default btn-block" value="send" id="send_message">
+                    <input type="submit" class="btn btn-lg btn-default btn-block" value="Отправить" id="send_message">
                 </form>
             </div>
         </div>
-        <a href="/" class="btn btn-primary" id="full_screen_btn">expand game full width</a>
+        <a href="/" class="btn btn-primary" id="full_screen_btn">Развернуть окно с игрой</a>
     </div>
 </div>
 <script>

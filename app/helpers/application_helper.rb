@@ -1,3 +1,4 @@
+# coding: utf-8
 module ApplicationHelper
   def badAction
     resp({result: "badAction"})
@@ -12,23 +13,23 @@ module ApplicationHelper
   end
 
   def badSid
-    resp({result: "badSid", message: "This sicret ID wrong"})
+    resp({result: "badSid", message: "Неверный sid"})
   end
 
   def badLogin
-    resp({result: "badLogin", message: "Username must meet format"})
+    resp({result: "badLogin", message: "Логин должен состоять минимум из одной буквы и цифр(мин. 4 символа)"})
   end
 
   def badPassword
-    resp({result: "badPassword", message: "Password must meet format"})
+    resp({result: "badPassword", message: "Пароль должен состоять минимум из одной буквы и цифр(мин. 4 символа)"})
   end
 
   def userExists
-    resp({result: "userExists", message: "User with this name already exists"})
+    resp({result: "userExists", message: "Пользователь с таким ником уже зарегистрирован"})
   end
 
   def badGame
-    resp({result: "badGame", message: "This game doesn't exists"})
+    resp({result: "badGame", message: "Такой игры не существует"})
   end
 
   def badName
@@ -36,7 +37,7 @@ module ApplicationHelper
   end
 
   def gameExists
-    resp({result: "gameExists", message: "Game with this name already exists"})
+    resp({result: "gameExists", message: "Игра с таким именем уже существует"})
   end
 
   def badMaxPlayers
@@ -44,7 +45,7 @@ module ApplicationHelper
   end
 
   def badMap
-    resp({result: "badMap", message: "This map doesn't exists"})
+    resp({result: "badMap", message: "Такой карты не существует"})
   end
 
   def badText
@@ -56,31 +57,31 @@ module ApplicationHelper
   end
 
   def gameFull
-    resp({result: "gameFull", message: "This game full"})
+    resp({result: "gameFull", message: "Игра заполнена, выберите другию или создайте свою"})
   end
 
   def gameRunning
-    resp({result: "gameRunning", message: "This game running, u can see stats only after game is finished"})
+    resp({result: "gameRunning", message: "Вы не можите посмотреть статистику сейчас"})
   end
 
   def gameFinished
-    resp({result: "gameFinished", message: "This game already finished"})
+    resp({result: "gameFinished", message: "Игра закончена"})
   end
 
   def alreadyInGame
-    resp({result: "alreadyInGame", message: "U already playing"})
+    resp({result: "alreadyInGame", message: "Вы уже играете"})
   end
 
   def notInGame
-    resp({result: "notInGame", message: "U are not playing in this game"})
+    resp({result: "notInGame", message: "Вы не играете в этой игре"})
   end
 
   def mapExists
-    resp({result: "mapExists", message: "Map with this name already exists" })
+    resp({result: "mapExists", message: "Карта с таким именем уже существует" })
   end
 
   def incorrect
-    resp({result: "incorrect", message: "Combination name and password incorrect"})
+    resp({result: "incorrect", message: "Неверная комбинация логин и пароль"})
   end
 
   def ok(other_params = {})

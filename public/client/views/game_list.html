@@ -6,11 +6,11 @@ _.each(Games, function(game,key,list){
     <%
     if (game.status == "running") {
     %>
-        <a href="/" class="join_game badge" id="<%= game.id %>">join</a>
+        <a href="/" class="join_game badge" id="<%= game.id %>">зайти</a>
     <%
     } else {
     %>
-        <a href="/" class="show_stats badge" id="<%= game.id %>">stats</a>
+        <a href="/" class="show_stats badge" id="<%= game.id %>">статистика</a>
     <%
     }
     %>

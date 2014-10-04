@@ -289,7 +289,7 @@ function start_websocket(sid, login)
                 player_y = player[Y];
             }
             //СТАТИСТИКА
-            container.addChild(get_text(player[LOGIN] + " - kills:" + player[KILLS] + ", death:" + player[DEATHS],
+            container.addChild(get_text(player[LOGIN] + " - убил:" + player[KILLS] + ", умер:" + player[DEATHS],
                 $("#canvas_wrapper").width() - 200 + view_port_offset_x, (i + 1) * 10 + view_port_offset_y));
 
             if (player[RESPAWN] > 0 && sprite.currentAnimation == DEAD)

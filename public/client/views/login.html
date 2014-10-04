@@ -1,13 +1,13 @@
 <form id="form-signin" class="form-signin">
-    <h2 class="form-signin-heading">Please <%=AppState.state%>
+    <h2 class="form-signin-heading"><%=AppState.state != "signup" ? "Добро пожаловать!" : ""%>
         <% if (AppState.state != "signup") { %>
-        <p><small class="registration">or <a href="/" id="to_signup">register</a></small></p>
+        <p><small class="registration"><a href="/" id="to_signup">регистрация</a></small></p>
         <% } %>
     </h2>
     <div id="validation_error">
     </div>
-    <input name="login" class="form-control" type="text" class="input-block-level" placeholder="Name" required autofocus>
-    <input name="password" class="form-control" type="password" class="input-block-level" placeholder="Password" required>
-    <a href="/" class="btn btn-lg btn-primary btn-block" id="<%=AppState.state%>"><%=AppState.state%></a>
+    <input name="login" class="form-control" type="text" class="input-block-level" placeholder="Имя" required autofocus>
+    <input name="password" class="form-control" type="password" class="input-block-level" placeholder="Пароль" required>
+    <a href="/" class="btn btn-lg btn-primary btn-block" id="<%=AppState.state%>"><%=AppState.state == "signup" ? "зарегистрироваться" : "войти"%></a>
 
 </form>
