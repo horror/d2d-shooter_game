@@ -69,12 +69,14 @@ module WS
 end
 
 EM.next_tick do
-  quantum = 0.005
-  EM.set_quantum(quantum * 1000) # Lowest possible timer resolution
-  EM.set_heartbeat_interval(quantum * 0.001)
-  EventMachine.add_periodic_timer(0.001 * Settings.tick_size) do
-    WS.inc_tick
-    WS.send_clients_response(nil)
+  EM.set_timer_quantum(5)
+  @start = @next = Time.now.to_f
+  @interval = Settings.tick_size / 1000
+  EM.add_periodic_timer(@interval) do
+    if Time.now.to_f >= @next
+      @next = WS.inc_tick * @interval + @start
+      WS.send_clients_response(nil)
+    end
   end
 
   EM::WebSocket.start(:host => '0.0.0.0', :port => 8001) do |ws|
