@@ -73,7 +73,7 @@ EM.next_tick do
   EM.set_timer_quantum(5)
   @start = @next = Time.now.to_f
   @interval = Settings.tick_size / 1000.0
-  EM.add_periodic_timer(@interval / 10.0) do
+  EM.add_periodic_timer(@interval / 30.0) do
     if Time.now.to_f >= @next
       @next = WS.inc_tick * @interval + @start
       WS.send_clients_response(nil)
