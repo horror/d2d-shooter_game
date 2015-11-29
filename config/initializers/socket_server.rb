@@ -30,6 +30,8 @@ module WS
     clients.each { |ws_handler, client| client.apply_changes if !synchron? || client.game_id == clients[ws].game_id }
     @games.each { |ws_handler, game| game.apply_changes if !synchron? || game.id == clients[ws].game_id }
     clients.each { |ws_handler, client| client.on_message(@tick) if !synchron? || client.game_id == clients[ws].game_id }
+    puts "klients"
+    puts clients.size
   end
 
   def self.on_open(ws)
@@ -62,7 +64,7 @@ module WS
     clients.delete(ws)
   end
 
-  def self.start
+  def self.run_periodic_timer
     @start = @next = Time.now.to_f
     @interval = Settings.tick_size / 1000.0
     @i = 0
@@ -83,27 +85,33 @@ module WS
     end
   end
 
+  def self.start
+    WS.run_periodic_timer
+
+    Thread.new do
+      @server = Rubame::Server.new("0.0.0.0", 8001)
+      @interval = Settings.tick_size / 1000.0
+      while true
+        @server.run do |client|
+          client.onopen do
+            WS.on_open(client)
+            puts "Server reports:  client open"
+          end
+          client.onmessage do |msg|
+            WS.on_message(client, msg)
+            puts "Server reports:  message received: #{msg}"
+          end
+          client.onclose do
+            WS.on_close(client)
+            puts "Server reports:  client closed"
+          end
+        end
+        sleep(@interval)
+      end
+    end
+  end
+
 end
 
 
 WS.start
-
-Thread.new do
-  @server = Rubame::Server.new("0.0.0.0", 8001)
-  while true
-    @server.run do |client|
-      client.onopen do
-        WS.on_open(client)
-        puts "Server reports:  client open"
-      end
-      client.onmessage do |msg|
-        WS.on_message(client, msg)
-        puts "Server reports:  message received: #{msg}"
-      end
-      client.onclose do
-        WS.on_close(client)
-        puts "Server reports:  client closed"
-      end
-    end
-  end
-end
