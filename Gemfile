@@ -22,10 +22,11 @@ group :assets do
 end
 
 gem 'jquery-rails'
+gem 'clutter'
 
 group :development, :test do
   gem 'rspec-rails'
-  gem "capybara"
+  gem 'capybara'
   gem 'spork', '0.9.2'
   gem 'annotate'
 end
@@ -36,6 +37,6 @@ group :test do
 end
 
 gem 'rest-client'
-gem 'em-websocket'
-gem 'em-http-request'
+gem 'rubame'
+gem 'eventmachine'
 gem 'rails_config'

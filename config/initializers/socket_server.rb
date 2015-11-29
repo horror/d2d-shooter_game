@@ -1,7 +1,3 @@
-require 'em-websocket'
-
-
-
 module WS
 
   @synchron = false
@@ -66,23 +62,48 @@ module WS
     clients.delete(ws)
   end
 
-end
-
-EM.next_tick do
-  EM.set_quantum(5)
-  EM.set_timer_quantum(5)
-  @start = @next = Time.now.to_f
-  @interval = Settings.tick_size / 1000.0
-  EM.add_periodic_timer(@interval / 30.0) do
-    if Time.now.to_f >= @next
-      @next = WS.inc_tick * @interval + @start
-      WS.send_clients_response(nil)
+  def self.start
+    @start = @next = Time.now.to_f
+    @interval = Settings.tick_size / 1000.0
+    @i = 0
+    @old_i = 0
+    Thread.new do
+      while(true) do
+        WS.inc_tick
+        WS.send_clients_response(nil)
+        sleep(@interval)
+        @i += 1
+        if (Time.now.to_f >= @next)
+          #puts "now tiks"
+          @next = Time.now.to_f + 1.0
+          #puts @i - @old_i
+          @old_i = @i
+        end
+      end
     end
   end
 
-  EM::WebSocket.start(:host => '0.0.0.0', :port => 8001) do |ws|
-    ws.onopen { WS.on_open(ws) }
-    ws.onmessage { |msg| WS.on_message(ws, msg) }
-    ws.onclose { WS.on_close(ws) }
+end
+
+
+WS.start
+
+Thread.new do
+  @server = Rubame::Server.new("0.0.0.0", 8001)
+  while true
+    @server.run do |client|
+      client.onopen do
+        WS.on_open(client)
+        puts "Server reports:  client open"
+      end
+      client.onmessage do |msg|
+        WS.on_message(client, msg)
+        puts "Server reports:  message received: #{msg}"
+      end
+      client.onclose do
+        WS.on_close(client)
+        puts "Server reports:  client closed"
+      end
+    end
   end
 end
